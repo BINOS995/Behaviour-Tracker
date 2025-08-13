@@ -1,0 +1,246 @@
+<html>
+<head>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        rel="stylesheet"
+        as="style"
+        onload="this.rel='stylesheet'"
+        href="https://fonts.googleapis.com/css2?display=swap&family=Lexend:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900"
+    />
+    <title>Performance Tracker</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<script type="module" src="./homepage.js"></script>
+<style>
+
+table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            padding: 8px 0;
+            border-radius: 6px 6px 0 0;
+        }
+
+        td {
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        td:hover {
+            background-color: #ecf0f1;
+            border-radius: 50%;
+        }
+
+        .today {
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+        }
+        .calendar {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+            max-width: 320px;
+        }
+
+</style>
+
+<body class="bg-[#101323]" style='font-family: Lexend, "Noto Sans", sans-serif;'>
+    <div class="flex min-h-screen">
+        
+        <!-- Sidebar -->
+        <aside class="w-80 flex flex-col justify-between bg-[#101323] p-4 border-r border-[#2f396a]">
+            <div class="flex flex-col gap-4">
+                <h1 class="text-white text-base font-medium">Behaviour Tracker</h1>
+                <nav class="flex flex-col gap-2">
+                    <!-- Dashboard -->
+                    <button class="flex items-center gap-3 px-3 py-2 text-white hover:bg-[#21284a] rounded-xl" data-content="Dashboard">
+                        🏠 Dashboard
+                    </button>
+
+                    <!-- Students & Classes Dropdown -->
+                    <div>
+                        <button id="studentsDropdownBtn" class="flex items-center justify-between w-full gap-3 px-3 py-2 text-white hover:bg-[#21284a] rounded-xl">
+                            <span>👥 Students & Classes</span>
+                            <span id="dropdownArrow">▼</span>
+                        </button>
+                        <div id="studentsDropdownMenu" class="flex flex-col ml-8 mt-1 hidden">
+                            <button class="px-3 py-2 text-white hover:bg-[#21284a] rounded-xl" data-content="Students">Students</button>
+                            
+                            <!-- Classes Nested Dropdown -->
+                            <div>
+                                <button id="classesDropdownBtn" class="flex items-center justify-between w-full px-3 py-2 text-white hover:bg-[#21284a] rounded-xl">
+                                    Classes
+                                    <span id="classesArrow">▼</span>
+                                </button>
+                                <div id="classesDropdownMenu" class="flex flex-col ml-6 mt-1 hidden">
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="KG2">KG2</button>
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="Grade 1">Grade 1</button>
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="Grade 2">Grade 2</button>
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="Grade 3">Grade 3</button>
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="Grade 4">Grade 4</button>
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="Grade 5">Grade 5</button>
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="Grade 6">Grade 6</button>
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="Grade 7">Grade 7</button>
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="Grade 8">Grade 8</button>
+                                    <button class="px-3 py-1 text-white hover:bg-[#21284a] rounded-xl" data-content="Grade 9">Grade 9</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Infractions -->
+                    <button class="flex items-center gap-3 px-3 py-2 text-white hover:bg-[#21284a] rounded-xl" data-content="Infractions">
+                        🚩 Infractions
+                    </button>
+
+                    <!-- Reports -->
+                    <button class="flex items-center gap-3 px-3 py-2 text-white hover:bg-[#21284a] rounded-xl" data-content="Reports">
+                        📊 Reports
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Logout Button -->
+            <div>
+                
+                <button class="flex items-center gap-3 px-3 py-2 text-white bg-red-600 hover:bg-red-700 rounded-xl transition" data-content="Logout" id="logout">
+                    Logout 🚪 
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-y-auto">
+            <header class="p-4 border-b border-[#2f396a]">
+                <h2 class="text-white text-2xl font-bold" id="content-title">Dashboard</h2>
+              
+                <p class="text-gray-300 mt-1 text-lg">
+                    👋 Welcome back, <span id="loggedUserFName"></span>!
+                </p>
+            </header>
+            <section class="p-4 text-white" id="content-display">
+                <!-- Default Dashboard Layout -->
+                <div id="dashboard-graphs" class="p-6 space-y-6">
+                    <!-- Top Row: Bar & Line -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl shadow p-4">
+                            <h4 class="font-semibold mb-2 text-black">Bar</h4>
+                            <canvas id="bar1"></canvas>
+                        </div>
+                        <div class="bg-white rounded-xl shadow p-4">
+                            <h4 class="font-semibold mb-2 text-black">Line</h4>
+                            <canvas id="line1"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="calendar">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th colspan="7">August 2025</th>
+                            </tr>
+                            <tr>
+                                <th>Sun</th>
+                                <th>Mon</th>
+                                <th>Tue</th>
+                                <th>Wed</th>
+                                <th>Thu</th>
+                                <th>Fri</th>
+                                <th>Sat</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td></td><td></td><td></td><td></td><td>1</td><td>2</td><td>3</td>
+                            </tr>
+                            <tr>
+                                <td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td>
+                            </tr>
+                            <tr>
+                                <td>11</td><td>12</td><td>13</td><td class="today">14</td><td>15</td><td>16</td><td>17</td>
+                            </tr>
+                            <tr>
+                                <td>18</td><td>19</td><td>20</td><td>21</td><td>22</td><td>23</td><td>24</td>
+                            </tr>
+                            <tr>
+                                <td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td><td>31</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+                <!----Calender Scripts -------->
+                <link rel="stylesheet" href="css/clndr.css" type="text/css" />
+                <script src="js/underscore-min.js" type="text/javascript"></script>
+                <script src="js/moment-2.2.1.js" type="text/javascript"></script>
+                <script src="js/clndr.js" type="text/javascript"></script>
+                <script src="js/site.js" type="text/javascript"></script>
+                <!----End Calender -------->
+            </section>
+        </main>
+    </div>
+
+    <script>
+        src="https://cdn.jsdelivr.net/npm/chart.js"
+        const tabContent = {
+            "Dashboard": document.getElementById("dashboard-graphs").outerHTML,
+            "Students": "<iframe src='https://docs.google.com/spreadsheets/d/1qL_8YVFMQkdv03MS-QMf2pAfHUuTjeo-/edit?usp=sharing' width='100%' height='600px'></iframe>",
+            "KG2": "<iframe src='https://docs.google.com/spreadsheets/d/1nZ0I5vau6LEW_gcfpmEbvrlccFJSOFdr/edit?usp=sharing' width='100%' height='800px'></iframe>",
+            "Grade 1": "<iframe src='https://docs.google.com/spreadsheets/d/14FOzY7rdywZ6e50RXIc1OmaQlgfbKNBH/edit?usp=sharing' width='100%' height='800px'></iframe>",
+            "Infractions": "In the Infractions section, you can view and manage student infractions.",
+            "Reports": "Generate reports based on student performance and class activities.",
+            "Logout": "You have been logged out."
+        };
+
+        document.querySelectorAll("aside button").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const content = btn.getAttribute("data-content");
+                if (content) {
+                    document.getElementById("content-title").textContent = content;
+                    document.getElementById("content-display").innerHTML = tabContent[content] || "Content not available.";
+                    if (content === "Dashboard") {
+                        loadCharts();
+                    }
+                }
+            });
+        });
+
+        document.getElementById("studentsDropdownBtn").addEventListener("click", () => {
+            const menu = document.getElementById("studentsDropdownMenu");
+            const arrow = document.getElementById("dropdownArrow");
+            menu.classList.toggle("hidden");
+            arrow.textContent = menu.classList.contains("hidden") ? "▼" : "▲";
+        });
+
+        document.getElementById("classesDropdownBtn").addEventListener("click", () => {
+            const menu = document.getElementById("classesDropdownMenu");
+            const arrow = document.getElementById("classesArrow");
+            menu.classList.toggle("hidden");
+            arrow.textContent = menu.classList.contains("hidden") ? "▼" : "▲";
+        });
+
+        function loadCharts() {
+            const ctxBar = document.getElementById("bar1");
+            const ctxLine = document.getElementById("line1");
+            if (!ctxBar) return;
+
+            new Chart(ctxBar, { type: "bar", data: { labels: ["A", "B", "C"], datasets: [{ label: "Bar Data", data: [12, 19, 3], backgroundColor: "rgba(75, 192, 192, 0.6)" }] } });
+            new Chart(ctxLine, { type: "line", data: { labels: ["Jan", "Feb", "Mar"], datasets: [{ label: "Line Data", data: [10, 5, 15], borderColor: "rgba(153, 102, 255, 1)", fill: false }] } });
+        }
+        loadCharts();
+    </script>
+   
+
+</body>
+</html>

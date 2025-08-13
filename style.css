@@ -5,8 +5,8 @@
     font-family:"poppins",sans-serif;
 }
 body{
-    background-color: #c9d6ff;
-    background:linear-gradient(to right,#101323,#c9d6ff);
+    background-color: #fff;
+    
 }
 .container{
     background:#fff;
@@ -40,7 +40,7 @@ input{
     font-size: 2em;
     text-align: center;
     margin: 20px 0;
-    color: rgb(53, 11, 11);
+    color: rgb(125,125,235);
   }
 .input-group{
     padding:1% 0;

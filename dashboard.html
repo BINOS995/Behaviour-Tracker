@@ -5,8 +5,11 @@
         rel="stylesheet"
         as="style"
         onload="this.rel='stylesheet'"
-        href="https://fonts.googleapis.com/css2?display=swap&family=Lexend:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900"
+        href="https://fonts.googleapis.com/css2?display=swap&family=Lexend:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900",
+         
+
     />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <title>Performance Tracker</title>
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -61,18 +64,19 @@
                 <h1 class="text-gray-800 text-base font-medium">Behaviour Tracker</h1>
                 <nav class="flex flex-col gap-2">
                     <!-- Dashboard -->
-                    <button class="flex items-center gap-3 px-3 py-2 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Dashboard">
-                        🏠 Dashboard
+                    <button class="flex items-center gap-3 px-3 py-2 text-white bg-purple-500 hover:bg-purple-600 rounded-xl" data-content="Dashboard">
+                        <i class="fas fa-home"></i> Dashboard
                     </button>
-
+          
                     <!-- Students & Classes Dropdown -->
                     <div>
                         <button id="studentsDropdownBtn" class="flex items-center justify-between w-full gap-3 px-3 py-2 text-gray-800 hover:bg-[#eef2ff] rounded-xl">
-                            <span>👥 Students & Classes</span>
+                            <span><i class="fas fa-envelope"></i> Classes </span>
                             <span id="dropdownArrow">▼</span>
                         </button>
+                        
                         <div id="studentsDropdownMenu" class="flex flex-col ml-8 mt-1 hidden">
-                            <button class="px-3 py-2 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Students">Students</button>
+                            <!--<button class="px-3 py-2 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Students">Students</button>-->
                             
                             <!-- Classes Nested Dropdown -->
                             <div>

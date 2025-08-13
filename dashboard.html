@@ -47,11 +47,42 @@
     }
 
     .calendar {
-        background-color: #ffffff;
-        padding: 20px;
+        background: linear-gradient(135deg, #f3e8ff 0%, #e0f2fe 100%);
+        padding: 24px;
+        border-radius: 18px;
+        box-shadow: 0px 4px 16px rgba(108, 92, 231, 0.08);
+        max-width: 340px;
+        margin: auto;
+        border: 1px solid #e0e7ff;
+    }
+    .calendar th {
+        background: none;
+        color: #6C5CE7;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
+    .calendar-cell {
+        background: #fff;
         border-radius: 12px;
-        box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.05);
-        max-width: 320px;
+        box-shadow: 0 2px 6px rgba(108, 92, 231, 0.06);
+        transition: background 0.2s, color 0.2s;
+        cursor: pointer;
+        padding: 12px 0;
+        margin: 2px;
+        text-align: center;
+        font-weight: 500;
+        color: #6C5CE7;
+    }
+    .calendar-cell:hover {
+        background: #e0e7ff;
+        color: #222;
+    }
+    .calendar .today {
+        background: linear-gradient(90deg, #6C5CE7 60%, #4D96FF 100%);
+        color: #fff;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(76, 149, 255, 0.12);
+        border-radius: 12px;
     }
 </style>
 
@@ -144,37 +175,37 @@
                     </div>
                 </div>
 
-                <div class="calendar mt-6">
-                    <table>
+                <div class="calendar mt-6 shadow-lg rounded-2xl overflow-hidden border border-gray-200 bg-gradient-to-br from-purple-50 to-blue-50">
+                    <table class="w-full text-sm">
                         <thead>
                             <tr>
-                                <th colspan="7">August 2025</th>
+                                <th colspan="7" class="bg-purple-600 text-white py-3 text-lg font-bold tracking-wide">August 2025</th>
                             </tr>
-                            <tr>
-                                <th>Sun</th>
-                                <th>Mon</th>
-                                <th>Tue</th>
-                                <th>Wed</th>
-                                <th>Thu</th>
-                                <th>Fri</th>
-                                <th>Sat</th>
+                            <tr class="bg-purple-100 text-purple-700">
+                                <th class="py-2">Sun</th>
+                                <th class="py-2">Mon</th>
+                                <th class="py-2">Tue</th>
+                                <th class="py-2">Wed</th>
+                                <th class="py-2">Thu</th>
+                                <th class="py-2">Fri</th>
+                                <th class="py-2">Sat</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td></td><td></td><td></td><td></td><td>1</td><td>2</td><td>3</td>
+                                <td class="bg-transparent"></td><td class="bg-transparent"></td><td class="bg-transparent"></td><td class="bg-transparent"></td><td class="calendar-cell">1</td><td class="calendar-cell">2</td><td class="calendar-cell">3</td>
                             </tr>
                             <tr>
-                                <td>4</td><td>5</td><td>6</td><td>7</td><td>8</td><td>9</td><td>10</td>
+                                <td class="calendar-cell">4</td><td class="calendar-cell">5</td><td class="calendar-cell">6</td><td class="calendar-cell">7</td><td class="calendar-cell">8</td><td class="calendar-cell">9</td><td class="calendar-cell">10</td>
                             </tr>
                             <tr>
-                                <td>11</td><td>12</td><td>13</td><td class="today">14</td><td>15</td><td>16</td><td>17</td>
+                                <td class="calendar-cell">11</td><td class="calendar-cell">12</td><td class="calendar-cell">13</td><td class="calendar-cell today">14</td><td class="calendar-cell">15</td><td class="calendar-cell">16</td><td class="calendar-cell">17</td>
                             </tr>
                             <tr>
-                                <td>18</td><td>19</td><td>20</td><td>21</td><td>22</td><td>23</td><td>24</td>
+                                <td class="calendar-cell">18</td><td class="calendar-cell">19</td><td class="calendar-cell">20</td><td class="calendar-cell">21</td><td class="calendar-cell">22</td><td class="calendar-cell">23</td><td class="calendar-cell">24</td>
                             </tr>
                             <tr>
-                                <td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td><td>31</td>
+                                <td class="calendar-cell">25</td><td class="calendar-cell">26</td><td class="calendar-cell">27</td><td class="calendar-cell">28</td><td class="calendar-cell">29</td><td class="calendar-cell">30</td><td class="calendar-cell">31</td>
                             </tr>
                         </tbody>
                     </table>
@@ -253,6 +284,29 @@
             });
         }
         loadCharts();
+        // Modal logic
+        document.addEventListener('DOMContentLoaded', function() {
+          const welcomeModal = document.getElementById('welcomeModal');
+          const closeWelcomeModal = document.getElementById('closeWelcomeModal');
+          if (welcomeModal && closeWelcomeModal) {
+            closeWelcomeModal.addEventListener('click', function() {
+              welcomeModal.style.display = 'none';
+            });
+          }
+        });
     </script>
+    <!-- Welcome Modal -->
+    <div id="welcomeModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" style="display: flex;">
+    <div class="bg-white rounded-xl shadow-lg p-8 max-w-sm w-full text-center">
+    <h3 class="text-2xl font-bold mb-4 text-purple-700">Welcome to Behaviour Tracker</h3>
+    <p class="text-gray-700 mb-6">We're glad to have you here!</p>
+    <button id="closeWelcomeModal" class="px-6 py-2 bg-purple-500 text-white rounded-xl hover:bg-purple-600">Close</button>
+    </div>
+    </div>
+</body>
+</html>
+
+
+</script>
 </body>
 </html>

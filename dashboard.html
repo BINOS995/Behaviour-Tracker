@@ -118,31 +118,30 @@
           
                     <!-- Students & Classes Dropdown -->
                     <div>
-                        <button id="studentsDropdownBtn" class="flex items-center justify-between w-full gap-3 px-3 py-2 text-gray-800 hover:bg-[#eef2ff] rounded-xl">
-                            <span><i class="fas fa-envelope"></i> Classes </span>
-                            <span id="dropdownArrow">▼</span>
+                        <button id="studentsDropdownBtn" class="flex items-center justify-between w-full gap-3 px-3 py-2 text-white bg-gradient-to-r from-purple-500 via-blue-400 to-cyan-400 shadow-lg hover:from-purple-600 hover:to-blue-500 rounded-xl font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2" style="box-shadow: 0 4px 16px rgba(106,90,249,0.12);">
+                            <span class="flex items-center gap-2">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                                Classes
+                            </span>
+                            <span id="dropdownArrow" class="transition-transform duration-200">▼</span>
                         </button>
-                        
-                        <div id="studentsDropdownMenu" class="flex flex-col ml-8 mt-1 hidden">
-                            <!--<button class="px-3 py-2 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Students">Students</button>-->
-                            
-                            <!-- Classes Nested Dropdown -->
+                        <div id="studentsDropdownMenu" class="flex flex-col ml-8 mt-2 p-3 rounded-xl shadow-lg bg-gradient-to-br from-purple-50 to-blue-100 border border-purple-100 transition-all duration-300 hidden">
                             <div>
-                                <button id="classesDropdownBtn" class="flex items-center justify-between w-full px-3 py-2 text-gray-800 hover:bg-[#eef2ff] rounded-xl">
+                                <button id="classesDropdownBtn" class="flex items-center justify-between w-full px-3 py-2 text-gray-800 font-semibold hover:bg-gradient-to-r hover:from-purple-100 hover:to-blue-100 rounded-xl transition-all duration-200">
                                     Classes
                                     <span id="classesArrow">▼</span>
                                 </button>
-                                <div id="classesDropdownMenu" class="flex flex-col ml-6 mt-1 hidden">
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="KG2">KG2</button>
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Grade 1">Grade 1</button>
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Grade 2">Grade 2</button>
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Grade 3">Grade 3</button>
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Grade 4">Grade 4</button>
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Grade 5">Grade 5</button>
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Grade 6">Grade 6</button>
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Grade 7">Grade 7</button>
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Grade 8">Grade 8</button>
-                                    <button class="px-3 py-1 text-gray-800 hover:bg-[#eef2ff] rounded-xl" data-content="Grade 9">Grade 9</button>
+                                <div id="classesDropdownMenu" class="flex flex-col ml-6 mt-2 p-2 rounded-lg shadow bg-white border border-gray-100 transition-all duration-300 hidden">
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="KG2">KG2</button>
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 1">Grade 1</button>
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 2">Grade 2</button>
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 3">Grade 3</button>
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 4">Grade 4</button>
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 5">Grade 5</button>
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 6">Grade 6</button>
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 7">Grade 7</button>
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 8">Grade 8</button>
+                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 9">Grade 9</button>
                                 </div>
                             </div>
                         </div>
@@ -174,13 +173,13 @@
                 <div id="dashboard-graphs" class="p-6 space-y-6">
                     <!-- Top Row: Bar & Line -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-xl shadow p-4">
-                            <h4 class="font-semibold mb-2 text-gray-800">Bar</h4>
-                            <canvas id="bar1"></canvas>
+                        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col items-center justify-center transition-transform duration-200 hover:scale-105">
+                            <h4 class="font-semibold mb-4 text-gray-800 text-lg">Bar Graph</h4>
+                            <canvas id="bar1" style="max-width: 100%; height: 280px;"></canvas>
                         </div>
-                        <div class="bg-white rounded-xl shadow p-4">
-                            <h4 class="font-semibold mb-2 text-gray-800">Line</h4>
-                            <canvas id="line1"></canvas>
+                        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col items-center justify-center transition-transform duration-200 hover:scale-105">
+                            <h4 class="font-semibold mb-4 text-gray-800 text-lg">Line Graph</h4>
+                            <canvas id="line1" style="max-width: 100%; height: 280px;"></canvas>
                         </div>
                     </div>
                 </div>
@@ -320,3 +319,109 @@
 </script>
 </body>
 </html>
+
+</script>
+</body>
+</html>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Modern Bar Graph
+    new Chart(document.getElementById('bar1').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Performance',
+                data: [12, 19, 3, 5, 2, 3, 7],
+                backgroundColor: [
+                    'rgba(106,90,249,0.8)',
+                    'rgba(0,212,255,0.8)',
+                    'rgba(76,149,255,0.8)',
+                    'rgba(108,92,231,0.8)',
+                    'rgba(255,99,132,0.8)',
+                    'rgba(255,159,64,0.8)',
+                    'rgba(54,162,235,0.8)'
+                ],
+                borderRadius: 8,
+                borderWidth: 2,
+                borderColor: 'rgba(255,255,255,0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(106,90,249,0.08)'
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    // Modern Line Graph
+    new Chart(document.getElementById('line1').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Trend',
+                data: [8, 11, 7, 14, 6, 9, 13],
+                fill: true,
+                backgroundColor: 'rgba(106,90,249,0.12)',
+                borderColor: 'rgba(0,212,255,1)',
+                borderWidth: 3,
+                pointBackgroundColor: 'rgba(76,149,255,1)',
+                pointRadius: 6,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(0,212,255,0.08)'
+                    },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+</body>
+</html>
+
+</script>
+</body>
+</html>
+
+<a id="sheetLink" href="https://docs.google.com/spreadsheets/d/your-sheet-id" target="_blank" style="display:none;" class="block mt-4 px-4 py-2 bg-gradient-to-r from-green-400 to-blue-500 text-white rounded-xl shadow-lg font-semibold transition-all duration-300 hover:from-green-500 hover:to-blue-600">View Google Sheet</a>

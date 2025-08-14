@@ -1,4 +1,4 @@
-// Import the functions you need from the SDKs you need
+ // Import the functions you need from the SDKs you need
  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
  import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
  import{getFirestore, setDoc, doc} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
@@ -92,32 +92,3 @@
         }
     })
  })
- const allowedEmails = [
-     "example1@gmail.com",
-     "example2@gmail.com",
-     "example3@gmail.com"
-     // Add more allowed Gmail addresses here
- ];
-
- auth.onAuthStateChanged((user) => {
-     const sheetLink = document.getElementById("sheetLink");
-     if (sheetLink) {
-         sheetLink.style.display = "none";
-     }
-     if (user) {
-         if (allowedEmails.includes(user.email)) {
-             if (sheetLink) {
-                 sheetLink.style.display = "block";
-             }
-         } else {
-             if (sheetLink) {
-                 sheetLink.style.display = "none";
-             }
-             alert("You are not authorized to view the Google Sheet.");
-         }
-     } else {
-         if (sheetLink) {
-             sheetLink.style.display = "none";
-         }
-     }
- });

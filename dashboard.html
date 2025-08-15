@@ -530,24 +530,12 @@
                 classSheetUrls = JSON.parse(savedSheetUrls);
             } else {
                 // Initialize predefined class URLs if none exist
-                classSheetUrls = {
-                    "KG2": "https://docs.google.com/spreadsheets/d/1nZ0I5vau6LEW_gcfpmEbvrlccFJSOFdr/edit?usp=sharing",
-                    "Grade 1": "https://docs.google.com/spreadsheets/d/14FOzY7rdywZ6e50RXIc1OmaQlgfbKNBH/edit?usp=sharing",
-                    "Grade 2": "https://docs.google.com/spreadsheets/d/1S1HXCyw06Ff2qKyD48unzpEPnik3TKWk/edit?usp=drive_link&ouid=114651673082826566995&rtpof=true&sd=true",
-                    "Grade 3": "https://docs.google.com/spreadsheets/d/1cwdEtqiBuOgijy2A77tisQI_tAv8eFsh/edit?usp=sharing&ouid=114651673082826566995&rtpof=true&sd=true",
-                    "Grade 4": "https://docs.google.com/spreadsheets/d/1LzNI2Xyiqefi-Rjynq8OYrBGP6Sn-w71/edit?usp=drive_link&ouid=114651673082826566995&rtpof=true&sd=true",
-                    "Grade 5": null,
-                    "Grade 6": null,
-                    "Grade 7": null,
-                    "Grade 8": null,
-                    "Grade 9": null
-                };
+                classSheetUrls = {};
                 localStorage.setItem('classSheetUrls', JSON.stringify(classSheetUrls));
             }
 
             // Update predefined classes with new Google Sheets functionality
-            const predefinedClasses = ["KG2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9"];
-            predefinedClasses.forEach(className => {
+            Object.keys(classSheetUrls).forEach(className => {
                 const sheetUrl = classSheetUrls[className] || null;
                 addClassToTabContent(className, sheetUrl);
             });
@@ -589,7 +577,7 @@
             }
 
             // Check if class already exists
-            if (customClasses.includes(className) || ['KG2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'].includes(className)) {
+            if (customClasses.includes(className) || Object.keys(classSheetUrls).includes(className)) {
                 alert('Class already exists');
                 return;
             }

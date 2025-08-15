@@ -148,16 +148,7 @@
                                     <span id="classesArrow">▼</span>
                                 </button>
                                 <div id="classesDropdownMenu" class="flex flex-col ml-6 mt-2 p-2 rounded-lg shadow bg-white border border-gray-100 transition-all duration-300 hidden">
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="KG2">KG2</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 1">Grade 1</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 2">Grade 2</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 3">Grade 3</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 4">Grade 4</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 5">Grade 5</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 6">Grade 6</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 7">Grade 7</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 8">Grade 8</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 9">Grade 9</button>
+                                    <!-- Grade buttons removed as requested -->
                                 </div>
                             </div>
                         </div>
@@ -243,16 +234,7 @@
         let tabContent = {
             "Dashboard": document.getElementById("dashboard-graphs").outerHTML,
             "Students": "<iframe src='https://docs.google.com/spreadsheets/d/1qL_8YVFMQkdv03MS-QMf2pAfHUuTjeo-/edit?usp=sharing' width='100%' height='600px'></iframe>",
-            "KG2": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/1nZ0I5vau6LEW_gcfpmEbvrlccFJSOFdr/edit?usp=sharing' width='100%' height='800px'></iframe></div>`,
-            "Grade 1": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/14FOzY7rdywZ6e50RXIc1OmaQlgfbKNBH/edit?usp=sharing' width='100%' height='800px'></iframe></div>`,
-            "Grade 2": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/1S1HXCyw06Ff2qKyD48unzpEPnik3TKWk/edit?usp=drive_link&ouid=114651673082826566995&rtpof=true&sd=true' width='100%' height='800px'></iframe></div>`,
-            "Grade 3": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/1cwdEtqiBuOgijy2A77tisQI_tAv8eFsh/edit?usp=sharing&ouid=114651673082826566995&rtpof=true&sd=true' width='100%' height='800px'></iframe></div>`,
-            "Grade 4": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/1LzNI2Xyiqefi-Rjynq8OYrBGP6Sn-w71/edit?usp=drive_link&ouid=114651673082826566995&rtpof=true&sd=true' width='100%' height='800px'></iframe></div>`,
-            "Grade 5": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 5 Sheet Placeholder</div></div>`,
-            "Grade 6": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 6 Sheet Placeholder</div></div>`,
-            "Grade 7": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 7 Sheet Placeholder</div></div>`,
-            "Grade 8": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 8 Sheet Placeholder</div></div>`,
-            "Grade 9": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 9 Sheet Placeholder</div></div>`,
+            /* KG2 and Grade 1-9 entries removed as requested */
 
             "Infractions": "In the Infractions section, you can view and manage student infractions.",
             "Reports": "Generate reports based on student performance and class activities.",
@@ -288,115 +270,7 @@
                 <div id="existingClassesContainer">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Class Password Management</h3>
                     <div id="classPasswordsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">KG2</h3>
-                                <button onclick="removeClass('KG2')" class="text-red-500 hover:text-red-700" title="Delete KG2">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordKG2" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('KG2')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 1</h3>
-                                <button onclick="removeClass('Grade 1')" class="text-red-500 hover:text-red-700" title="Delete Grade 1">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade1" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade1')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 2</h3>
-                                <button onclick="removeClass('Grade 2')" class="text-red-500 hover:text-red-700" title="Delete Grade 2">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade2" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade2')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 3</h3>
-                                <button onclick="removeClass('Grade 3')" class="text-red-500 hover:text-red-700" title="Delete Grade 3">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade3" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade3')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 4</h3>
-                                <button onclick="removeClass('Grade 4')" class="text-red-500 hover:text-red-700" title="Delete Grade 4">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade4" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade4')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 5</h3>
-                                <button onclick="removeClass('Grade 5')" class="text-red-500 hover:text-red-700" title="Delete Grade 5">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade5" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade5')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 6</h3>
-                                <button onclick="removeClass('Grade 6')" class="text-red-500 hover:text-red-700" title="Delete Grade 6">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade6" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade6')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 7</h3>
-                                <button onclick="removeClass('Grade 7')" class="text-red-500 hover:text-red-700" title="Delete Grade 7">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade7" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade7')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 8</h3>
-                                <button onclick="removeClass('Grade 8')" class="text-red-500 hover:text-red-700" title="Delete Grade 8">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade8" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade8')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 9</h3>
-                                <button onclick="removeClass('Grade 9')" class="text-red-500 hover:text-red-700" title="Delete Grade 9">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade9" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade9')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
+                        <!-- KG2 and Grade 1-9 entries removed as requested -->
                     </div>
                 </div>
                 
@@ -544,6 +418,17 @@
                 customClasses = JSON.parse(savedClasses);
                 
                 // Add custom classes to tabContent and dropdown
+                // First clear existing custom class buttons to prevent duplication
+                const classesDropdownMenu = document.getElementById('classesDropdownMenu');
+                const existingButtons = classesDropdownMenu.querySelectorAll('button[data-content]');
+                existingButtons.forEach(button => {
+                    const className = button.getAttribute('data-content');
+                    if (customClasses.includes(className)) {
+                        button.remove();
+                    }
+                });
+                
+                // Now add the custom classes
                 customClasses.forEach(className => {
                     const sheetUrl = classSheetUrls[className] || null;
                     addClassToTabContent(className, sheetUrl);
@@ -650,14 +535,23 @@
 
         function addClassToDropdown(className) {
             const classesDropdownMenu = document.getElementById('classesDropdownMenu');
-            const button = document.createElement('button');
-            button.className = 'px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200';
-            button.setAttribute('data-content', className);
-            button.textContent = className;
-            classesDropdownMenu.appendChild(button);
-
-            // Re-setup all class buttons to include the new one
-            setupClassButtons();
+            
+            // Check if the class button already exists to prevent duplication
+            const existingButton = Array.from(classesDropdownMenu.querySelectorAll('button')).find(btn => 
+                btn.getAttribute('data-content') === className || btn.textContent === className
+            );
+            
+            // Only add if the button doesn't already exist
+            if (!existingButton) {
+                const button = document.createElement('button');
+                button.className = 'px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200';
+                button.setAttribute('data-content', className);
+                button.textContent = className;
+                classesDropdownMenu.appendChild(button);
+                
+                // Re-setup all class buttons to include the new one
+                setupClassButtons();
+            }
         }
 
         function removeClass(className) {

@@ -27,8 +27,22 @@ const firebaseConfig = {
             if (docSnap.exists()) {
                 const userData = docSnap.data();
                 document.getElementById('loggedUserFName').innerText = userData.firstName;
-                document.getElementById('loggedUserEmail').innerText = userData.email;
-                document.getElementById('loggedUserLName').innerText = userData.lastName;
+                console.log('User email from Firestore:', userData.email);
+                console.log('Admin email check:', userData.email === 'fobiblankson95@gmail.com');
+                
+                // Show admin button only for admin email
+                const adminBtn = document.getElementById('adminBtn');
+                if (adminBtn) {
+                  if (userData.email === 'fobiblankson95@gmail.com') {
+                    adminBtn.style.display = 'flex';
+                    console.log('Admin button should be visible');
+                  } else {
+                    adminBtn.style.display = 'none';
+                    console.log('Admin button hidden for email:', userData.email);
+                  }
+                } else {
+                  console.log('Admin button element not found');
+                }
             } else {
                 console.log("no document found matching id");
                 // BEGIN: Add user data if document does not exist

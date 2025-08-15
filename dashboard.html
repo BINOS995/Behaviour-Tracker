@@ -149,15 +149,15 @@
                                 </button>
                                 <div id="classesDropdownMenu" class="flex flex-col ml-6 mt-2 p-2 rounded-lg shadow bg-white border border-gray-100 transition-all duration-300 hidden">
                                     <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="KG2">KG2</button>
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 1">Grade 1</button>
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 2">Grade 2</button>
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 3">Grade 3</button>
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 4">Grade 4</button>
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 5">Grade 5</button>
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 6">Grade 6</button>
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 7">Grade 7</button>
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 8">Grade 8</button>
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 9">Grade 9</button>
+                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 1">Grade 1</button>
+                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 2">Grade 2</button>
+                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 3">Grade 3</button>
+                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 4">Grade 4</button>
+                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 5">Grade 5</button>
+                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 6">Grade 6</button>
+                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 7">Grade 7</button>
+                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 8">Grade 8</button>
+                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 9">Grade 9</button>
                                 </div>
                             </div>
                         </div>
@@ -240,7 +240,7 @@
     </div>
 <!-- This is where all the google slides are called.................................................................................................................................................................................................. -->
      <script>
-        const tabContent = {
+        let tabContent = {
             "Dashboard": document.getElementById("dashboard-graphs").outerHTML,
             "Students": "<iframe src='https://docs.google.com/spreadsheets/d/1qL_8YVFMQkdv03MS-QMf2pAfHUuTjeo-/edit?usp=sharing' width='100%' height='600px'></iframe>",
             "KG2": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/1nZ0I5vau6LEW_gcfpmEbvrlccFJSOFdr/edit?usp=sharing' width='100%' height='800px'></iframe></div>`,
@@ -258,71 +258,152 @@
             "Reports": "Generate reports based on student performance and class activities.",
             "Logout": "You have been logged out.",
             "Admin": `<div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Admin - Class Password Management</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">KG2</h3>
-                        <input type="password" id="passwordKG2" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('KG2')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">Grade 1</h3>
-                        <input type="password" id="passwordGrade1" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('Grade1')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">Grade 2</h3>
-                        <input type="password" id="passwordGrade2" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('Grade2')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">Grade 3</h3>
-                        <input type="password" id="passwordGrade3" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('Grade3')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">Grade 4</h3>
-                        <input type="password" id="passwordGrade4" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('Grade4')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">Grade 5</h3>
-                        <input type="password" id="passwordGrade5" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('Grade5')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">Grade 6</h3>
-                        <input type="password" id="passwordGrade6" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('Grade6')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">Grade 7</h3>
-                        <input type="password" id="passwordGrade7" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('Grade7')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">Grade 8</h3>
-                        <input type="password" id="passwordGrade8" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('Grade8')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                    </div>
-                    
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h3 class="font-semibold text-lg mb-3 text-purple-700">Grade 9</h3>
-                        <input type="password" id="passwordGrade9" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                        <button onclick="savePassword('Grade9')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Admin - Class Management</h2>
+                
+                <!-- Add New Class Section -->
+                <div class="mb-8 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
+                    <h3 class="text-xl font-bold text-purple-800 mb-4">Add New Class</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
+                            <input type="text" id="newClassName" class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g., Grade 10">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password (optional)</label>
+                            <input type="password" id="newClassPassword" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Leave blank for public access">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Google Sheets URL (optional)</label>
+                            <input type="url" id="newClassSheetUrl" class="w-full p-2 border border-gray-300 rounded-md" placeholder="https://docs.google.com/spreadsheets/d/...">
+                        </div>
+                        <div class="md:col-span-2 flex items-end">
+                            <button onclick="addNewClass()" class="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-2 rounded-md hover:from-green-600 hover:to-blue-600 font-semibold">
+                                <i class="fas fa-plus mr-2"></i>Add Class
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Existing Classes Password Management -->
+                <div id="existingClassesContainer">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Class Password Management</h3>
+                    <div id="classPasswordsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">KG2</h3>
+                                <button onclick="removeClass('KG2')" class="text-red-500 hover:text-red-700" title="Delete KG2">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordKG2" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('KG2')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">Grade 1</h3>
+                                <button onclick="removeClass('Grade 1')" class="text-red-500 hover:text-red-700" title="Delete Grade 1">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordGrade1" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('Grade1')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">Grade 2</h3>
+                                <button onclick="removeClass('Grade 2')" class="text-red-500 hover:text-red-700" title="Delete Grade 2">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordGrade2" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('Grade2')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">Grade 3</h3>
+                                <button onclick="removeClass('Grade 3')" class="text-red-500 hover:text-red-700" title="Delete Grade 3">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordGrade3" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('Grade3')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">Grade 4</h3>
+                                <button onclick="removeClass('Grade 4')" class="text-red-500 hover:text-red-700" title="Delete Grade 4">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordGrade4" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('Grade4')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">Grade 5</h3>
+                                <button onclick="removeClass('Grade 5')" class="text-red-500 hover:text-red-700" title="Delete Grade 5">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordGrade5" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('Grade5')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">Grade 6</h3>
+                                <button onclick="removeClass('Grade 6')" class="text-red-500 hover:text-red-700" title="Delete Grade 6">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordGrade6" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('Grade6')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">Grade 7</h3>
+                                <button onclick="removeClass('Grade 7')" class="text-red-500 hover:text-red-700" title="Delete Grade 7">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordGrade7" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('Grade7')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">Grade 8</h3>
+                                <button onclick="removeClass('Grade 8')" class="text-red-500 hover:text-red-700" title="Delete Grade 8">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordGrade8" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('Grade8')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="font-semibold text-lg text-purple-700">Grade 9</h3>
+                                <button onclick="removeClass('Grade 9')" class="text-red-500 hover:text-red-700" title="Delete Grade 9">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <input type="password" id="passwordGrade9" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                            <button onclick="savePassword('Grade9')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="mt-6 p-4 bg-blue-50 rounded-lg">
                     <h4 class="font-semibold text-blue-800 mb-2">Instructions:</h4>
                     <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• Use the form above to add new classes</li>
                         <li>• Enter passwords for each class to restrict access</li>
                         <li>• Leave password blank to allow public access</li>
                         <li>• Students will be prompted to enter the password when accessing classes</li>
@@ -333,17 +414,22 @@
         };
 
 
+        function showTab(content) {
+            currentTab = content;
+            document.getElementById("content-title").textContent = content;
+            document.getElementById("content-display").innerHTML = tabContent[content] || "Content not available.";
+            if (content === "Dashboard") {
+                loadCharts();
+            } else if (content === "Admin") {
+                loadPasswords();
+            }
+        }
+
         document.querySelectorAll("aside button").forEach(btn => {
             btn.addEventListener("click", () => {
                 const content = btn.getAttribute("data-content");
                 if (content) {
-                    document.getElementById("content-title").textContent = content;
-                    document.getElementById("content-display").innerHTML = tabContent[content] || "Content not available.";
-                    if (content === "Dashboard") {
-                        loadCharts();
-                    } else if (content === "Admin") {
-                        loadPasswords();
-                    }
+                    showTab(content);
                 }
             });
         });
@@ -416,13 +502,17 @@
     </div>
 
     <script>
-        // Password management system
+        // Class management system
         const adminClassPasswords = {};
+        let customClasses = [];
+        let classSheetUrls = {};
+        let currentTab = 'Dashboard';
 
         function savePassword(className) {
             const passwordInput = document.getElementById(`password${className}`);
             const password = passwordInput.value;
-            adminClassPasswords[className] = password;
+            const classKey = className.replace(/\s+/g, '');
+            adminClassPasswords[classKey] = password;
             localStorage.setItem('classPasswords', JSON.stringify(adminClassPasswords));
             alert(`Password for ${className} saved successfully!`);
         }
@@ -432,21 +522,204 @@
             if (savedPasswords) {
                 const passwords = JSON.parse(savedPasswords);
                 Object.assign(adminClassPasswords, passwords);
+            }
+
+            const savedClasses = localStorage.getItem('customClasses');
+            const savedSheetUrls = localStorage.getItem('classSheetUrls');
+            if (savedSheetUrls) {
+                classSheetUrls = JSON.parse(savedSheetUrls);
+            } else {
+                // Initialize predefined class URLs if none exist
+                classSheetUrls = {
+                    "KG2": "https://docs.google.com/spreadsheets/d/1nZ0I5vau6LEW_gcfpmEbvrlccFJSOFdr/edit?usp=sharing",
+                    "Grade 1": "https://docs.google.com/spreadsheets/d/14FOzY7rdywZ6e50RXIc1OmaQlgfbKNBH/edit?usp=sharing",
+                    "Grade 2": "https://docs.google.com/spreadsheets/d/1S1HXCyw06Ff2qKyD48unzpEPnik3TKWk/edit?usp=drive_link&ouid=114651673082826566995&rtpof=true&sd=true",
+                    "Grade 3": "https://docs.google.com/spreadsheets/d/1cwdEtqiBuOgijy2A77tisQI_tAv8eFsh/edit?usp=sharing&ouid=114651673082826566995&rtpof=true&sd=true",
+                    "Grade 4": "https://docs.google.com/spreadsheets/d/1LzNI2Xyiqefi-Rjynq8OYrBGP6Sn-w71/edit?usp=drive_link&ouid=114651673082826566995&rtpof=true&sd=true",
+                    "Grade 5": null,
+                    "Grade 6": null,
+                    "Grade 7": null,
+                    "Grade 8": null,
+                    "Grade 9": null
+                };
+                localStorage.setItem('classSheetUrls', JSON.stringify(classSheetUrls));
+            }
+
+            // Update predefined classes with new Google Sheets functionality
+            const predefinedClasses = ["KG2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9"];
+            predefinedClasses.forEach(className => {
+                const sheetUrl = classSheetUrls[className] || null;
+                addClassToTabContent(className, sheetUrl);
+            });
+
+            if (savedClasses) {
+                customClasses = JSON.parse(savedClasses);
                 
-                // Load passwords into input fields
-                Object.keys(passwords).forEach(className => {
-                    const input = document.getElementById(`password${className}`);
-                    if (input) {
-                        input.value = passwords[className] || '';
+                // Add custom classes to tabContent and dropdown
+                customClasses.forEach(className => {
+                    const sheetUrl = classSheetUrls[className] || null;
+                    addClassToTabContent(className, sheetUrl);
+                    addClassToDropdown(className);
+                });
+                
+                updateCustomClasses();
+            }
+
+            // Load passwords into input fields
+            Object.keys(adminClassPasswords).forEach(className => {
+                const input = document.getElementById(`password${className}`);
+                if (input) {
+                    input.value = adminClassPasswords[className] || '';
+                }
+            });
+        }
+
+        function addNewClass() {
+            const classNameInput = document.getElementById('newClassName');
+            const passwordInput = document.getElementById('newClassPassword');
+            const sheetUrlInput = document.getElementById('newClassSheetUrl');
+            
+            const className = classNameInput.value.trim();
+            const password = passwordInput.value.trim();
+            const sheetUrl = sheetUrlInput.value.trim();
+            
+            if (!className) {
+                alert('Please enter a class name');
+                return;
+            }
+
+            // Check if class already exists
+            if (customClasses.includes(className) || ['KG2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'].includes(className)) {
+                alert('Class already exists');
+                return;
+            }
+
+            // Add to custom classes
+            customClasses.push(className);
+            localStorage.setItem('customClasses', JSON.stringify(customClasses));
+
+            // Save password if provided
+            if (password) {
+                const classKey = className.replace(' ', '');
+                adminClassPasswords[classKey] = password;
+                localStorage.setItem('classPasswords', JSON.stringify(adminClassPasswords));
+            }
+
+            // Save Google Sheets URL if provided
+            if (sheetUrl) {
+                classSheetUrls[className] = sheetUrl;
+                localStorage.setItem('classSheetUrls', JSON.stringify(classSheetUrls));
+            }
+
+            // Update UI
+            updateCustomClasses();
+            addClassToTabContent(className, sheetUrl);
+            addClassToDropdown(className);
+
+            // Clear inputs
+            classNameInput.value = '';
+            passwordInput.value = '';
+            sheetUrlInput.value = '';
+
+            alert(`Class "${className}" added successfully!`);
+        }
+
+        function updateCustomClasses() {
+            const container = document.getElementById('classPasswordsGrid');
+            
+            // Remove existing custom class elements
+            const existingCustom = container.querySelectorAll('[data-custom="true"]');
+            existingCustom.forEach(el => el.remove());
+
+            // Add custom class password fields
+            customClasses.forEach(className => {
+                const classKey = className.replace(' ', '');
+                const div = document.createElement('div');
+                div.className = 'bg-gray-50 p-4 rounded-lg';
+                div.setAttribute('data-custom', 'true');
+                div.innerHTML = `
+                    <h3 class="font-semibold text-lg mb-3 text-purple-700">${className}</h3>
+                    <input type="password" id="password${classKey}" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
+                    <button onclick="savePassword('${classKey}')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600 mb-2">Save</button>
+                    <button onclick="removeClass('${className}')" class="w-full bg-red-500 text-white py-2 rounded-md hover:bg-red-600">Remove Class</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addClassToTabContent(className, sheetUrl = null) {
+            const classKey = className.replace(' ', '');
+            if (sheetUrl && sheetUrl.trim()) {
+                tabContent[className] = `<div id="classContent" class="class-content-blur"><iframe src='${sheetUrl}' width='100%' height='800px'></iframe></div>`;
+            } else {
+                tabContent[className] = `<div id="classContent" class="class-content-blur"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>${className} Sheet Placeholder</div></div>`;
+            }
+        }
+
+        function removeClassFromTabContent(className) {
+            delete tabContent[className];
+        }
+
+        function addClassToDropdown(className) {
+            const classesDropdownMenu = document.getElementById('classesDropdownMenu');
+            const button = document.createElement('button');
+            button.className = 'px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200';
+            button.setAttribute('data-content', className);
+            button.textContent = className;
+            classesDropdownMenu.appendChild(button);
+
+            // Re-setup all class buttons to include the new one
+            setupClassButtons();
+        }
+
+        function removeClass(className) {
+            const predefinedClasses = ["KG2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9"];
+            const index = customClasses.indexOf(className);
+            if (index > -1) {
+                customClasses.splice(index, 1);
+                localStorage.setItem('customClasses', JSON.stringify(customClasses));
+            }
+            if (predefinedClasses.includes(className) || index > -1) {
+                // Remove from passwords
+                const classKey = className.replace(/\s+/g, '');
+                delete adminClassPasswords[classKey];
+                localStorage.setItem('classPasswords', JSON.stringify(adminClassPasswords));
+                // Remove Google Sheets URL
+                delete classSheetUrls[className];
+                localStorage.setItem('classSheetUrls', JSON.stringify(classSheetUrls));
+                // Remove from tabContent
+                removeClassFromTabContent(className);
+                // Remove from dropdown
+                const classesDropdownMenu = document.getElementById('classesDropdownMenu');
+                const buttons = classesDropdownMenu.querySelectorAll('button');
+                buttons.forEach(button => {
+                    if (button.textContent === className) {
+                        button.remove();
                     }
                 });
+                // Remove password field from Admin page
+                const container = document.getElementById('classPasswordsGrid');
+                const adminDivs = container.querySelectorAll('div');
+                adminDivs.forEach(div => {
+                    const h3 = div.querySelector('h3');
+                    if (h3 && h3.textContent === className) {
+                        div.remove();
+                    }
+                });
+                // Update UI
+                updateCustomClasses();
+                // If this was the active tab, go to Dashboard
+                if (currentTab === className) {
+                    showTab('Dashboard');
+                }
             }
         }
 
         // Check password for class access
         function checkClassAccess(className) {
             const currentPasswords = getClassPasswords();
-            const password = currentPasswords[className];
+            const classKey = className.replace(/\s+/g, '');
+            const password = currentPasswords[classKey];
             if (!password) {
                 return true; // No password set, allow access
             }
@@ -605,14 +878,25 @@ function getClassPasswords() {
 
 const classPasswords = getClassPasswords();
 let selectedClass = null;
-document.querySelectorAll('[data-content^="KG2"], [data-content^="Grade "]').forEach(btn => {
-  btn.addEventListener('click', function(e) {
-    e.preventDefault();
-    selectedClass = btn.getAttribute('data-content');
-    document.getElementById('classPasswordModal').classList.remove('hidden');
-    document.getElementById('classPasswordInput').value = "";
-    document.getElementById('classPasswordError').classList.add('hidden');
+function setupClassButtons() {
+  document.querySelectorAll('[data-content]').forEach(btn => {
+    const content = btn.getAttribute('data-content');
+    // Only handle class buttons (KG2, Grade X, or custom classes)
+    if (content === 'KG2' || content.startsWith('Grade ') || customClasses.includes(content)) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        selectedClass = content;
+        document.getElementById('classPasswordModal').classList.remove('hidden');
+        document.getElementById('classPasswordInput').value = "";
+        document.getElementById('classPasswordError').classList.add('hidden');
+      });
+    }
   });
+}
+
+// Setup initial class buttons and reload when new classes are added
+document.addEventListener('DOMContentLoaded', function() {
+  setupClassButtons();
 });
 document.getElementById('classPasswordCancel').onclick = function() {
   document.getElementById('classPasswordModal').classList.add('hidden');
@@ -635,20 +919,26 @@ document.getElementById('classPasswordSubmit').onclick = function() {
   const currentPasswords = getClassPasswords();
   
   // Map the display names to admin system format
-  const classKey = selectedClass.replace(' ', '');
+  const classKey = selectedClass.replace(/\s+/g, '');
   const password = currentPasswords[classKey];
   
   if (!password || input === password) {
     document.getElementById('classPasswordModal').classList.add('hidden');
     classUnlocked = true;
-    setClassBlur(true);
     
     // Show the actual class content
-    const tabKey = selectedClass.replace(' ', '');
-    showTab(tabKey);
+    showTab(selectedClass);
+    
+    // Remove blur effect after showing content
+    setTimeout(() => {
+      const el = document.getElementById('classContent');
+      if (el) {
+        el.classList.remove('class-content-blur');
+        el.classList.add('class-content-unblur');
+      }
+    }, 100);
   } else {
     document.getElementById('classPasswordError').classList.remove('hidden');
-    setClassBlur(false);
   }
 };
 window.onload = function() {

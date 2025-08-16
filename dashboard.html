@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Performance Tracker</title>
+    
+    <!-- Prevent caching to ensure auth checks work on back button -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -43,15 +48,46 @@
 
         // Initialize admin status
         window.isAdmin = false;
-        onAuthStateChanged(auth, (user) => {
+        let adminListener = null;
+        
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const adminEmail = 'fobiblankson95@gmail.com';
-                window.isAdmin = user.email === adminEmail;
-                
-                // Show/hide admin button based on admin status
-                const adminBtn = document.getElementById('adminBtn');
-                if (adminBtn) {
-                    adminBtn.style.display = window.isAdmin ? 'flex' : 'none';
+                try {
+                    // Check admin status
+                    const adminDoc = await getDoc(doc(db, 'admins', user.uid));
+                    window.isAdmin = adminDoc.exists();
+                    
+                    // Show/hide admin button based on admin status
+                    const adminBtn = document.getElementById('adminBtn');
+                    if (adminBtn) {
+                        adminBtn.style.display = window.isAdmin ? 'flex' : 'none';
+                    }
+                    
+                    // Load admin list if current user is admin
+                    if (window.isAdmin) {
+                        loadAdminList();
+                        
+                        // Set up real-time listener for admin changes
+                        if (adminListener) {
+                            adminListener();
+                        }
+                        
+                        adminListener = onSnapshot(collection(db, 'admins'), (snapshot) => {
+                            // Reload admin list when changes occur
+                            if (window.isAdmin) {
+                                loadAdminList();
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error checking admin status:', error);
+                    window.isAdmin = false;
+                }
+            } else {
+                // Clean up listener when user logs out
+                if (adminListener) {
+                    adminListener();
+                    adminListener = null;
                 }
             }
         });
@@ -186,6 +222,27 @@
         "Admin": `
             <div class="bg-white rounded-xl shadow-sm p-6">
                 <h1 class="text-2xl font-bold text-gray-800 mb-6">Admin Panel</h1>
+                
+                <!-- Admin Management Section -->
+                <div class="mb-8">
+                    <h2 class="text-lg font-semibold text-gray-700 mb-4">Admin Management</h2>
+                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                        <h3 class="text-md font-medium text-gray-800 mb-3">Grant Admin Privileges</h3>
+                        <div class="flex gap-2">
+                            <input type="email" id="adminEmailInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg" placeholder="Enter user email">
+                            <button onclick="grantAdminPrivileges()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                                <i class="fas fa-user-plus mr-1"></i>Grant Admin
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-md font-medium text-gray-800 mb-3">Current Admins</h3>
+                        <div id="adminList" class="space-y-2">
+                            <!-- Admins will be loaded here -->
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="mb-6">
                     <h2 class="text-lg font-semibold text-gray-700 mb-4">Manage Classes</h2>
@@ -576,6 +633,9 @@
                         addClassBtn.removeEventListener('click', addNewClass);
                         addClassBtn.addEventListener('click', addNewClass);
                     }
+                    
+                    // Load admin list when admin panel is opened
+                    loadAdminList();
                 }, 100);
             }
         }
@@ -643,21 +703,188 @@
         }
     }
 
+    // Admin Management Functions
+    async function grantAdminPrivileges() {
+        const emailInput = document.getElementById('adminEmailInput');
+        const email = emailInput.value.trim();
+        
+        if (!email) {
+            alert('Please enter an email address');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to grant admin privileges to ${email}?`)) {
+            return;
+        }
+        
+        try {
+            // Find user by email
+            const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
+            const usersSnapshot = await window.firebaseFirestore.getDocs(usersRef);
+            let targetUser = null;
+            
+            usersSnapshot.forEach((doc) => {
+                const userData = doc.data();
+                if (userData.email === email) {
+                    targetUser = { uid: doc.id, ...userData };
+                }
+            });
+            
+            if (!targetUser) {
+                alert('User not found with this email address');
+                return;
+            }
+            
+            // Grant admin privileges
+            await window.firebaseFirestore.setDoc(
+                window.firebaseFirestore.doc(window.firebaseDB, 'admins', targetUser.uid),
+                {
+                    email: targetUser.email,
+                    firstName: targetUser.firstName,
+                    lastName: targetUser.lastName,
+                    grantedBy: window.firebaseAuth.currentUser.uid,
+                    grantedAt: new Date().toISOString()
+                }
+            );
+            
+            alert(`Admin privileges granted to ${targetUser.firstName} ${targetUser.lastName}`);
+            emailInput.value = '';
+            loadAdminList();
+            
+        } catch (error) {
+            console.error('Error granting admin privileges:', error);
+            alert('Error granting admin privileges. Please try again.');
+        }
+    }
+    
+    async function revokeAdminPrivileges(userId) {
+        if (!confirm('Are you sure you want to revoke admin privileges?')) {
+            return;
+        }
+        
+        try {
+            await window.firebaseFirestore.deleteDoc(
+                window.firebaseFirestore.doc(window.firebaseDB, 'admins', userId)
+            );
+            
+            alert('Admin privileges revoked successfully');
+            loadAdminList();
+            
+        } catch (error) {
+            console.error('Error revoking admin privileges:', error);
+            alert('Error revoking admin privileges. Please try again.');
+        }
+    }
+    
+    async function initializeFirstAdmin() {
+        try {
+            const adminsRef = window.firebaseFirestore.collection(window.firebaseDB, 'admins');
+            const adminsSnapshot = await window.firebaseFirestore.getDocs(adminsRef);
+            
+            if (adminsSnapshot.empty) {
+                // Find the initial admin user
+                const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
+                const usersSnapshot = await window.firebaseFirestore.getDocs(usersRef);
+                let initialAdmin = null;
+                
+                usersSnapshot.forEach((doc) => {
+                    const userData = doc.data();
+                    if (userData.email === 'fobiblankson95@gmail.com') {
+                        initialAdmin = { uid: doc.id, ...userData };
+                    }
+                });
+                
+                if (initialAdmin) {
+                    await window.firebaseFirestore.setDoc(
+                        window.firebaseFirestore.doc(window.firebaseDB, 'admins', initialAdmin.uid),
+                        {
+                            email: initialAdmin.email,
+                            firstName: initialAdmin.firstName,
+                            lastName: initialAdmin.lastName,
+                            grantedBy: 'system',
+                            grantedAt: new Date().toISOString(),
+                            isInitialAdmin: true
+                        }
+                    );
+                    console.log('Initial admin setup complete');
+                }
+            }
+        } catch (error) {
+            console.error('Error initializing first admin:', error);
+        }
+    }
+    
+    async function loadAdminList() {
+        if (!window.isAdmin) return;
+        
+        try {
+            const adminsRef = window.firebaseFirestore.collection(window.firebaseDB, 'admins');
+            const adminsSnapshot = await window.firebaseFirestore.getDocs(adminsRef);
+            
+            const adminList = document.getElementById('adminList');
+            adminList.innerHTML = '';
+            
+            if (adminsSnapshot.empty) {
+                adminList.innerHTML = '<p class="text-gray-500">No admins found</p>';
+                return;
+            }
+            
+            adminsSnapshot.forEach((doc) => {
+                const admin = doc.data();
+                const adminDiv = document.createElement('div');
+                adminDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg border';
+                adminDiv.innerHTML = `
+                    <div>
+                        <p class="font-medium">${admin.firstName} ${admin.lastName}</p>
+                        <p class="text-sm text-gray-600">${admin.email}</p>
+                        <p class="text-xs text-gray-500">Granted: ${new Date(admin.grantedAt).toLocaleDateString()}</p>
+                    </div>
+                    ${doc.id !== window.firebaseAuth.currentUser.uid && !admin.isInitialAdmin ? 
+                        `<button onclick="revokeAdminPrivileges('${doc.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                            <i class="fas fa-user-times"></i> Revoke
+                        </button>` :
+                        '<span class="text-sm text-green-600">' + (admin.isInitialAdmin ? 'System Admin' : 'Current User') + '</span>'
+                    }
+                `;
+                adminList.appendChild(adminDiv);
+            });
+            
+        } catch (error) {
+            console.error('Error loading admin list:', error);
+        }
+    }
+    
     // Event listeners
     document.addEventListener('DOMContentLoaded', () => {
-        // Ensure Firebase is initialized before proceeding
-        const checkFirebase = setInterval(() => {
-            if (window.firebaseDB && window.firebaseFirestore) {
-                clearInterval(checkFirebase);
-                loadClasses();
+        // Check if user is authenticated
+        const unsubscribe = window.firebaseAuth.onAuthStateChanged((user) => {
+            if (!user) {
+                // Redirect to login page if not authenticated
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Ensure Firebase is initialized before proceeding
+            const checkFirebase = setInterval(() => {
+                if (window.firebaseDB && window.firebaseFirestore) {
+                    clearInterval(checkFirebase);
+                    loadClasses();
+                    
+                    // Load dashboard by default
+                loadContent('Dashboard');
                 
                 // Set up event listeners after ensuring elements exist
                 setTimeout(() => {
                     setupClassButtons();
                     updateWelcomeMessage();
+                    initializeFirstAdmin(); // Initialize first admin if needed
                 }, 100);
-            }
-        }, 100);
+                }
+            }, 100);
+            
+            // Clean up the auth listener
+            setTimeout(() => unsubscribe(), 1000);
+        });
         
         const submitPassword = document.getElementById('submitPassword');
         if (submitPassword) submitPassword.addEventListener('click', checkPassword);

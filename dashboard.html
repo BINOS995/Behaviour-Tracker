@@ -1,4674 +1,705 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-        rel="stylesheet"
-        as="style"
-        onload="this.rel='stylesheet'"
-        href="https://fonts.googleapis.com/css2?display=swap&family=Lexend:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900",
-         
-
-    />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Performance Tracker</title>
-    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBNGdPWISw803XD8xVo0RyCGoGpNX8o_jM",
+            authDomain: "dpointslogin.firebaseapp.com",
+            projectId: "dpointslogin",
+            storageBucket: "dpointslogin.firebasestorage.app",
+            messagingSenderId: "486203348613",
+            appId: "1:486203348613:web:a22083bc80b9326bc73bec"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Make Firebase services globally available
+        window.firebaseApp = app;
+        window.firebaseAuth = auth;
+        window.firebaseDB = db;
+        window.firebaseFirestore = {
+            collection,
+            doc,
+            setDoc,
+            getDoc,
+            deleteDoc,
+            onSnapshot,
+            getDocs
+        };
+
+        // Initialize admin status
+        window.isAdmin = false;
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const adminEmail = 'fobiblankson95@gmail.com';
+                window.isAdmin = user.email === adminEmail;
+                
+                // Show/hide admin button based on admin status
+                const adminBtn = document.getElementById('adminBtn');
+                if (adminBtn) {
+                    adminBtn.style.display = window.isAdmin ? 'flex' : 'none';
+                }
+            }
+        });
+    </script>
+    
+    <style>
+        .class-content-blur {
+            filter: blur(12px);
+            pointer-events: none;
+            user-select: none;
+            transition: filter 0.3s;
+        }
+        .class-content-unblur {
+            filter: none;
+            pointer-events: auto;
+            user-select: auto;
+            transition: filter 0.3s;
+        }
+    </style>
 </head>
-<script type="module" src="./homepage.js"></script>
-<style>
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th {
-        background-color: #6C5CE7; /* Purple header */
-        color: white;
-        padding: 8px 0;
-        border-radius: 6px 6px 0 0;
-    }
-
-    td {
-        text-align: center;
-        padding: 10px;
-        cursor: pointer;
-    }
-
-    td:hover {
-        background-color: #f1f5ff; /* Light blue hover */
-        border-radius: 50%;
-    }
-
-    .today {
-        background-color: #6C5CE7; /* Purple */
-        color: white;
-        border-radius: 50%;
-    }
-
-    .calendar {
-        background: linear-gradient(135deg, #f3e8ff 0%, #e0f2fe 100%);
-        padding: 24px;
-        border-radius: 18px;
-        box-shadow: 0px 4px 16px rgba(108, 92, 231, 0.08);
-        max-width: 340px;
-        margin: auto;
-        border: 1px solid #e0e7ff;
-    }
-    .calendar th {
-        background: none;
-        color: #6C5CE7;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-    }
-    .calendar-cell {
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 2px 6px rgba(108, 92, 231, 0.06);
-        transition: background 0.2s, color 0.2s;
-        cursor: pointer;
-        padding: 12px 0;
-        margin: 2px;
-        text-align: center;
-        font-weight: 500;
-        color: #6C5CE7;
-    }
-    .calendar-cell:hover {
-        background: #e0e7ff;
-        color: #222;
-    }
-    .calendar .today {
-        background: linear-gradient(90deg, #6C5CE7 60%, #4D96FF 100%);
-        color: #fff;
-        font-weight: 700;
-        box-shadow: 0 4px 12px rgba(76, 149, 255, 0.12);
-        border-radius: 12px;
-    }
-    .class-content-blur {
-      filter: blur(12px);
-      pointer-events: none;
-      user-select: none;
-      transition: filter 0.3s;
-    }
-    .class-content-unblur {
-      filter: none;
-      pointer-events: auto;
-      user-select: auto;
-      transition: filter 0.3s;
-    }
-</style>
-
-<body class="bg-[#f8fafc]" style='font-family: Lexend, "Noto Sans", sans-serif;'>
-    <div class="flex min-h-screen">
+<body class="bg-gray-50 font-sans">
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-lg">
+        <div class="p-6">
+            <h1 class="text-2xl font-bold text-gray-800">Behaviour Tracker</h1>
+        </div>
         
-        <!-- Sidebar -->
-        <aside class="w-80 flex flex-col justify-between bg-white p-4 border-r border-gray-200">
-            <div class="flex flex-col gap-4">
-                <h1 class="text-gray-800 text-base font-medium">Behaviour Tracker</h1>
-                <nav class="flex flex-col gap-2">
-                    <!-- Floating Virtual Assistant Button -->
-                    <button class="assistant-float-btn" title="Virtual Assistant" style="position: fixed; bottom: 32px; right: 32px; z-index: 1000; background: linear-gradient(135deg, #6a5af9 0%, #00d4ff 100%); box-shadow: 0 4px 16px rgba(106,90,249,0.2); border: none; border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: box-shadow 0.2s;">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="10" fill="url(#assistantGradient)"/>
-                            <ellipse cx="12" cy="15" rx="5" ry="2.5" fill="#fff" opacity="0.7"/>
-                            <circle cx="12" cy="10" r="4" fill="#fff"/>
-                            <circle cx="10.5" cy="10" r="0.7" fill="#333"/>
-                            <circle cx="13.5" cy="10" r="0.7" fill="#333"/>
-                            <path d="M11 12.5c.5.5 1.5.5 2 0" stroke="#333" stroke-width="0.7" stroke-linecap="round"/>
-                            <defs>
-                                <radialGradient id="assistantGradient" cx="0" cy="0" r="1" gradientTransform="translate(12 12) scale(10)" gradientUnits="userSpaceOnUse">
-                                    <stop stop-color="#6a5af9"/>
-                                    <stop offset="1" stop-color="#00d4ff"/>
-                                </radialGradient>
-                            </defs>
-                        </svg>
+        <nav class="px-4">
+            <button class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600" data-content="Dashboard">
+                <i class="fas fa-home"></i> Dashboard
+            </button>
+            
+            <button id="adminBtn" class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-green-500 rounded-lg hover:bg-green-600" style="display:none;" data-content="Admin">
+                <i class="fas fa-user-shield"></i> Admin
+            </button>
+            
+            <div class="mb-4">
+                <button id="classesDropdownBtn" class="flex items-center justify-between w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                    <span><i class="fas fa-chalkboard-teacher mr-2"></i>Classes</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div id="classesDropdownMenu" class="hidden mt-2 ml-4">
+                    <!-- Classes will be loaded here -->
+                </div>
+            </div>
+            
+            <button class="flex items-center gap-3 w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg" data-content="Logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8">
+        <div id="content" class="max-w-7xl mx-auto">
+            <!-- Content will be dynamically loaded here -->
+        </div>
+    </main>
+</div>
+
+<!-- Password Modal -->
+<div id="passwordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-xl max-w-md w-full mx-4">
+        <h3 class="text-xl font-bold mb-4">Enter Class Password</h3>
+        <input type="password" id="classPasswordInput" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4" placeholder="Enter password">
+        <div class="flex gap-4">
+            <button id="submitPassword" class="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600">Submit</button>
+            <button id="cancelPassword" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400">Cancel</button>
+        </div>
+        <p id="passwordError" class="text-red-500 mt-2 hidden">Incorrect password. Please try again.</p>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let currentClass = '';
+    let adminClassPasswords = {};
+    
+    // Tab content management
+    const tabContent = {
+        "Dashboard": `
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome back!</h1>
+                <p class="text-gray-600">Track student behavior and performance across different classes.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-purple-100 text-sm">Total Classes</p>
+                            <p class="text-3xl font-bold" id="totalClasses">0</p>
+                        </div>
+                        <i class="fas fa-chalkboard-teacher text-3xl opacity-75"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-blue-100 text-sm">Active Students</p>
+                            <p class="text-3xl font-bold" id="totalStudents">0</p>
+                        </div>
+                        <i class="fas fa-users text-3xl opacity-75"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-green-100 text-sm">Positive Points</p>
+                            <p class="text-3xl font-bold" id="totalPoints">0</p>
+                        </div>
+                        <i class="fas fa-star text-3xl opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button class="bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-600 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add New Student
                     </button>
-                    <!-- Dashboard -->
-                    <button class="flex items-center gap-3 px-3 py-2 text-white bg-purple-500 hover:bg-purple-600 rounded-xl" data-content="Dashboard">
-                        <i class="fas fa-home"></i> Dashboard
+                    <button class="bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>View Reports
                     </button>
-                    <!-- Admin Button (hidden by default, shown only for admin) -->
-                    <button id="adminBtn" class="flex items-center gap-3 px-3 py-2 text-white bg-gradient-to-r from-green-500 via-blue-400 to-purple-500 hover:from-green-600 hover:to-purple-600 rounded-xl" style="display:none;" data-content="Admin">
-                        <i class="fas fa-user-shield"></i> Admin
+                </div>
+            </div>
+        `,
+        "Admin": `
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h1 class="text-2xl font-bold text-gray-800 mb-6">Admin Panel</h1>
+                
+                <div class="mb-6">
+                    <h2 class="text-lg font-semibold text-gray-700 mb-4">Manage Classes</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Class Name</label>
+                            <input type="text" id="newClassName" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Enter class name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input type="password" id="newClassPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Enter password">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Google Sheet URL</label>
+                        <input type="url" id="newClassSheet" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="https://docs.google.com/spreadsheets/d/...">
+                        <p class="text-xs text-gray-500 mt-1">Paste the Google Sheets URL for behavior tracking</p>
+                    </div>
+                    <button id="addClassBtn" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                        <i class="fas fa-plus mr-2"></i>Add Class
                     </button>
-          
-                    <!-- Students & Classes Dropdown -->
-                    <div>
-                        <button id="studentsDropdownBtn" class="flex items-center justify-between w-full gap-3 px-3 py-2 text-white bg-gradient-to-r from-purple-500 via-blue-400 to-cyan-400 shadow-lg hover:from-purple-600 hover:to-blue-500 rounded-xl font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2" style="box-shadow: 0 4px 16px rgba(106,90,249,0.12);">
-                            <span class="flex items-center gap-2">
-                                <i class="fas fa-chalkboard-teacher"></i>
-                                Classes
-                            </span>
-                            <span id="dropdownArrow" class="transition-transform duration-200">▼</span>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Existing Classes</h3>
+                    <div id="classesList" class="space-y-3">
+                        <p class="text-gray-500">Loading classes...</p>
+                    </div>
+                </div>
+            </div>
+        `,
+        "Logout": `
+            <div class="bg-white rounded-xl shadow-sm p-6 text-center">
+                <h1 class="text-2xl font-bold text-gray-800 mb-4">Logging Out...</h1>
+                <p class="text-gray-600">You will be redirected to the login page.</p>
+            </div>
+        `
+    };
+
+    // Load classes from Firestore
+    async function loadClasses() {
+        try {
+            console.log('Loading classes from Firestore...');
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            const snapshot = await window.firebaseFirestore.getDocs(classesRef);
+            adminClassPasswords = {};
+            
+            console.log(`Found ${snapshot.size} classes`);
+            
+            if (snapshot.empty) {
+                console.log('No classes found in Firestore');
+                adminClassPasswords = {};
+            } else {
+                snapshot.forEach(doc => {
+                    const classData = doc.data();
+                    adminClassPasswords[doc.id] = {
+                        password: classData.password,
+                        sheetUrl: classData.sheetUrl
+                    };
+                    console.log(`Loaded class: ${doc.id}`);
+                });
+            }
+            
+            updateClassesList();
+            updateTabContentWithClasses();
+        } catch (error) {
+            console.error('Error loading classes:', error);
+            // Show error in the classes list
+            const classesList = document.getElementById('classesList');
+            if (classesList) {
+                classesList.innerHTML = `
+                    <div class="text-red-500 p-4 bg-red-50 rounded-lg">
+                        <strong>Error loading classes:</strong><br>
+                        ${error.message}<br><br>
+                        <small>Check console for details</small>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Update classes list in admin panel
+    function updateClassesList() {
+        const classesList = document.getElementById('classesList');
+        if (!classesList) return;
+
+        classesList.innerHTML = '';
+        
+        const classes = Object.keys(adminClassPasswords);
+        if (classes.length === 0) {
+            classesList.innerHTML = '<p class="text-gray-500">No classes created yet. Add a class above to get started.</p>';
+            return;
+        }
+        
+        classes.forEach(className => {
+            const classData = adminClassPasswords[className];
+            const classItem = document.createElement('div');
+            classItem.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
+            classItem.innerHTML = `
+                <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                        <span class="font-medium text-lg">${className}</span>
+                        <span class="text-sm text-gray-500 ml-2">(Password protected)</span>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-2">
+                        <strong>Password:</strong>
+                        <span class="password-display ml-2 font-mono text-xs bg-gray-200 px-2 py-1 rounded" data-password="${classData.password}">
+                            ${'*'.repeat(classData.password.length)}
+                        </span>
+                        <button class="show-password-btn ml-2 text-blue-500 hover:text-blue-700" onclick="togglePasswordVisibility(this)">
+                            <i class="fas fa-eye"></i>
                         </button>
-                        <div id="studentsDropdownMenu" class="flex flex-col ml-8 mt-2 p-3 rounded-xl shadow-lg bg-gradient-to-br from-purple-50 to-blue-100 border border-purple-100 transition-all duration-300 hidden">
-                            <div>
-                                <button id="classesDropdownBtn" class="flex items-center justify-between w-full px-3 py-2 text-gray-800 font-semibold hover:bg-gradient-to-r hover:from-purple-100 hover:to-blue-100 rounded-xl transition-all duration-200">
-                                    Classes
-                                    <span id="classesArrow">▼</span>
-                                </button>
-                                <div id="classesDropdownMenu" class="flex flex-col ml-6 mt-2 p-2 rounded-lg shadow bg-white border border-gray-100 transition-all duration-300 hidden">
-                                    <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="KG2">KG2</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 1">Grade 1</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 2">Grade 2</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 3">Grade 3</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 4">Grade 4</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 5">Grade 5</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 6">Grade 6</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 7">Grade 7</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 8">Grade 8</button>
-                                <button class="px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200" data-content="Grade 9">Grade 9</button>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <strong>Sheet URL:</strong>
+                        ${classData.sheetUrl ? `
+                        <a href="${classData.sheetUrl}" target="_blank" class="text-blue-600 hover:underline ml-1">
+                            ${classData.sheetUrl.length > 50 ? classData.sheetUrl.substring(0, 50) + '...' : classData.sheetUrl}
+                        </a>
+                        ` : '<span class="text-gray-400 ml-1">No sheet URL provided</span>'}
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <button class="text-red-500 hover:text-red-700 p-2" onclick="removeClass('${className}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            classesList.appendChild(classItem);
+        });
+    }
+
+    // Add new class
+    async function addNewClass() {
+        const className = document.getElementById('newClassName').value.trim();
+        const password = document.getElementById('newClassPassword').value.trim();
+        const sheetUrl = document.getElementById('newClassSheet').value.trim();
+
+        if (!className || !password) {
+            alert('Please enter both class name and password');
+            return;
+        }
+
+        if (!sheetUrl) {
+            alert('Please enter a Google Sheet URL');
+            return;
+        }
+
+        // Validate Google Sheets URL
+        if (!sheetUrl.includes('docs.google.com/spreadsheets')) {
+            alert('Please enter a valid Google Sheets URL');
+            return;
+        }
+
+        try {
+            // Show loading state
+            const addBtn = document.getElementById('addClassBtn');
+            const originalText = addBtn.innerHTML;
+            addBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
+            addBtn.disabled = true;
+
+            const classRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className);
+            await window.firebaseFirestore.setDoc(classRef, {
+                password: password,
+                sheetUrl: sheetUrl,
+                createdAt: new Date().toISOString()
+            });
+
+            // Clear fields
+            document.getElementById('newClassName').value = '';
+            document.getElementById('newClassPassword').value = '';
+            document.getElementById('newClassSheet').value = '';
+            
+            // Success prompt
+            alert(`✅ Class "${className}" has been successfully created!`);
+            
+            // Restore button state
+            addBtn.innerHTML = originalText;
+            addBtn.disabled = false;
+            
+        } catch (error) {
+            console.error('Error adding class:', error);
+            alert('Error adding class. Please try again.');
+            
+            // Restore button state on error
+            const addBtn = document.getElementById('addClassBtn');
+            addBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Add Class';
+            addBtn.disabled = false;
+        }
+    }
+
+    // Remove class
+    async function removeClass(className) {
+        if (!confirm(`Are you sure you want to remove ${className}?`)) return;
+
+        try {
+            await window.firebaseFirestore.deleteDoc(window.firebaseFirestore.doc(window.firebaseDB, 'classes', className));
+            loadClasses(); // Reload classes
+        } catch (error) {
+            console.error('Error removing class:', error);
+            alert('Error removing class. Please try again.');
+        }
+    }
+
+    // Update tab content with dynamic classes
+    function updateTabContentWithClasses() {
+        // Remove old class entries from tabContent
+        Object.keys(tabContent).forEach(key => {
+            if (key !== 'Dashboard' && key !== 'Admin' && key !== 'Logout') {
+                delete tabContent[key];
+            }
+        });
+
+        // Add new classes from Firestore
+        Object.keys(adminClassPasswords).forEach(className => {
+            tabContent[className] = createClassContent(className);
+        });
+
+        // Update sidebar navigation
+        updateSidebarNavigation();
+    }
+
+    // Create content for a specific class
+    function createClassContent(className) {
+        const classData = adminClassPasswords[className];
+        const sheetUrl = classData?.sheetUrl || '';
+        
+        // Convert Google Sheets URL to embed format
+        let embedUrl = '';
+        if (sheetUrl) {
+            const match = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+            if (match) {
+                embedUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/edit?usp=sharing&rm=minimal`;
+            }
+        }
+
+        return `
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">${className}</h1>
+                    <button onclick="showAddStudentModal('${className}')" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                        <i class="fas fa-plus mr-2"></i>Add Student
+                    </button>
+                </div>
+
+                <div class="class-content-blur" id="${className}-content">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2">
+                            <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Behavior Tracker</h3>
+                                ${embedUrl ? `
+                                <div class="border border-gray-300 rounded-lg overflow-hidden" style="height: 600px;">
+                                    <iframe 
+                                        src="${embedUrl}" 
+                                        width="100%" 
+                                        height="100%" 
+                                        frameborder="0"
+                                        style="border:0;"
+                                        allowfullscreen>
+                                    </iframe>
+                                </div>
+                                ` : '<p class="text-gray-500">No Google Sheet configured for this class.</p>'}
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Students</h3>
+                                <div id="${className}-students" class="space-y-3">
+                                    <p class="text-gray-500">No students added yet.</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </nav>
-            </div>
-
-            <!-- Logout Button -->
-            <div>
-                <button class="flex items-center gap-3 px-3 py-2 text-white bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 hover:from-red-600 hover:to-purple-600 shadow-lg rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2" data-content="Logout" id="logout">
-                    <span class="inline-block w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-2">
-                        <i class="fas fa-sign-out-alt text-lg text-white"></i>
-                    </span>
-                    <span class="font-semibold">Logout</span>
-                </button>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="flex-1 flex flex-col overflow-y-auto">
-            <header class="p-4 border-b border-gray-200 bg-white">
-                <h2 class="text-gray-800 text-2xl font-bold" id="content-title">Dashboard</h2>
-                <p class="text-gray-500 mt-1 text-lg">
-                    👋 Welcome back, <span id="loggedUserFName"></span>!
-                </p>
-            </header>
-            <section class="p-4 text-gray-800" id="content-display">
-                <!-- Default Dashboard Layout -->
-                <div id="dashboard-graphs" class="p-6 space-y-6">
-                    <!-- Top Row: Bar & Line -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col items-center justify-center transition-transform duration-200 hover:scale-105">
-                            <h4 class="font-semibold mb-4 text-gray-800 text-lg">Bar Graph</h4>
-                            <canvas id="bar1" style="max-width: 100%; height: 280px;"></canvas>
-                        </div>
-                        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col items-center justify-center transition-transform duration-200 hover:scale-105">
-                            <h4 class="font-semibold mb-4 text-gray-800 text-lg">Line Graph</h4>
-                            <canvas id="line1" style="max-width: 100%; height: 280px;"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="calendar mt-6 shadow-lg rounded-2xl overflow-hidden border border-gray-200 bg-gradient-to-br from-purple-50 to-blue-50">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr>
-                                <th colspan="7" class="bg-purple-600 text-white py-3 text-lg font-bold tracking-wide">August 2025</th>
-                            </tr>
-                            <tr class="bg-purple-100 text-purple-700">
-                                <th class="py-2">Sun</th>
-                                <th class="py-2">Mon</th>
-                                <th class="py-2">Tue</th>
-                                <th class="py-2">Wed</th>
-                                <th class="py-2">Thu</th>
-                                <th class="py-2">Fri</th>
-                                <th class="py-2">Sat</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="bg-transparent"></td><td class="bg-transparent"></td><td class="bg-transparent"></td><td class="bg-transparent"></td><td class="calendar-cell">1</td><td class="calendar-cell">2</td><td class="calendar-cell">3</td>
-                            </tr>
-                            <tr>
-                                <td class="calendar-cell">4</td><td class="calendar-cell">5</td><td class="calendar-cell">6</td><td class="calendar-cell">7</td><td class="calendar-cell">8</td><td class="calendar-cell">9</td><td class="calendar-cell">10</td>
-                            </tr>
-                            <tr>
-                                <td class="calendar-cell">11</td><td class="calendar-cell">12</td><td class="calendar-cell">13</td><td class="calendar-cell today">14</td><td class="calendar-cell">15</td><td class="calendar-cell">16</td><td class="calendar-cell">17</td>
-                            </tr>
-                            <tr>
-                                <td class="calendar-cell">18</td><td class="calendar-cell">19</td><td class="calendar-cell">20</td><td class="calendar-cell">21</td><td class="calendar-cell">22</td><td class="calendar-cell">23</td><td class="calendar-cell">24</td>
-                            </tr>
-                            <tr>
-                                <td class="calendar-cell">25</td><td class="calendar-cell">26</td><td class="calendar-cell">27</td><td class="calendar-cell">28</td><td class="calendar-cell">29</td><td class="calendar-cell">30</td><td class="calendar-cell">31</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
-    </div>
-<!-- This is where all the google slides are called.................................................................................................................................................................................................. -->
-     <script>
-        let tabContent = {
-            "Dashboard": document.getElementById("dashboard-graphs").outerHTML,
-            "Students": "<iframe src='https://docs.google.com/spreadsheets/d/1qL_8YVFMQkdv03MS-QMf2pAfHUuTjeo-/edit?usp=sharing' width='100%' height='600px'></iframe>",
-            "KG2": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/1nZ0I5vau6LEW_gcfpmEbvrlccFJSOFdr/edit?usp=sharing' width='100%' height='800px'></iframe></div>`,
-            "Grade 1": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/14FOzY7rdywZ6e50RXIc1OmaQlgfbKNBH/edit?usp=sharing' width='100%' height='800px'></iframe></div>`,
-            "Grade 2": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/1S1HXCyw06Ff2qKyD48unzpEPnik3TKWk/edit?usp=drive_link&ouid=114651673082826566995&rtpof=true&sd=true' width='100%' height='800px'></iframe></div>`,
-            "Grade 3": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/1cwdEtqiBuOgijy2A77tisQI_tAv8eFsh/edit?usp=sharing&ouid=114651673082826566995&rtpof=true&sd=true' width='100%' height='800px'></iframe></div>`,
-            "Grade 4": `<div id="classContent" class="class-content-blur"><iframe src='https://docs.google.com/spreadsheets/d/1LzNI2Xyiqefi-Rjynq8OYrBGP6Sn-w71/edit?usp=drive_link&ouid=114651673082826566995&rtpof=true&sd=true' width='100%' height='800px'></iframe></div>`,
-            "Grade 5": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 5 Sheet Placeholder</div></div>`,
-            "Grade 6": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 6 Sheet Placeholder</div></div>`,
-            "Grade 7": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 7 Sheet Placeholder</div></div>`,
-            "Grade 8": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 8 Sheet Placeholder</div></div>`,
-            "Grade 9": `<div id=\"classContent\" class=\"class-content-blur\"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>Grade 9 Sheet Placeholder</div></div>`,
-
-            "Infractions": "In the Infractions section, you can view and manage student infractions.",
-            "Reports": "Generate reports based on student performance and class activities.",
-            "Logout": "You have been logged out.",
-            "Admin": `<div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Admin - Class Management</h2>
-                
-                <!-- Add New Class Section -->
-                <div class="mb-8 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
-                    <h3 class="text-xl font-bold text-purple-800 mb-4">Add New Class</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
-                            <input type="text" id="newClassName" class="w-full p-2 border border-gray-300 rounded-md" placeholder="e.g., Grade 10">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Password (optional)</label>
-                            <input type="password" id="newClassPassword" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Leave blank for public access">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Google Sheets URL (optional)</label>
-                            <input type="url" id="newClassSheetUrl" class="w-full p-2 border border-gray-300 rounded-md" placeholder="https://docs.google.com/spreadsheets/d/...">
-                        </div>
-                        <div class="md:col-span-2 flex items-end">
-                            <button onclick="addNewClass()" class="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-2 rounded-md hover:from-green-600 hover:to-blue-600 font-semibold">
-                                <i class="fas fa-plus mr-2"></i>Add Class
-                            </button>
+                            <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Class Stats</h3>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Total Students:</span>
+                                        <span class="font-semibold" id="${className}-count">0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Average Points:</span>
+                                        <span class="font-semibold" id="${className}-avg">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Performance Chart</h3>
+                                <canvas id="${className}-chart" width="300" height="200"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        `;
+    }
 
-                <!-- Existing Classes Password Management -->
-                <div id="existingClassesContainer">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">Class Password Management</h3>
-                    <div id="classPasswordsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">KG2</h3>
-                                <button onclick="removeClass('KG2')" class="text-red-500 hover:text-red-700" title="Delete KG2">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordKG2" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('KG2')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 1</h3>
-                                <button onclick="removeClass('Grade 1')" class="text-red-500 hover:text-red-700" title="Delete Grade 1">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade1" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade1')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 2</h3>
-                                <button onclick="removeClass('Grade 2')" class="text-red-500 hover:text-red-700" title="Delete Grade 2">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade2" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade2')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 3</h3>
-                                <button onclick="removeClass('Grade 3')" class="text-red-500 hover:text-red-700" title="Delete Grade 3">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade3" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade3')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 4</h3>
-                                <button onclick="removeClass('Grade 4')" class="text-red-500 hover:text-red-700" title="Delete Grade 4">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade4" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade4')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 5</h3>
-                                <button onclick="removeClass('Grade 5')" class="text-red-500 hover:text-red-700" title="Delete Grade 5">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade5" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade5')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 6</h3>
-                                <button onclick="removeClass('Grade 6')" class="text-red-500 hover:text-red-700" title="Delete Grade 6">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade6" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade6')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 7</h3>
-                                <button onclick="removeClass('Grade 7')" class="text-red-500 hover:text-red-700" title="Delete Grade 7">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade7" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade7')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 8</h3>
-                                <button onclick="removeClass('Grade 8')" class="text-red-500 hover:text-red-700" title="Delete Grade 8">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade8" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade8')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                        
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="font-semibold text-lg text-purple-700">Grade 9</h3>
-                                <button onclick="removeClass('Grade 9')" class="text-red-500 hover:text-red-700" title="Delete Grade 9">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                            <input type="password" id="passwordGrade9" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                            <button onclick="savePassword('Grade9')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600">Save</button>
-                        </div>
-                    </div>
-                </div>
+    // Update sidebar navigation with dynamic classes
+    function updateSidebarNavigation() {
+        const classesDropdownMenu = document.getElementById('classesDropdownMenu');
+        if (!classesDropdownMenu) return;
+
+        classesDropdownMenu.innerHTML = '';
+        
+        Object.keys(adminClassPasswords).forEach(className => {
+            const classButton = document.createElement('button');
+            classButton.className = 'class-btn flex items-center gap-2 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-left';
+            classButton.setAttribute('data-content', className);
+            classButton.innerHTML = `<i class="fas fa-book"></i> ${className}`;
+            classesDropdownMenu.appendChild(classButton);
+        });
+
+        setupClassButtons();
+    }
+
+    // Setup event listeners for class buttons
+    function setupClassButtons() {
+        document.querySelectorAll('[data-content]').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const content = e.currentTarget.getAttribute('data-content');
                 
-                <div class="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 class="font-semibold text-blue-800 mb-2">Instructions:</h4>
-                    <ul class="text-sm text-blue-700 space-y-1">
-                        <li>• Use the form above to add new classes</li>
-                        <li>• Enter passwords for each class to restrict access</li>
-                        <li>• Leave password blank to allow public access</li>
-                        <li>• Students will be prompted to enter the password when accessing classes</li>
-                        <li>• Passwords are saved locally in your browser</li>
-                    </ul>
-                </div>
-            </div>`
-        };
-
-
-        function showTab(content) {
-            currentTab = content;
-            document.getElementById("content-title").textContent = content;
-            document.getElementById("content-display").innerHTML = tabContent[content] || "Content not available.";
-            if (content === "Dashboard") {
-                loadCharts();
-            } else if (content === "Admin") {
-                loadPasswords();
-            }
-        }
-
-        document.querySelectorAll("aside button").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const content = btn.getAttribute("data-content");
-                if (content) {
-                    showTab(content);
+                if (content === 'Logout') {
+                    window.firebaseAuth.signOut(window.firebaseAuth).then(() => {
+                        window.location.href = 'index.html';
+                    });
+                } else if (content === 'Classes') {
+                    document.getElementById('classesDropdownMenu').classList.toggle('hidden');
+                } else {
+                    loadContent(content);
                 }
             });
         });
+    }
 
-        document.getElementById("studentsDropdownBtn").addEventListener("click", () => {
-            const menu = document.getElementById("studentsDropdownMenu");
-            const arrow = document.getElementById("dropdownArrow");
-            menu.classList.toggle("hidden");
-            arrow.textContent = menu.classList.contains("hidden") ? "▼" : "▲";
-        });
+    // Show password modal
+    function showPasswordModal(className) {
+        currentClass = className;
+        document.getElementById('passwordModal').classList.remove('hidden');
+        document.getElementById('passwordModal').classList.add('flex');
+        document.getElementById('classPasswordInput').value = '';
+        document.getElementById('passwordError').classList.add('hidden');
+        document.getElementById('classPasswordInput').focus();
+    }
 
-        document.getElementById("classesDropdownBtn").addEventListener("click", () => {
-            const menu = document.getElementById("classesDropdownMenu");
-            const arrow = document.getElementById("classesArrow");
-            menu.classList.toggle("hidden");
-            arrow.textContent = menu.classList.contains("hidden") ? "▼" : "▲";
-        });
+    // Hide password modal
+    function hidePasswordModal() {
+        document.getElementById('passwordModal').classList.add('hidden');
+        document.getElementById('passwordModal').classList.remove('flex');
+    }
 
-        function loadCharts() {
-            const ctxBar = document.getElementById("bar1");
-            const ctxLine = document.getElementById("line1");
-            if (!ctxBar) return;
-
-            new Chart(ctxBar, {
-                type: "bar",
-                data: {
-                    labels: ["A", "B", "C"],
-                    datasets: [{
-                        label: "Bar Data",
-                        data: [12, 19, 3],
-                        backgroundColor: ["#FF6B6B", "#6BCB77", "#4D96FF"]
-                    }]
-                }
-            });
-
-            new Chart(ctxLine, {
-                type: "line",
-                data: {
-                    labels: ["Jan", "Feb", "Mar"],
-                    datasets: [{
-                        label: "Line Data",
-                        data: [10, 5, 15],
-                        borderColor: "#6C5CE7",
-                        backgroundColor: "#6C5CE7",
-                        fill: false
-                    }]
-                }
-            });
-        }
-        loadCharts();
-        // Modal logic
-        document.addEventListener('DOMContentLoaded', function() {
-          const welcomeModal = document.getElementById('welcomeModal');
-          const closeWelcomeModal = document.getElementById('closeWelcomeModal');
-          if (welcomeModal && closeWelcomeModal) {
-            closeWelcomeModal.addEventListener('click', function() {
-              welcomeModal.style.display = 'none';
-            });
-          }
-        });
-    </script>
-
-    <!-- Welcome Modal -->
-    <div id="welcomeModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50" style="display: flex;">
-    <div class="bg-white rounded-xl shadow-lg p-8 max-w-sm w-full text-center">
-    <h3 class="text-2xl font-bold mb-4 text-purple-700">Welcome to Behaviour Tracker</h3>
-    <p class="text-gray-700 mb-6">We're glad to have you here!</p>
-    <button id="closeWelcomeModal" class="px-6 py-2 bg-purple-500 text-white rounded-xl hover:bg-purple-600">Close</button>
-    </div>
-    </div>
-
-    <script>
-        // Class management system
-        const adminClassPasswords = {};
-        let customClasses = [];
-        let classSheetUrls = {};
-        let currentTab = 'Dashboard';
-
-        function savePassword(className) {
-            const passwordInput = document.getElementById(`password${className}`);
-            const password = passwordInput.value;
-            const classKey = className.replace(/\s+/g, '');
-            adminClassPasswords[classKey] = password;
-            localStorage.setItem('classPasswords', JSON.stringify(adminClassPasswords));
-            alert(`Password for ${className} saved successfully!`);
-        }
-
-        function loadPasswords() {
-            const savedPasswords = localStorage.getItem('classPasswords');
-            if (savedPasswords) {
-                const passwords = JSON.parse(savedPasswords);
-                Object.assign(adminClassPasswords, passwords);
+    // Check password
+    function checkPassword() {
+        const enteredPassword = document.getElementById('classPasswordInput').value;
+        const correctPassword = adminClassPasswords[currentClass]?.password;
+        
+        if (enteredPassword === correctPassword) {
+            hidePasswordModal();
+            const contentDiv = document.getElementById(`${currentClass}-content`);
+            if (contentDiv) {
+                contentDiv.classList.remove('class-content-blur');
+                contentDiv.classList.add('class-content-unblur');
             }
+        } else {
+            document.getElementById('passwordError').classList.remove('hidden');
+        }
+    }
 
-            const savedClasses = localStorage.getItem('customClasses');
-            const savedSheetUrls = localStorage.getItem('classSheetUrls');
-            if (savedSheetUrls) {
-                classSheetUrls = JSON.parse(savedSheetUrls);
-            } else {
-                // Initialize predefined class URLs if none exist
-                classSheetUrls = {};
-                localStorage.setItem('classSheetUrls', JSON.stringify(classSheetUrls));
+    // Load content
+    function loadContent(content) {
+        const contentDiv = document.getElementById('content');
+        
+        if (tabContent[content]) {
+            contentDiv.innerHTML = tabContent[content];
+            
+            if (content !== 'Dashboard' && content !== 'Admin' && content !== 'Logout') {
+                showPasswordModal(content);
+            } else if (content === 'Dashboard') {
+                updateDashboardStats();
+            } else if (content === 'Admin') {
+                // Ensure classes are loaded when admin panel is opened
+                setTimeout(() => {
+                    loadClasses();
+                    // Attach event listener for Add Class button
+                    const addClassBtn = document.getElementById('addClassBtn');
+                    if (addClassBtn) {
+                        // Remove any existing listener to prevent duplicates
+                        addClassBtn.removeEventListener('click', addNewClass);
+                        addClassBtn.addEventListener('click', addNewClass);
+                    }
+                }, 100);
             }
+        }
+    }
 
-            // Update predefined classes with new Google Sheets functionality
-            Object.keys(classSheetUrls).forEach(className => {
-                const sheetUrl = classSheetUrls[className] || null;
-                addClassToTabContent(className, sheetUrl);
-            });
+    // Update dashboard stats and welcome message
+    async function updateDashboardStats() {
+        document.getElementById('totalClasses').textContent = Object.keys(adminClassPasswords).length;
+        document.getElementById('totalStudents').textContent = '0';
+        document.getElementById('totalPoints').textContent = '0';
+        
+        // Update welcome message with user's first name
+        const user = window.firebaseAuth.currentUser;
+        if (user) {
+            try {
+                const userDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebaseDB, 'users', user.uid)
+                );
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const welcomeElement = document.querySelector('#content h1');
+                    if (welcomeElement) {
+                        welcomeElement.textContent = `Welcome back, ${userData.firstName}!`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        }
+    }
 
-            if (savedClasses) {
-                customClasses = JSON.parse(savedClasses);
+    // Toggle password visibility
+    function togglePasswordVisibility(button) {
+        const passwordSpan = button.previousElementSibling;
+        const password = passwordSpan.getAttribute('data-password');
+        const icon = button.querySelector('i');
+        
+        if (passwordSpan.textContent.includes('*')) {
+            passwordSpan.textContent = password;
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordSpan.textContent = '*'.repeat(password.length);
+            icon.className = 'fas fa-eye';
+        }
+    }
+
+    // Update welcome message with user's first name
+    async function updateWelcomeMessage() {
+        const user = window.firebaseAuth.currentUser;
+        if (user) {
+            try {
+                const userDoc = await window.firebaseFirestore.getDoc(
+                    window.firebaseFirestore.doc(window.firebaseDB, 'users', user.uid)
+                );
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const welcomeElement = document.querySelector('#content h1');
+                    if (welcomeElement) {
+                        welcomeElement.textContent = `Welcome back, ${userData.firstName}!`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        }
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        // Ensure Firebase is initialized before proceeding
+        const checkFirebase = setInterval(() => {
+            if (window.firebaseDB && window.firebaseFirestore) {
+                clearInterval(checkFirebase);
+                loadClasses();
                 
-                // Add custom classes to tabContent and dropdown
-                customClasses.forEach(className => {
-                    const sheetUrl = classSheetUrls[className] || null;
-                    addClassToTabContent(className, sheetUrl);
-                    addClassToDropdown(className);
+                // Set up event listeners after ensuring elements exist
+                setTimeout(() => {
+                    setupClassButtons();
+                    updateWelcomeMessage();
+                }, 100);
+            }
+        }, 100);
+        
+        const submitPassword = document.getElementById('submitPassword');
+        if (submitPassword) submitPassword.addEventListener('click', checkPassword);
+        
+        const cancelPassword = document.getElementById('cancelPassword');
+        if (cancelPassword) cancelPassword.addEventListener('click', hidePasswordModal);
+        
+        const classPasswordInput = document.getElementById('classPasswordInput');
+        if (classPasswordInput) {
+            classPasswordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') checkPassword();
+            });
+        }
+        
+        const classesDropdownBtn = document.getElementById('classesDropdownBtn');
+        if (classesDropdownBtn) {
+            classesDropdownBtn.addEventListener('click', () => {
+                document.getElementById('classesDropdownMenu').classList.toggle('hidden');
+            });
+        }
+
+        // Listen for real-time updates
+        if (window.firebaseFirestore) {
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            window.firebaseFirestore.onSnapshot(classesRef, (snapshot) => {
+                adminClassPasswords = {};
+                snapshot.forEach(doc => {
+                    const classData = doc.data();
+                    adminClassPasswords[doc.id] = {
+                        password: classData.password,
+                        sheetUrl: classData.sheetUrl
+                    };
                 });
+                updateClassesList();
+                updateTabContentWithClasses();
                 
-                updateCustomClasses();
-            }
-
-            // Load passwords into input fields
-            Object.keys(adminClassPasswords).forEach(className => {
-                const input = document.getElementById(`password${className}`);
-                if (input) {
-                    input.value = adminClassPasswords[className] || '';
+                if (document.querySelector('[data-content="Dashboard"]')) {
+                    updateDashboardStats();
                 }
             });
-        }
-
-        function addNewClass() {
-            const classNameInput = document.getElementById('newClassName');
-            const passwordInput = document.getElementById('newClassPassword');
-            const sheetUrlInput = document.getElementById('newClassSheetUrl');
-            
-            const className = classNameInput.value.trim();
-            const password = passwordInput.value.trim();
-            const sheetUrl = sheetUrlInput.value.trim();
-            
-            if (!className) {
-                alert('Please enter a class name');
-                return;
-            }
-
-            // Check if class already exists
-            if (customClasses.includes(className) || Object.keys(classSheetUrls).includes(className)) {
-                alert('Class already exists');
-                return;
-            }
-
-            // Add to custom classes
-            customClasses.push(className);
-            localStorage.setItem('customClasses', JSON.stringify(customClasses));
-
-            // Save password if provided
-            if (password) {
-                const classKey = className.replace(' ', '');
-                adminClassPasswords[classKey] = password;
-                localStorage.setItem('classPasswords', JSON.stringify(adminClassPasswords));
-            }
-
-            // Save Google Sheets URL if provided
-            if (sheetUrl) {
-                classSheetUrls[className] = sheetUrl;
-                localStorage.setItem('classSheetUrls', JSON.stringify(classSheetUrls));
-            }
-
-            // Update UI
-            updateCustomClasses();
-            addClassToTabContent(className, sheetUrl);
-            addClassToDropdown(className);
-
-            // Clear inputs
-            classNameInput.value = '';
-            passwordInput.value = '';
-            sheetUrlInput.value = '';
-
-            alert(`Class "${className}" added successfully!`);
-        }
-
-        function updateCustomClasses() {
-            const container = document.getElementById('classPasswordsGrid');
-            
-            // Remove existing custom class elements
-            const existingCustom = container.querySelectorAll('[data-custom="true"]');
-            existingCustom.forEach(el => el.remove());
-
-            // Add custom class password fields
-            customClasses.forEach(className => {
-                const classKey = className.replace(' ', '');
-                const div = document.createElement('div');
-                div.className = 'bg-gray-50 p-4 rounded-lg';
-                div.setAttribute('data-custom', 'true');
-                div.innerHTML = `
-                    <h3 class="font-semibold text-lg mb-3 text-purple-700">${className}</h3>
-                    <input type="password" id="password${classKey}" class="w-full p-2 border border-gray-300 rounded-md mb-2" placeholder="Enter password">
-                    <button onclick="savePassword('${classKey}')" class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600 mb-2">Save</button>
-                    <button onclick="removeClass('${className}')" class="w-full bg-red-500 text-white py-2 rounded-md hover:bg-red-600">Remove Class</button>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function addClassToTabContent(className, sheetUrl = null) {
-            const classKey = className.replace(' ', '');
-            if (sheetUrl && sheetUrl.trim()) {
-                tabContent[className] = `<div id="classContent" class="class-content-blur"><iframe src='${sheetUrl}' width='100%' height='800px'></iframe></div>`;
-            } else {
-                tabContent[className] = `<div id="classContent" class="class-content-blur"><div style='width:100%;height:800px;display:flex;align-items:center;justify-content:center;color:#888;font-size:2rem;'>${className} Sheet Placeholder</div></div>`;
-            }
-        }
-
-        function removeClassFromTabContent(className) {
-            delete tabContent[className];
-        }
-
-        function addClassToDropdown(className) {
-            const classesDropdownMenu = document.getElementById('classesDropdownMenu');
-            const button = document.createElement('button');
-            button.className = 'px-3 py-2 my-1 text-gray-800 font-medium hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 rounded-lg transition-all duration-200';
-            button.setAttribute('data-content', className);
-            button.textContent = className;
-            classesDropdownMenu.appendChild(button);
-
-            // Re-setup all class buttons to include the new one
-            setupClassButtons();
-        }
-
-        function removeClass(className) {
-            const predefinedClasses = ["KG2", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9"];
-            const index = customClasses.indexOf(className);
-            if (index > -1) {
-                customClasses.splice(index, 1);
-                localStorage.setItem('customClasses', JSON.stringify(customClasses));
-            }
-            if (predefinedClasses.includes(className) || index > -1) {
-                // Remove from passwords
-                const classKey = className.replace(/\s+/g, '');
-                delete adminClassPasswords[classKey];
-                localStorage.setItem('classPasswords', JSON.stringify(adminClassPasswords));
-                // Remove Google Sheets URL
-                delete classSheetUrls[className];
-                localStorage.setItem('classSheetUrls', JSON.stringify(classSheetUrls));
-                // Remove from tabContent
-                removeClassFromTabContent(className);
-                // Remove from dropdown
-                const classesDropdownMenu = document.getElementById('classesDropdownMenu');
-                const buttons = classesDropdownMenu.querySelectorAll('button');
-                buttons.forEach(button => {
-                    if (button.textContent === className) {
-                        button.remove();
-                    }
-                });
-                // Remove password field from Admin page
-                const container = document.getElementById('classPasswordsGrid');
-                const adminDivs = container.querySelectorAll('div');
-                adminDivs.forEach(div => {
-                    const h3 = div.querySelector('h3');
-                    if (h3 && h3.textContent === className) {
-                        div.remove();
-                    }
-                });
-                // Update UI
-                updateCustomClasses();
-                // If this was the active tab, go to Dashboard
-                if (currentTab === className) {
-                    showTab('Dashboard');
-                }
-            }
-        }
-
-        // Check password for class access
-        function checkClassAccess(className) {
-            const currentPasswords = getClassPasswords();
-            const classKey = className.replace(/\s+/g, '');
-            const password = currentPasswords[classKey];
-            if (!password) {
-                return true; // No password set, allow access
-            }
-            
-            const enteredPassword = prompt(`Enter password for ${className}:`);
-            return enteredPassword === password;
-        }
-
-        // Load passwords when admin page is accessed
-        document.addEventListener('DOMContentLoaded', function() {
-            loadPasswords();
-        });
-
-        // Welcome modal
-        document.addEventListener('DOMContentLoaded', function() {
-          const welcomeModal = document.getElementById('welcomeModal');
-          const closeWelcomeModal = document.getElementById('closeWelcomeModal');
-          if (welcomeModal && closeWelcomeModal) {
-            closeWelcomeModal.addEventListener('click', function() {
-              welcomeModal.style.display = 'none';
-            });
-          }
-        });
-    </script>
-</body>
-</html>
-
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Modern Bar Graph
-    new Chart(document.getElementById('bar1').getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-                label: 'Performance',
-                data: [12, 19, 3, 5, 2, 3, 7],
-                backgroundColor: [
-                    'rgba(106,90,249,0.8)',
-                    'rgba(0,212,255,0.8)',
-                    'rgba(76,149,255,0.8)',
-                    'rgba(108,92,231,0.8)',
-                    'rgba(255,99,132,0.8)',
-                    'rgba(255,159,64,0.8)',
-                    'rgba(54,162,235,0.8)'
-                ],
-                borderRadius: 8,
-                borderWidth: 2,
-                borderColor: 'rgba(255,255,255,0.8)'
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                title: {
-                    display: false
-                }
-            },
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    }
-                },
-                y: {
-                    grid: {
-                        color: 'rgba(106,90,249,0.08)'
-                    },
-                    beginAtZero: true
-                }
-            }
         }
     });
-    // Modern Line Graph
-    new Chart(document.getElementById('line1').getContext('2d'), {
-        type: 'line',
-        data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-                label: 'Trend',
-                data: [8, 11, 7, 14, 6, 9, 13],
-                fill: true,
-                backgroundColor: 'rgba(106,90,249,0.12)',
-                borderColor: 'rgba(0,212,255,1)',
-                borderWidth: 3,
-                pointBackgroundColor: 'rgba(76,149,255,1)',
-                pointRadius: 6,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                title: {
-                    display: false
-                }
-            },
-            scales: {
-                x: {
-                    grid: {
-                        display: false
-                    }
-                },
-                y: {
-                    grid: {
-                        color: 'rgba(0,212,255,0.08)'
-                    },
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-});
 </script>
 </body>
 </html>
-
-</script>
-</body>
-</html>
-
-<!-- Password Modal -->
-<div id="classPasswordModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 hidden">
-  <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-xs flex flex-col gap-4">
-    <h3 class="text-lg font-bold text-gray-800 mb-2">Enter Class Password</h3>
-    <input type="password" id="classPasswordInput" class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="Password" />
-    <div class="flex gap-2 mt-2">
-      <button id="classPasswordSubmit" class="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:from-purple-600 hover:to-blue-600 transition-all">Submit</button>
-      <button id="classPasswordCancel" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all">Cancel</button>
-    </div>
-    <span id="classPasswordError" class="text-red-500 text-sm hidden">Incorrect password. Please try again.</span>
-  </div>
-</div>
-<!-- This where the passwords are stored .................................................................................................................................................................................-->
-<script>
-// Load passwords from localStorage (managed by admin)
-function getClassPasswords() {
-  const savedPasswords = localStorage.getItem('classPasswords');
-  return savedPasswords ? JSON.parse(savedPasswords) : {};
-}
-
-const classPasswords = getClassPasswords();
-let selectedClass = null;
-function setupClassButtons() {
-  document.querySelectorAll('[data-content]').forEach(btn => {
-    const content = btn.getAttribute('data-content');
-    // Only handle class buttons (KG2, Grade X, or custom classes)
-    if (content === 'KG2' || content.startsWith('Grade ') || customClasses.includes(content)) {
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        selectedClass = content;
-        document.getElementById('classPasswordModal').classList.remove('hidden');
-        document.getElementById('classPasswordInput').value = "";
-        document.getElementById('classPasswordError').classList.add('hidden');
-      });
-    }
-  });
-}
-
-// Setup initial class buttons and reload when new classes are added
-document.addEventListener('DOMContentLoaded', function() {
-  setupClassButtons();
-});
-document.getElementById('classPasswordCancel').onclick = function() {
-  document.getElementById('classPasswordModal').classList.add('hidden');
-};
-let classUnlocked = false;
-function setClassBlur(state) {
-  const el = document.getElementById('classContent');
-  if (el) {
-    if (state) {
-      el.classList.remove('class-content-blur');
-      el.classList.add('class-content-unblur');
-    } else {
-      el.classList.remove('class-content-unblur');
-      el.classList.add('class-content-blur');
-    }
-  }
-}
-document.getElementById('classPasswordSubmit').onclick = function() {
-  const input = document.getElementById('classPasswordInput').value;
-  const currentPasswords = getClassPasswords();
-  
-  // Map the display names to admin system format
-  const classKey = selectedClass.replace(/\s+/g, '');
-  const password = currentPasswords[classKey];
-  
-  if (!password || input === password) {
-    document.getElementById('classPasswordModal').classList.add('hidden');
-    classUnlocked = true;
-    
-    // Show the actual class content
-    showTab(selectedClass);
-    
-    // Remove blur effect after showing content
-    setTimeout(() => {
-      const el = document.getElementById('classContent');
-      if (el) {
-        el.classList.remove('class-content-blur');
-        el.classList.add('class-content-unblur');
-      }
-    }, 100);
-  } else {
-    document.getElementById('classPasswordError').classList.remove('hidden');
-  }
-};
-window.onload = function() {
-  setClassBlur(false);
-};
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</html>
-
-</script>
-</body>
-</

@@ -213,7 +213,7 @@
             <!-- Top Learners Section -->
             <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">
-                    <i class="fas fa-trophy text-yellow-500 mr-2"></i> Top Learners
+                    <i class="fas fa-trophy text-yellow-500 mr-2"></i> Top Learners By Class
                 </h2>
                 <div id="topLearnersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <p class="text-gray-500 italic col-span-full text-center py-4">No top learners data available yet</p>
@@ -259,7 +259,7 @@
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">Reset Top Learners</h3>
                     <p class="text-gray-600 mb-4">Use this button to clear all top learners data when the term or period is over.</p>
-                    <button onclick="clearAllTopLearners()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                    <button onclick="confirmClearAllTopLearners()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
                         <i class="fas fa-trash mr-2"></i>Reset All Top Learners
                     </button>
                 </div>
@@ -493,43 +493,42 @@
                 return;
             }
             
-            // Create a document reference for this class's best learner
-            const bestLearnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'bestLearners', className);
+            // Generate a unique ID for this top learner entry
+            const timestamp = new Date().getTime();
+            const learnerId = `${className}_${timestamp}`;
+            
+            // Create a document reference for this top learner
+            const bestLearnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'bestLearners', learnerId);
             
             // Save the data to Firestore
             await window.firebaseFirestore.setDoc(bestLearnerRef, {
                 name: name,
                 points: points,
+                className: className,
                 updatedAt: new Date().toISOString()
             });
             
-            alert('Best learner saved successfully!');
+            // Clear the input fields after saving
+            nameInput.value = '';
+            pointsInput.value = '';
+            
+            alert('Top learner saved successfully!');
             // No need to call loadTopLearners() here as we have real-time updates
             
         } catch (error) {
-            console.error('Error saving best learner:', error);
-            alert('Failed to save best learner. Please try again.');
+            console.error('Error saving top learner:', error);
+            alert('Failed to save top learner. Please try again.');
         }
     }
     
-    // Function to load best learner data from Firestore
+    // Function to load top learners data for a specific class from Firestore
     async function loadBestLearner(className) {
         try {
-            const bestLearnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'bestLearners', className);
-            const docSnap = await window.firebaseFirestore.getDoc(bestLearnerRef);
-            
-            let bestLearnerName = '';
-            let bestLearnerPoints = '';
-            
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                bestLearnerName = data.name || '';
-                bestLearnerPoints = data.points || '';
-            }
-            
-            return { bestLearnerName, bestLearnerPoints };
+            // We're no longer loading a single best learner since we now support multiple
+            // This function now returns empty values as we'll use the form to add new top learners
+            return { bestLearnerName: '', bestLearnerPoints: '' };
         } catch (error) {
-            console.error('Error loading best learner:', error);
+            console.error('Error loading top learners:', error);
             return { bestLearnerName: '', bestLearnerPoints: '' };
         }
     }
@@ -638,7 +637,7 @@
                             </div>
                             
                             <div class="bg-gray-50 rounded-xl p-4 mb-4">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Best Learner</h3>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Add Top Learner</h3>
                                 <div class="space-y-3">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
@@ -651,8 +650,9 @@
                                             placeholder="Enter points" value="${bestLearnerPoints}">
                                     </div>
                                     <button onclick="saveBestLearner('${className}')" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 mt-2">
-                                        <i class="fas fa-save mr-2"></i>Save Best Learner
+                                        <i class="fas fa-plus mr-2"></i>Add Top Learner
                                     </button>
+                                    <p class="text-xs text-gray-500 mt-2">You can add multiple top learners for this class. They will be ranked by points on the dashboard.</p>
                                 </div>
                             </div>
                             
@@ -830,7 +830,8 @@
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     learners.push({
-                        className: doc.id,
+                        id: doc.id,
+                        className: data.className || doc.id.split('_')[0], // Fallback for older data format
                         name: data.name,
                         points: data.points,
                         updatedAt: data.updatedAt
@@ -840,31 +841,67 @@
                 // Sort by points (highest first)
                 learners.sort((a, b) => b.points - a.points);
                 
-                // Create cards for each top learner
-                learners.forEach((learner) => {
-                    const learnerCard = document.createElement('div');
-                    learnerCard.className = 'bg-gray-50 rounded-xl p-4';
-                    learnerCard.innerHTML = `
-                        <div class="flex items-start">
-                            <div class="p-2 rounded-full bg-yellow-100 text-yellow-500 mr-3">
-                                <i class="fas fa-medal"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-gray-800">${learner.name}</h3>
-                                <p class="text-sm text-gray-600 mb-1">${learner.className}</p>
-                                <div class="flex items-center">
-                                    <span class="text-lg font-bold text-yellow-500">${learner.points}</span>
-                                    <span class="text-xs text-gray-500 ml-1">points</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    topLearnersContainer.appendChild(learnerCard);
+                // Group learners by class
+                const learnersByClass = {};
+                learners.forEach(learner => {
+                    if (!learnersByClass[learner.className]) {
+                        learnersByClass[learner.className] = [];
+                    }
+                    learnersByClass[learner.className].push(learner);
                 });
                 
-                // Update the saveBestLearner function to not call loadTopLearners again
-                // since we now have real-time updates
+                // Create a section for each class
+                Object.keys(learnersByClass).forEach(className => {
+                    // Create class header
+                    const classHeader = document.createElement('div');
+                    classHeader.className = 'col-span-full mt-4 mb-2';
+                    classHeader.innerHTML = `
+                        <h3 class="text-lg font-semibold text-gray-700">${className} Top Learners</h3>
+                    `;
+                    topLearnersContainer.appendChild(classHeader);
+                    
+                    // Sort learners within this class by points
+                    const classLearners = learnersByClass[className];
+                    
+                    // Create cards for each top learner in this class
+                    classLearners.forEach((learner, index) => {
+                        const position = index + 1;
+                        const learnerCard = document.createElement('div');
+                        learnerCard.className = 'bg-gray-50 rounded-xl p-4';
+                        
+                        // Determine medal color based on position
+                        let medalColor = 'text-gray-500 bg-gray-100';
+                        let medalIcon = 'fa-medal';
+                        
+                        if (position === 1) {
+                            medalColor = 'text-yellow-500 bg-yellow-100'; // Gold
+                        } else if (position === 2) {
+                            medalColor = 'text-gray-400 bg-gray-100'; // Silver
+                        } else if (position === 3) {
+                            medalColor = 'text-amber-600 bg-amber-100'; // Bronze
+                        }
+                        
+                        learnerCard.innerHTML = `
+                            <div class="flex items-start">
+                                <div class="p-2 rounded-full ${medalColor} mr-3">
+                                    <i class="fas ${medalIcon}"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center">
+                                        <h3 class="font-semibold text-gray-800">${learner.name}</h3>
+                                        <span class="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Rank #${position}</span>
+                                    </div>
+                                    <div class="flex items-center mt-1">
+                                        <span class="text-lg font-bold text-yellow-500">${learner.points}</span>
+                                        <span class="text-xs text-gray-500 ml-1">points</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        topLearnersContainer.appendChild(learnerCard);
+                    });
+                });
             });
             
         } catch (error) {
@@ -884,6 +921,58 @@
         } else {
             passwordSpan.textContent = '*'.repeat(password.length);
             icon.className = 'fas fa-eye';
+        }
+    }
+    
+    // Confirm before clearing all top learners
+    function confirmClearAllTopLearners() {
+        if (confirm('Are you sure you want to reset ALL top learners data? This action cannot be undone.')) {
+            if (confirm('FINAL WARNING: This will permanently delete all top learners records. Continue?')) {
+                clearAllTopLearners();
+            }
+        }
+    }
+    
+    // Clear all top learners data
+    async function clearAllTopLearners() {
+        try {
+            // Show loading state
+            const resetBtn = document.querySelector('button[onclick="confirmClearAllTopLearners()"]');
+            const originalText = resetBtn.innerHTML;
+            resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Resetting...';
+            resetBtn.disabled = true;
+            
+            // Get all top learners documents
+            const bestLearnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'bestLearners');
+            const snapshot = await window.firebaseFirestore.getDocs(bestLearnersRef);
+            
+            // Delete each document
+            const deletePromises = [];
+            snapshot.forEach((doc) => {
+                deletePromises.push(
+                    window.firebaseFirestore.deleteDoc(
+                        window.firebaseFirestore.doc(window.firebaseDB, 'bestLearners', doc.id)
+                    )
+                );
+            });
+            
+            // Wait for all deletions to complete
+            await Promise.all(deletePromises);
+            
+            // Restore button state
+            resetBtn.innerHTML = originalText;
+            resetBtn.disabled = false;
+            
+            alert('All top learners data has been successfully reset!');
+            
+        } catch (error) {
+            console.error('Error clearing top learners:', error);
+            alert('Error clearing top learners data. Please try again.');
+            
+            // Restore button state on error
+            const resetBtn = document.querySelector('button[onclick="confirmClearAllTopLearners()"]');
+            resetBtn.innerHTML = '<i class="fas fa-trash mr-2"></i>Reset All Top Learners';
+            resetBtn.disabled = false;
         }
     }
 

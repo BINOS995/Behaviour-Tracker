@@ -335,6 +335,26 @@
                         <p class="text-gray-500">Loading classes...</p>
                     </div>
                 </div>
+
+                <!-- User Class Allocation Section -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">User Class Allocation</h3>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Select User Email</label>
+                        <select id="userEmailSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="">Loading users...</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Classes</label>
+                        <div id="classCheckboxes" class="space-y-2">
+                            <p class="text-gray-500">Select a user first</p>
+                        </div>
+                    </div>
+                    <button onclick="saveUserClassAllocation()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-save mr-2"></i>Save Allocation
+                    </button>
+                </div>
             </div>
         `,
         "Logout": `
@@ -345,7 +365,7 @@
         `
     };
 
-    // Load classes from Firestore
+    // Load classes from Firestore with user permissions
     async function loadClasses() {
         try {
             console.log('Loading classes from Firestore...');
@@ -359,18 +379,36 @@
                 console.log('No classes found in Firestore');
                 adminClassPasswords = {};
             } else {
+                // For regular users, filter by their assigned classes
+            const currentUser = window.firebaseAuth.currentUser;
+            let allowedClasses = null;
+            
+            if (currentUser && !isAdmin) {
+                // Get user's allowed classes
+                const userClassesRef = window.firebaseFirestore.doc(window.firebaseDB, 'userClasses', currentUser.email);
+                const userClassesDoc = await window.firebaseFirestore.getDoc(userClassesRef);
+                if (userClassesDoc.exists()) {
+                    allowedClasses = userClassesDoc.data().classes || [];
+                }
+            }
+                
                 snapshot.forEach(doc => {
                     const classData = doc.data();
-                    adminClassPasswords[doc.id] = {
-                        password: classData.password,
-                        sheetUrl: classData.sheetUrl
-                    };
-                    console.log(`Loaded class: ${doc.id}`);
+                    // Admin sees all classes, regular users see only assigned classes
+                    if (isAdmin || !allowedClasses || allowedClasses.includes(doc.id)) {
+                        adminClassPasswords[doc.id] = {
+                            password: classData.password,
+                            sheetUrl: classData.sheetUrl
+                        };
+                        console.log(`Loaded class: ${doc.id}`);
+                    }
                 });
             }
             
             updateClassesList();
             updateTabContentWithClasses();
+            
+            // Admin panel will load users separately when opened
         } catch (error) {
             console.error('Error loading classes:', error);
             // Show error in the classes list
@@ -384,6 +422,126 @@
                     </div>
                 `;
             }
+        }
+    }
+
+    // Load all users for admin panel
+    async function loadUsers() {
+        try {
+            const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
+            const snapshot = await window.firebaseFirestore.getDocs(usersRef);
+            const userSelect = document.getElementById('userEmailSelect');
+            
+            if (!userSelect) {
+                console.error('userEmailSelect element not found');
+                return;
+            }
+            
+            userSelect.innerHTML = '<option value="">Select a user...</option>';
+            
+            snapshot.forEach(doc => {
+                const userData = doc.data();
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = `${userData.firstName} ${userData.lastName} (${doc.id})`;
+                userSelect.appendChild(option);
+            });
+            
+            userSelect.addEventListener('change', loadUserClassCheckboxes);
+        } catch (error) {
+            console.error('Error loading users:', error);
+        }
+    }
+
+    // Load class checkboxes for user allocation
+    async function loadUserClassCheckboxes() {
+        const userEmailSelect = document.getElementById('userEmailSelect');
+        const classCheckboxes = document.getElementById('classCheckboxes');
+        
+        if (!userEmailSelect || !classCheckboxes) {
+            console.error('Required elements not found');
+            return;
+        }
+        
+        const userEmail = userEmailSelect.value;
+        
+        if (!userEmail) {
+            classCheckboxes.innerHTML = '<p class="text-gray-500">Select a user first</p>';
+            return;
+        }
+        
+        try {
+            // Get user's current classes
+            const userClassesRef = window.firebaseFirestore.doc(window.firebaseDB, 'userClasses', userEmail);
+            const userClassesDoc = await window.firebaseFirestore.getDoc(userClassesRef);
+            const userClasses = userClassesDoc.exists() ? userClassesDoc.data().classes || [] : [];
+            
+            // Create checkboxes for all classes
+            classCheckboxes.innerHTML = '';
+            Object.keys(adminClassPasswords).forEach(className => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                div.innerHTML = `
+                    <input type="checkbox" id="class-${className}" value="${className}" ${userClasses.includes(className) ? 'checked' : ''} class="mr-2">
+                    <label for="class-${className}" class="text-sm text-gray-700">${className}</label>
+                `;
+                classCheckboxes.appendChild(div);
+            });
+        } catch (error) {
+            console.error('Error loading user classes:', error);
+        }
+    }
+
+    // Load user class allocations for admin display
+    async function loadUserClassAllocations() {
+        try {
+            const userClassesRef = window.firebaseFirestore.collection(window.firebaseDB, 'userClasses');
+            const snapshot = await window.firebaseFirestore.getDocs(userClassesRef);
+            
+            console.log(`Found ${snapshot.size} user class allocations`);
+            
+            // This function is mainly for logging/debugging purposes
+            // The actual display happens in loadUserClassCheckboxes when a user is selected
+        } catch (error) {
+            console.error('Error loading user class allocations:', error);
+        }
+    }
+
+    // Save user class allocation
+    async function saveUserClassAllocation() {
+        const userEmailSelect = document.getElementById('userEmailSelect');
+        if (!userEmailSelect) {
+            alert('User selection element not found');
+            return;
+        }
+        
+        const userEmail = userEmailSelect.value;
+        if (!userEmail) {
+            alert('Please select a user');
+            return;
+        }
+        
+        const selectedClasses = [];
+        document.querySelectorAll('#classCheckboxes input[type="checkbox"]:checked').forEach(checkbox => {
+            selectedClasses.push(checkbox.value);
+        });
+        
+        try {
+            const userClassesRef = window.firebaseFirestore.doc(window.firebaseDB, 'userClasses', userEmail);
+            await window.firebaseFirestore.setDoc(userClassesRef, {
+                classes: selectedClasses,
+                updatedAt: new Date().toISOString()
+            });
+            
+            alert('Class allocation saved successfully!');
+            
+            // Reload classes for the user if they're viewing
+            if (userEmail === window.firebaseAuth.currentUser?.email) {
+                loadClasses();
+            }
+        } catch (error) {
+            console.error('Error saving user classes:', error);
+            alert('Error saving class allocation. Please try again.');
         }
     }
 
@@ -805,6 +963,12 @@
                     // Load admin list when admin panel is opened
                     loadAdminList();
                     console.log('Admin list loaded');
+                    
+                    // Load user data for admin panel
+                    if (isAdmin) {
+                        loadUsers();
+                        loadUserClassAllocations();
+                    }
                 }, 100);
             }
         }

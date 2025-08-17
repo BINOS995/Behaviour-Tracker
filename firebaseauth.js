@@ -48,7 +48,7 @@
             lastName:lastName
         };
         showMessage('Account Created Successfully', 'signUpMessage');
-        const docRef=doc(db, "users", user.uid);
+        const docRef=doc(db, "users", email);
         setDoc(docRef,userData)
         .then(()=>{
             window.location.href='index.html';

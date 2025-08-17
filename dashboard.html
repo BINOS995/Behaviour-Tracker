@@ -45,6 +45,9 @@
             onSnapshot,
             getDocs
         };
+        
+        // Create a collection reference for best learners
+        window.bestLearnersCollection = collection(db, 'bestLearners');
 
         // Initialize admin status
         window.isAdmin = false;
@@ -207,6 +210,16 @@
                 </div>
             </div>
 
+            <!-- Top Learners Section -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-trophy text-yellow-500 mr-2"></i> Top Learners
+                </h2>
+                <div id="topLearnersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <p class="text-gray-500 italic col-span-full text-center py-4">No top learners data available yet</p>
+                </div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm p-6">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -224,28 +237,36 @@
                 <h1 class="text-2xl font-bold text-gray-800 mb-6">Admin Panel</h1>
                 
                 <!-- Admin Management Section -->
-                <div class="mb-8">
-                    <h2 class="text-lg font-semibold text-gray-700 mb-4">Admin Management</h2>
-                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                        <h3 class="text-md font-medium text-gray-800 mb-3">Grant Admin Privileges</h3>
-                        <div class="flex gap-2">
-                            <input type="email" id="adminEmailInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg" placeholder="Enter user email">
-                            <button onclick="grantAdminPrivileges()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
-                                <i class="fas fa-user-plus mr-1"></i>Grant Admin
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="text-md font-medium text-gray-800 mb-3">Current Admins</h3>
-                        <div id="adminList" class="space-y-2">
-                            <!-- Admins will be loaded here -->
-                        </div>
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Grant Admin Privileges</h3>
+                    <div class="flex gap-2">
+                        <input type="email" id="adminEmailInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg" placeholder="Enter user email">
+                        <button onclick="grantAdminPrivileges()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                            <i class="fas fa-user-plus mr-1"></i>Grant Admin
+                        </button>
                     </div>
                 </div>
                 
-                <div class="mb-6">
-                    <h2 class="text-lg font-semibold text-gray-700 mb-4">Manage Classes</h2>
+                <!-- Current Admins Section -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Current Admins</h3>
+                    <div id="adminList" class="space-y-2">
+                        <!-- Admins will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Reset Top Learners Section -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Reset Top Learners</h3>
+                    <p class="text-gray-600 mb-4">Use this button to clear all top learners data when the term or period is over.</p>
+                    <button onclick="clearAllTopLearners()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                        <i class="fas fa-trash mr-2"></i>Reset All Top Learners
+                    </button>
+                </div>
+                
+                <!-- Manage Classes Section -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Manage Classes</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Class Name</label>
@@ -266,8 +287,9 @@
                     </button>
                 </div>
 
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Existing Classes</h3>
+                <!-- Existing Classes Section -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Existing Classes</h3>
                     <div id="classesList" class="space-y-3">
                         <p class="text-gray-500">Loading classes...</p>
                     </div>
@@ -447,6 +469,71 @@
         }
     }
 
+    // Function to save best learner data to Firestore
+    async function saveBestLearner(className) {
+        try {
+            const nameInput = document.getElementById(`${className}-best-learner-name`);
+            const pointsInput = document.getElementById(`${className}-best-learner-points`);
+            
+            if (!nameInput || !pointsInput) {
+                console.error('Could not find best learner input fields');
+                return;
+            }
+            
+            const name = nameInput.value.trim();
+            const points = parseInt(pointsInput.value, 10);
+            
+            if (!name) {
+                alert('Please enter a student name');
+                return;
+            }
+            
+            if (isNaN(points) || points <= 0) {
+                alert('Please enter a valid number of points');
+                return;
+            }
+            
+            // Create a document reference for this class's best learner
+            const bestLearnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'bestLearners', className);
+            
+            // Save the data to Firestore
+            await window.firebaseFirestore.setDoc(bestLearnerRef, {
+                name: name,
+                points: points,
+                updatedAt: new Date().toISOString()
+            });
+            
+            alert('Best learner saved successfully!');
+            // No need to call loadTopLearners() here as we have real-time updates
+            
+        } catch (error) {
+            console.error('Error saving best learner:', error);
+            alert('Failed to save best learner. Please try again.');
+        }
+    }
+    
+    // Function to load best learner data from Firestore
+    async function loadBestLearner(className) {
+        try {
+            const bestLearnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'bestLearners', className);
+            const docSnap = await window.firebaseFirestore.getDoc(bestLearnerRef);
+            
+            let bestLearnerName = '';
+            let bestLearnerPoints = '';
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                bestLearnerName = data.name || '';
+                bestLearnerPoints = data.points || '';
+            }
+            
+            return { bestLearnerName, bestLearnerPoints };
+        } catch (error) {
+            console.error('Error loading best learner:', error);
+            return { bestLearnerName: '', bestLearnerPoints: '' };
+        }
+    }
+    
     // Update tab content with dynamic classes
     function updateTabContentWithClasses() {
         // Remove old class entries from tabContent
@@ -478,6 +565,26 @@
                 embedUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/edit?usp=sharing&rm=minimal`;
             }
         }
+        
+        // Load best learner data if available
+        let bestLearnerName = '';
+        let bestLearnerPoints = '';
+        
+        // Load best learner data for this class
+        loadBestLearner(className).then(data => {
+            setTimeout(() => {
+                const nameInput = document.getElementById(`${className}-best-learner-name`);
+                const pointsInput = document.getElementById(`${className}-best-learner-points`);
+                
+                if (nameInput && data.bestLearnerName) {
+                    nameInput.value = data.bestLearnerName;
+                }
+                
+                if (pointsInput && data.bestLearnerPoints) {
+                    pointsInput.value = data.bestLearnerPoints;
+                }
+            }, 500); // Small delay to ensure DOM is ready
+        });
 
         return `
             <div class="bg-white rounded-xl shadow-sm p-6">
@@ -509,7 +616,7 @@
                             
                             <div class="bg-gray-50 rounded-xl p-4">
                                 <h3 class="text-lg font-semibold text-gray-700 mb-4">Students</h3>
-                                <div id="${className}-students" class="space-y-3">
+                                <div id="${className}-students" class="space-y-3 max-h-80 overflow-y-auto pr-2">
                                     <p class="text-gray-500">No students added yet.</p>
                                 </div>
                             </div>
@@ -527,6 +634,25 @@
                                         <span class="text-gray-600">Average Points:</span>
                                         <span class="font-semibold" id="${className}-avg">0</span>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Best Learner</h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
+                                        <input type="text" id="${className}-best-learner-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg" 
+                                            placeholder="Enter student name" value="${bestLearnerName}">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Points</label>
+                                        <input type="number" id="${className}-best-learner-points" class="w-full px-3 py-2 border border-gray-300 rounded-lg" 
+                                            placeholder="Enter points" value="${bestLearnerPoints}">
+                                    </div>
+                                    <button onclick="saveBestLearner('${className}')" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 mt-2">
+                                        <i class="fas fa-save mr-2"></i>Save Best Learner
+                                    </button>
                                 </div>
                             </div>
                             
@@ -625,6 +751,7 @@
             } else if (content === 'Admin') {
                 // Ensure classes are loaded when admin panel is opened
                 setTimeout(() => {
+                    console.log('Admin panel loaded, setting up...');
                     loadClasses();
                     // Attach event listener for Add Class button
                     const addClassBtn = document.getElementById('addClassBtn');
@@ -632,10 +759,14 @@
                         // Remove any existing listener to prevent duplicates
                         addClassBtn.removeEventListener('click', addNewClass);
                         addClassBtn.addEventListener('click', addNewClass);
+                        console.log('Add Class button event listener attached');
+                    } else {
+                        console.error('Add Class button not found');
                     }
                     
                     // Load admin list when admin panel is opened
                     loadAdminList();
+                    console.log('Admin list loaded');
                 }, 100);
             }
         }
@@ -646,6 +777,9 @@
         document.getElementById('totalClasses').textContent = Object.keys(adminClassPasswords).length;
         document.getElementById('totalStudents').textContent = '0';
         document.getElementById('totalPoints').textContent = '0';
+        
+        // Load top learners for the dashboard
+        loadTopLearners();
         
         // Update welcome message with user's first name
         const user = window.firebaseAuth.currentUser;
@@ -664,6 +798,77 @@
             } catch (error) {
                 console.error('Error fetching user data:', error);
             }
+        }
+    }
+    
+    // Function to load and display top learners with real-time updates
+    function loadTopLearners() {
+        try {
+            const bestLearnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'bestLearners');
+            
+            // Use onSnapshot for real-time updates
+            window.firebaseFirestore.onSnapshot(bestLearnersRef, (snapshot) => {
+                const topLearnersContainer = document.getElementById('topLearnersContainer');
+                
+                if (!topLearnersContainer) {
+                    console.error('Top learners container not found');
+                    return;
+                }
+                
+                // Clear the container
+                topLearnersContainer.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    topLearnersContainer.innerHTML = `
+                        <p class="text-gray-500 italic col-span-full text-center py-4">No top learners data available yet</p>
+                    `;
+                    return;
+                }
+                
+                // Convert snapshot to array and sort by points (highest first)
+                const learners = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    learners.push({
+                        className: doc.id,
+                        name: data.name,
+                        points: data.points,
+                        updatedAt: data.updatedAt
+                    });
+                });
+                
+                // Sort by points (highest first)
+                learners.sort((a, b) => b.points - a.points);
+                
+                // Create cards for each top learner
+                learners.forEach((learner) => {
+                    const learnerCard = document.createElement('div');
+                    learnerCard.className = 'bg-gray-50 rounded-xl p-4';
+                    learnerCard.innerHTML = `
+                        <div class="flex items-start">
+                            <div class="p-2 rounded-full bg-yellow-100 text-yellow-500 mr-3">
+                                <i class="fas fa-medal"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-800">${learner.name}</h3>
+                                <p class="text-sm text-gray-600 mb-1">${learner.className}</p>
+                                <div class="flex items-center">
+                                    <span class="text-lg font-bold text-yellow-500">${learner.points}</span>
+                                    <span class="text-xs text-gray-500 ml-1">points</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    topLearnersContainer.appendChild(learnerCard);
+                });
+                
+                // Update the saveBestLearner function to not call loadTopLearners again
+                // since we now have real-time updates
+            });
+            
+        } catch (error) {
+            console.error('Error setting up top learners listener:', error);
         }
     }
 
@@ -776,6 +981,41 @@
         }
     }
     
+    // Function to clear all top learners data
+    async function clearAllTopLearners() {
+        if (!confirm('Are you sure you want to clear ALL top learners data? This action cannot be undone.')) {
+            return;
+        }
+        
+        // Double confirmation for critical action
+        if (!confirm('This will permanently delete all top learners records. Proceed?')) {
+            return;
+        }
+        
+        try {
+            const bestLearnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'bestLearners');
+            const snapshot = await window.firebaseFirestore.getDocs(bestLearnersRef);
+            
+            if (snapshot.empty) {
+                alert('No top learners data found to clear.');
+                return;
+            }
+            
+            // Delete each document in the collection
+            const batch = window.firebaseFirestore.writeBatch(window.firebaseDB);
+            snapshot.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+            
+            await batch.commit();
+            alert('All top learners data has been cleared successfully.');
+            
+        } catch (error) {
+            console.error('Error clearing top learners data:', error);
+            alert('Error clearing top learners data. Please try again.');
+        }
+    }
+    
     async function initializeFirstAdmin() {
         try {
             const adminsRef = window.firebaseFirestore.collection(window.firebaseDB, 'admins');
@@ -854,6 +1094,13 @@
         }
     }
     
+    // Function to clear all top learners data
+    function clearAllTopLearners() {
+        // Implementation for clearing top learners data
+        console.log('Clearing all top learners data...');
+        // Add actual implementation here
+    }
+    
     // Event listeners
     document.addEventListener('DOMContentLoaded', () => {
         // Check if user is authenticated
@@ -878,6 +1125,7 @@
                     setupClassButtons();
                     updateWelcomeMessage();
                     initializeFirstAdmin(); // Initialize first admin if needed
+                    setupAdminTabs(); // Setup admin tabs functionality
                 }, 100);
                 }
             }, 100);

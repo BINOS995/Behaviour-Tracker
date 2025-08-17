@@ -112,14 +112,26 @@
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
-<div class="flex min-h-screen">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white shadow-lg">
-        <div class="p-6">
-            <h1 class="text-2xl font-bold text-gray-800">Behaviour Tracker</h1>
+<div class="flex flex-col md:flex-row min-h-screen">
+    <!-- Mobile Header (visible on small screens) -->
+    <div class="md:hidden bg-white shadow-sm p-4 flex items-center justify-between">
+        <div class="flex items-center">
+            <img src="images/logo1.png" alt="Behaviour Tracker" class="w-8 h-8 mr-2 rounded-lg">
+            <h1 class="text-xl font-bold text-gray-800">Behaviour Tracker</h1>
+        </div>
+        <button id="mobileMenuBtn" class="text-gray-700 hover:bg-gray-100 p-2 rounded-lg">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar (hidden on mobile by default) -->
+    <aside id="sidebar" class="w-full md:w-64 bg-white shadow-lg md:block hidden transition-all duration-300 ease-in-out">
+        <div class="p-4 md:p-6 hidden md:block text-center">
+            <img src="images/logo1.png" alt="Behaviour Tracker" class="w-16 h-16 mx-auto mb-2 rounded-lg">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-800">Behaviour Tracker</h1>
         </div>
         
-        <nav class="px-4">
+        <nav class="px-4 py-2">
             <button class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600" data-content="Dashboard">
                 <i class="fas fa-home"></i> Dashboard
             </button>
@@ -145,7 +157,7 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-8">
+    <main class="flex-1 p-4 md:p-6 lg:p-8">
         <div id="content" class="max-w-7xl mx-auto">
             <!-- Content will be dynamically loaded here -->
         </div>
@@ -170,71 +182,100 @@
     let currentClass = '';
     let adminClassPasswords = {};
     
+    // Mobile menu toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.getElementById('sidebar');
+        
+        if (mobileMenuBtn && sidebar) {
+            mobileMenuBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('hidden');
+            });
+            
+            // Close sidebar when clicking on a menu item (mobile only)
+            const menuItems = sidebar.querySelectorAll('button[data-content]');
+            menuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    if (window.innerWidth < 768) { // md breakpoint
+                        sidebar.classList.add('hidden');
+                    }
+                });
+            });
+        }
+    });
+    
     // Tab content management
     const tabContent = {
         "Dashboard": `
             <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome back!</h1>
-                <p class="text-gray-600">Track student behavior and performance across different classes.</p>
+                <div class="flex items-center mb-4">
+                    <img src="images/logo1.png" alt="Behaviour Tracker" class="w-12 h-12 mr-3 rounded-lg">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-1">Welcome back!</h1>
+                        <p class="text-gray-600">Track student behavior and performance across different classes.</p>
+                    </div>
+                </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-6 text-white">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+                <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 md:p-6 text-white">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-purple-100 text-sm">Total Classes</p>
-                            <p class="text-3xl font-bold" id="totalClasses">0</p>
+                            <p class="text-purple-100 text-xs sm:text-sm">Total Classes</p>
+                            <p class="text-2xl md:text-3xl font-bold" id="totalClasses">0</p>
                         </div>
-                        <i class="fas fa-chalkboard-teacher text-3xl opacity-75"></i>
+                        <i class="fas fa-chalkboard-teacher text-2xl md:text-3xl opacity-75"></i>
                     </div>
                 </div>
                 
-                <div class="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl p-6 text-white">
+                <div class="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl p-4 md:p-6 text-white">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-blue-100 text-sm">Active Students</p>
-                            <p class="text-3xl font-bold" id="totalStudents">0</p>
+                            <p class="text-blue-100 text-xs sm:text-sm">Active Students</p>
+                            <p class="text-2xl md:text-3xl font-bold" id="totalStudents">0</p>
                         </div>
-                        <i class="fas fa-users text-3xl opacity-75"></i>
+                        <i class="fas fa-users text-2xl md:text-3xl opacity-75"></i>
                     </div>
                 </div>
                 
-                <div class="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-6 text-white">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-4 md:p-6 text-white">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-green-100 text-sm">Positive Points</p>
-                            <p class="text-3xl font-bold" id="totalPoints">0</p>
+                            <p class="text-green-100 text-xs sm:text-sm">Positive Points</p>
+                            <p class="text-2xl md:text-3xl font-bold" id="totalPoints">0</p>
                         </div>
-                        <i class="fas fa-star text-3xl opacity-75"></i>
+                        <i class="fas fa-star text-2xl md:text-3xl opacity-75"></i>
                     </div>
                 </div>
             </div>
 
             <!-- Top Learners Section -->
-            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">
+            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
+                <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4">
                     <i class="fas fa-trophy text-yellow-500 mr-2"></i> Top Learners By Class
                 </h2>
-                <div id="topLearnersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div id="topLearnersContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     <p class="text-gray-500 italic col-span-full text-center py-4">No top learners data available yet</p>
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm p-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button class="bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-600 transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Add New Student
-                    </button>
-                    <button class="bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
-                        <i class="fas fa-chart-bar mr-2"></i>View Reports
-                    </button>
-                </div>
-            </div>
+            <!-- Quick Actions section removed -->
         `,
         "Admin": `
-            <div class="bg-white rounded-xl shadow-sm p-6">
-                <h1 class="text-2xl font-bold text-gray-800 mb-6">Admin Panel</h1>
+            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
+                    <div class="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                        <i class="fas fa-user-shield text-gray-400 text-5xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800 mb-2">Admin Panel</h1>
+                        <p class="text-gray-600 mb-2">Manage classes, admins, and system settings</p>
+                        <div class="flex gap-2">
+                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Admin Access</span>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Full Privileges</span>
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- Admin Management Section -->
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
@@ -267,22 +308,22 @@
                 <!-- Manage Classes Section -->
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">Manage Classes</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Class Name</label>
-                            <input type="text" id="newClassName" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Enter class name">
+                            <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Class Name</label>
+                            <input type="text" id="newClassName" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base" placeholder="Enter class name">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                            <input type="password" id="newClassPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Enter password">
+                            <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Password</label>
+                            <input type="password" id="newClassPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base" placeholder="Enter password">
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Google Sheet URL</label>
-                        <input type="url" id="newClassSheet" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="https://docs.google.com/spreadsheets/d/...">
+                        <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Google Sheet URL</label>
+                        <input type="url" id="newClassSheet" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base" placeholder="https://docs.google.com/spreadsheets/d/...">
                         <p class="text-xs text-gray-500 mt-1">Paste the Google Sheets URL for behavior tracking</p>
                     </div>
-                    <button id="addClassBtn" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                    <button id="addClassBtn" class="bg-purple-500 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-purple-600 text-sm md:text-base">
                         <i class="fas fa-plus mr-2"></i>Add Class
                     </button>
                 </div>
@@ -586,21 +627,18 @@
         });
 
         return `
-            <div class="bg-white rounded-xl shadow-sm p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800">${className}</h1>
-                    <button onclick="showAddStudentModal('${className}')" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
-                        <i class="fas fa-plus mr-2"></i>Add Student
-                    </button>
+            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                <div class="flex items-center justify-between mb-4 md:mb-6">
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">${className}</h1>
                 </div>
 
                 <div class="class-content-blur" id="${className}-content">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                         <div class="lg:col-span-2">
-                            <div class="bg-gray-50 rounded-xl p-4 mb-6">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Behavior Tracker</h3>
+                            <div class="bg-gray-50 rounded-xl p-3 md:p-4 mb-4 md:mb-6">
+                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Behavior Tracker</h3>
                                 ${embedUrl ? `
-                                <div class="border border-gray-300 rounded-lg overflow-hidden" style="height: 600px;">
+                                <div class="border border-gray-300 rounded-lg overflow-hidden" style="height: 400px; max-height: 80vh;">
                                     <iframe 
                                         src="${embedUrl}" 
                                         width="100%" 
@@ -610,54 +648,54 @@
                                         allowfullscreen>
                                     </iframe>
                                 </div>
-                                ` : '<p class="text-gray-500">No Google Sheet configured for this class.</p>'}
+                                ` : '<p class="text-sm md:text-base text-gray-500">No Google Sheet configured for this class.</p>'}
                             </div>
                             
-                            <div class="bg-gray-50 rounded-xl p-4">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Students</h3>
-                                <div id="${className}-students" class="space-y-3 max-h-80 overflow-y-auto pr-2">
-                                    <p class="text-gray-500">No students added yet.</p>
+                            <div class="bg-gray-50 rounded-xl p-3 md:p-4">
+                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Students</h3>
+                                <div id="${className}-students" class="space-y-2 md:space-y-3 max-h-60 md:max-h-80 overflow-y-auto pr-2">
+                                    <p class="text-sm md:text-base text-gray-500">Student list will appear here.</p>
                                 </div>
                             </div>
                         </div>
                         
                         <div>
-                            <div class="bg-gray-50 rounded-xl p-4 mb-4">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Class Stats</h3>
+                            <div class="bg-gray-50 rounded-xl p-3 md:p-4 mb-3 md:mb-4">
+                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Class Stats</h3>
                                 <div class="space-y-2">
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">Total Students:</span>
-                                        <span class="font-semibold" id="${className}-count">0</span>
+                                        <span class="text-xs md:text-sm text-gray-600">Total Students:</span>
+                                        <span class="font-semibold text-sm md:text-base" id="${className}-count">0</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">Average Points:</span>
-                                        <span class="font-semibold" id="${className}-avg">0</span>
+                                        <span class="text-xs md:text-sm text-gray-600">Average Points:</span>
+                                        <span class="font-semibold text-sm md:text-base" id="${className}-avg">0</span>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="bg-gray-50 rounded-xl p-4 mb-4">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Add Top Learner</h3>
-                                <div class="space-y-3">
+                            <div class="bg-gray-50 rounded-xl p-3 md:p-4 mb-3 md:mb-4">
+                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Add Top Learner</h3>
+                                <div class="space-y-2 md:space-y-3">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                                        <input type="text" id="${className}-best-learner-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg" 
+                                        <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Student Name</label>
+                                        <input type="text" id="${className}-best-learner-name" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base" 
                                             placeholder="Enter student name" value="${bestLearnerName}">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Points</label>
-                                        <input type="number" id="${className}-best-learner-points" class="w-full px-3 py-2 border border-gray-300 rounded-lg" 
+                                        <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Points</label>
+                                        <input type="number" id="${className}-best-learner-points" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base" 
                                             placeholder="Enter points" value="${bestLearnerPoints}">
                                     </div>
-                                    <button onclick="saveBestLearner('${className}')" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 mt-2">
+                                    <button onclick="saveBestLearner('${className}')" class="w-full bg-green-500 text-white py-1.5 md:py-2 rounded-lg hover:bg-green-600 mt-2 text-sm md:text-base">
                                         <i class="fas fa-plus mr-2"></i>Add Top Learner
                                     </button>
                                     <p class="text-xs text-gray-500 mt-2">You can add multiple top learners for this class. They will be ranked by points on the dashboard.</p>
                                 </div>
                             </div>
                             
-                            <div class="bg-gray-50 rounded-xl p-4">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4">Performance Chart</h3>
+                            <div class="bg-gray-50 rounded-xl p-3 md:p-4">
+                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Performance Chart</h3>
                                 <canvas id="${className}-chart" width="300" height="200"></canvas>
                             </div>
                         </div>

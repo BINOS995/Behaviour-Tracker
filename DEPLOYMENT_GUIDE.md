@@ -94,6 +94,19 @@ After deployment, update your Firestore security rules in the Firebase Console:
 - ✅ Updated `index.html` with authentication redirects
 - ✅ Updated `firebaseauth.js` with global exports
 
+## Known Issues & Future Improvements
+
+### User Allocation System Issue
+**Issue**: New users are not appearing in the user allocation list due to inconsistencies in Firestore document ID handling between user creation and retrieval systems.
+
+**Status**: Documented for future fix
+
+**Current Workaround**: All new users are automatically granted access to all classes. The class allocation feature displays "Coming Soon" with a note about this limitation.
+
+**Technical Details**: The issue stems from mismatched document ID formats between `firebaseauth.js` (using email as ID) and `homepage.js` (using Firebase Auth UID as ID). This causes new users to not be found in the user allocation system.
+
+**Future Fix**: Standardize document ID format across all modules and implement proper user allocation controls.
+
 ## Next Steps
 1. Run `firebase login` if not already logged in
 2. Update `.firebaserc` with your actual project ID

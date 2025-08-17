@@ -96,6 +96,149 @@
         });
     </script>
     
+    <!-- Additional diagnostic functions -->
+    <script>
+    // Comprehensive Firestore structure check
+    async function checkFirestoreStructure() {
+        try {
+            console.log('=== COMPREHENSIVE FIRESTORE CHECK ===');
+            
+            // Check current authentication state
+            const currentUser = window.firebaseAuth.currentUser;
+            console.log('Current authenticated user:', currentUser?.email || 'No user logged in');
+            
+            // Check users collection
+            const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
+            const usersSnapshot = await window.firebaseFirestore.getDocs(usersRef);
+            
+            console.log('=== USERS COLLECTION ANALYSIS ===');
+            console.log('Total documents in users collection:', usersSnapshot.size);
+            
+            if (usersSnapshot.empty) {
+                console.log('❌ USERS COLLECTION IS EMPTY!');
+                alert('❌ No users found in Firestore! The users collection is completely empty.');
+                return;
+            }
+            
+            const allUsers = [];
+            let validUsers = 0;
+            let invalidUsers = 0;
+            
+            usersSnapshot.forEach(doc => {
+                const userData = doc.data();
+                const docId = doc.id;
+                
+                const userInfo = {
+                    documentId: docId,
+                    documentData: userData,
+                    hasEmail: !!userData.email,
+                    hasFirstName: !!userData.firstName,
+                    hasLastName: !!userData.lastName,
+                    dataKeys: Object.keys(userData || {}),
+                    dataValues: Object.values(userData || {}),
+                    isValid: !!(userData.email && userData.firstName && userData.lastName)
+                };
+                
+                allUsers.push(userInfo);
+                
+                if (userInfo.isValid) {
+                    validUsers++;
+                } else {
+                    invalidUsers++;
+                }
+                
+                console.log(`Document ID: "${docId}"`);
+                console.log(`  Email: ${userData.email || 'MISSING'}`);
+                console.log(`  First Name: ${userData.firstName || 'MISSING'}`);
+                console.log(`  Last Name: ${userData.lastName || 'MISSING'}`);
+                console.log(`  Data Keys: [${Object.keys(userData || {}).join(', ')}]`);
+                console.log(`  Status: ${userInfo.isValid ? '✅ VALID' : '❌ INVALID'}`);
+                console.log('---');
+            });
+            
+            // Create detailed report
+            const report = {
+                totalDocuments: usersSnapshot.size,
+                validUsers: validUsers,
+                invalidUsers: invalidUsers,
+                allUsers: allUsers
+            };
+            
+            console.log('=== FIRESTORE SUMMARY ===');
+            console.log('Total documents:', report.totalDocuments);
+            console.log('Valid users:', report.validUsers);
+            console.log('Invalid users:', report.invalidUsers);
+            console.log('Complete data:', JSON.stringify(report, null, 2));
+            
+            // Display alert with findings
+            let alertMessage = `📊 FIRESTORE ANALYSIS RESULTS:
+
+📈 Collection Stats:
+• Total documents: ${report.totalDocuments}
+• Valid users: ${report.validUsers}
+• Invalid users: ${report.invalidUsers}
+
+🔍 Document IDs found:
+`;
+            
+            allUsers.forEach(user => {
+                alertMessage += `• "${user.documentId}" (${user.isValid ? '✅ Valid' : '❌ Invalid'})
+`;
+            });
+            
+            if (invalidUsers > 0) {
+                alertMessage += `
+⚠️ INVALID USERS FOUND:
+These documents are missing required fields (email, firstName, lastName).
+Check the console for detailed information about each invalid user.
+`;
+            }
+            
+            alertMessage += `
+💡 Next Steps:
+1. Check the browser console for complete details
+2. Verify user creation process
+3. Check if new users are being created with correct field names
+4. Ensure document IDs match expected format (email addresses)
+
+🔗 Firebase Console Link:
+https://console.firebase.google.com/project/your-project-id/firestore/data/~2Fusers
+
+Replace 'your-project-id' with your actual Firebase project ID.`;
+            
+            alert(alertMessage);
+            
+            // Also check if we can access the authentication data
+            try {
+                console.log('=== AUTHENTICATION CHECK ===');
+                if (currentUser) {
+                    console.log('Current user email:', currentUser.email);
+                    console.log('Current user UID:', currentUser.uid);
+                    
+                    // Check if current user exists in the users collection
+                    const currentUserDoc = allUsers.find(u => u.documentId === currentUser.email);
+                    if (currentUserDoc) {
+                        console.log('✅ Current user found in users collection');
+                    } else {
+                        console.log('❌ Current user NOT found in users collection');
+                        console.log('Available document IDs:', allUsers.map(u => u.documentId));
+                    }
+                } else {
+                    console.log('❌ No user currently logged in');
+                }
+            } catch (authError) {
+                console.error('Error checking authentication:', authError);
+            }
+            
+            console.log('=== FIRESTORE CHECK COMPLETE ===');
+            
+        } catch (error) {
+            console.error('Error checking Firestore structure:', error);
+            alert(`❌ Error checking Firestore: ${error.message}\n\nCheck the browser console for details.`);
+        }
+    }
+    </script>
+    
     <style>
         .class-content-blur {
             filter: blur(12px);
@@ -217,6 +360,8 @@
                 </div>
             </div>
             
+
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 md:p-6 text-white">
                     <div class="flex items-center justify-between">
@@ -264,8 +409,8 @@
         "Admin": `
             <div class="bg-white rounded-xl shadow-sm p-4 md:p-6">
                 <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-6">
-                    <div class="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                        <i class="fas fa-user-shield text-gray-400 text-5xl"></i>
+                    <div class="w-32 h-32 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center overflow-hidden">
+                        <i class="fas fa-user-shield text-white text-5xl"></i>
                     </div>
                     <div>
                         <h1 class="text-2xl font-bold text-gray-800 mb-2">Admin Panel</h1>
@@ -339,6 +484,20 @@
                 <!-- User Class Allocation Section -->
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">User Class Allocation</h3>
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-yellow-400 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-yellow-800">Feature Coming Soon</h4>
+                                <p class="text-sm text-yellow-700 mt-1">
+                                    Currently, all new users automatically have access to all classes. 
+                                    Advanced user-specific class allocation will be implemented in a future update.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Select User Email</label>
                         <select id="userEmailSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
@@ -346,14 +505,25 @@
                         </select>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Assign Classes</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Available Classes (Auto-Assigned)</label>
                         <div id="classCheckboxes" class="space-y-2">
-                            <p class="text-gray-500">Select a user first</p>
+                            <p class="text-gray-500 italic">All users currently have access to all classes by default</p>
                         </div>
                     </div>
-                    <button onclick="saveUserClassAllocation()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
-                        <i class="fas fa-save mr-2"></i>Save Allocation
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="saveUserClassAllocation()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 opacity-50 cursor-not-allowed" disabled>
+                            <i class="fas fa-save mr-2"></i>Save Allocation
+                        </button>
+                        <button onclick="loadUsers()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh Users
+                        </button>
+                        <button onclick="diagnosticLoadUsers()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                            <i class="fas fa-search mr-2"></i>Diagnose Users
+                        </button>
+                        <button onclick="checkFirestoreStructure()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                            <i class="fas fa-database mr-2"></i>Check Firestore
+                        </button>
+                    </div>
                 </div>
             </div>
         `,
@@ -366,6 +536,8 @@
     };
 
     // Load classes from Firestore with user permissions
+
+
     async function loadClasses() {
         try {
             console.log('Loading classes from Firestore...');
@@ -379,30 +551,25 @@
                 console.log('No classes found in Firestore');
                 adminClassPasswords = {};
             } else {
-                // For regular users, filter by their assigned classes
-            const currentUser = window.firebaseAuth.currentUser;
-            let allowedClasses = null;
-            
-            if (currentUser && !isAdmin) {
-                // Get user's allowed classes
-                const userClassesRef = window.firebaseFirestore.doc(window.firebaseDB, 'userClasses', currentUser.email);
-                const userClassesDoc = await window.firebaseFirestore.getDoc(userClassesRef);
-                if (userClassesDoc.exists()) {
-                    allowedClasses = userClassesDoc.data().classes || [];
-                }
-            }
+                // TEMPORARY: All users have access to all classes (feature coming soon)
+                console.log('TEMPORARY: All users have access to all classes (feature coming soon)');
                 
-                snapshot.forEach(doc => {
-                    const classData = doc.data();
-                    // Admin sees all classes, regular users see only assigned classes
-                    if (isAdmin || !allowedClasses || allowedClasses.includes(doc.id)) {
-                        adminClassPasswords[doc.id] = {
-                            password: classData.password,
-                            sheetUrl: classData.sheetUrl
-                        };
-                        console.log(`Loaded class: ${doc.id}`);
-                    }
-                });
+                console.log('Total classes found:', snapshot.size);
+            
+            snapshot.forEach(doc => {
+                const classData = doc.data();
+                const className = String(doc.id || '').trim();
+                
+                // Debug: Log all available classes
+                console.log(`Available class: "${className}"`);
+                
+                // All users see all classes (temporary implementation)
+                adminClassPasswords[className] = {
+                    password: classData.password,
+                    sheetUrl: classData.sheetUrl
+                };
+                console.log(`✓ Loaded class: "${className}" for all users (temporary)`);
+            });
             }
             
             updateClassesList();
@@ -428,6 +595,7 @@
     // Load all users for admin panel
     async function loadUsers() {
         try {
+            console.log('Loading users from Firestore...');
             const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
             const snapshot = await window.firebaseFirestore.getDocs(usersRef);
             const userSelect = document.getElementById('userEmailSelect');
@@ -437,23 +605,320 @@
                 return;
             }
             
+            console.log(`Found ${snapshot.size} total documents in 'users' collection`);
+            
             userSelect.innerHTML = '<option value="">Select a user...</option>';
+            
+            if (snapshot.empty) {
+                console.log('No users found in Firestore');
+                userSelect.innerHTML = '<option value="">No users found</option>';
+                return;
+            }
+            
+            let userCount = 0;
             
             snapshot.forEach(doc => {
                 const userData = doc.data();
-                const option = document.createElement('option');
-                option.value = doc.id;
-                option.textContent = `${userData.firstName} ${userData.lastName} (${doc.id})`;
-                userSelect.appendChild(option);
+                const userEmail = doc.id; // Document ID is the email
+                
+                console.log(`Processing user: ${userEmail}`, userData);
+                
+                // Use the data from the document, but ensure we have the required fields
+                const email = userData.email || userEmail;
+                const firstName = userData.firstName || '';
+                const lastName = userData.lastName || '';
+                
+                if (email && firstName && lastName) {
+                    const option = document.createElement('option');
+                    option.value = email;
+                    option.textContent = `${firstName} ${lastName} (${email})`;
+                    userSelect.appendChild(option);
+                    userCount++;
+                    console.log(`✓ Added user: ${firstName} ${lastName} (${email})`);
+                } else {
+                    console.warn(`Skipping user ${userEmail}: missing required fields`, {
+                        email: email,
+                        firstName: firstName,
+                        lastName: lastName
+                    });
+                }
             });
             
+            console.log(`Successfully loaded ${userCount} users`);
+            
+            if (userCount === 0) {
+                userSelect.innerHTML = '<option value="">No valid users found</option>';
+                console.warn('No users with complete data found');
+            }
+            
+            // Remove existing event listener to prevent duplicates
+            userSelect.removeEventListener('change', loadUserClassCheckboxes);
             userSelect.addEventListener('change', loadUserClassCheckboxes);
+            
         } catch (error) {
             console.error('Error loading users:', error);
+            const userSelect = document.getElementById('userEmailSelect');
+            if (userSelect) {
+                userSelect.innerHTML = '<option value="">Error loading users</option>';
+            }
+        }
+    }
+    
+    // Diagnostic function for troubleshooting user data
+    async function diagnosticLoadUsers() {
+        try {
+            console.log('=== DIAGNOSTIC: Checking User Data ===');
+            const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
+            const snapshot = await window.firebaseFirestore.getDocs(usersRef);
+            const userSelect = document.getElementById('userEmailSelect');
+            
+            if (!userSelect) {
+                console.error('userEmailSelect element not found');
+                return;
+            }
+            
+            console.log(`Total documents in 'users' collection: ${snapshot.size}`);
+            
+            // Create diagnostic report
+            let diagnosticReport = `=== USER DATA DIAGNOSTIC ===\n\n`;
+            diagnosticReport += `Total documents found: ${snapshot.size}\n\n`;
+            
+            if (snapshot.empty) {
+                diagnosticReport += "❌ No users found in 'users' collection!\n";
+                diagnosticReport += "Possible causes:\n";
+                diagnosticReport += "1. No users have been created yet\n";
+                diagnosticReport += "2. Users are in a different collection\n";
+                diagnosticReport += "3. Security rules are blocking access\n";
+                diagnosticReport += "4. Check Firebase Console: https://console.firebase.google.com/\n";
+                console.log(diagnosticReport);
+                userSelect.innerHTML = '<option value="">❌ No users found</option>';
+                alert(diagnosticReport);
+                return;
+            }
+            
+            userSelect.innerHTML = '<option value="">Select a user...</option>';
+            let validUsers = 0;
+            let invalidUsers = 0;
+            let userDetails = [];
+            
+            console.log('=== RAW FIRESTORE DATA ===');
+            snapshot.forEach((doc, index) => {
+                const userData = doc.data();
+                const docId = doc.id;
+                
+                console.log(`Document ${index + 1}:`, {
+                    id: docId,
+                    data: userData,
+                    hasEmail: !!userData.email,
+                    hasFirstName: !!userData.firstName,
+                    hasLastName: !!userData.lastName
+                });
+                
+                userDetails.push({
+                    id: docId,
+                    email: userData.email || docId,
+                    firstName: userData.firstName || '',
+                    lastName: userData.lastName || '',
+                    rawData: userData
+                });
+                
+                const email = userData.email || docId;
+                const firstName = userData.firstName || '';
+                const lastName = userData.lastName || '';
+                
+                if (email && firstName && lastName) {
+                    const option = document.createElement('option');
+                    option.value = email;
+                    option.textContent = `${firstName} ${lastName} (${email})`;
+                    userSelect.appendChild(option);
+                    validUsers++;
+                } else {
+                    invalidUsers++;
+                }
+            });
+            
+            diagnosticReport += `=== DETAILED USER ANALYSIS ===\n`;
+            userDetails.forEach((user, index) => {
+                diagnosticReport += `\n${index + 1}. Document ID: "${user.id}"\n`;
+                diagnosticReport += `   Email: "${user.email}"\n`;
+                diagnosticReport += `   First Name: "${user.firstName || "❌ MISSING"}"\n`;
+                diagnosticReport += `   Last Name: "${user.lastName || "❌ MISSING"}"\n`;
+                diagnosticReport += `   Status: ${(user.firstName && user.lastName) ? "✅ Valid" : "❌ Incomplete"}\n`;
+                diagnosticReport += `   Raw data keys: ${Object.keys(user.rawData).join(', ')}\n`;
+            });
+            
+            diagnosticReport += `\n=== SUMMARY ===\n`;
+            diagnosticReport += `Valid users: ${validUsers}\n`;
+            diagnosticReport += `Invalid users (missing data): ${invalidUsers}\n`;
+            diagnosticReport += `Total documents: ${snapshot.size}\n`;
+            diagnosticReport += `All document IDs: ${userDetails.map(u => `"${u.id}"`).join(', ')}\n`;
+            
+            console.log(diagnosticReport);
+            alert(diagnosticReport);
+            
+            if (validUsers === 0) {
+                userSelect.innerHTML = '<option value="">❌ No valid users found</option>';
+                console.warn("All users have incomplete data - check Firestore documents");
+                
+                // Additional debug: suggest checking Firebase Console
+                console.log("💡 TIP: Check your Firebase Console at https://console.firebase.google.com/");
+                console.log("💡 Navigate to: Firestore Database > Data > users collection");
+            }
+            
+        } catch (error) {
+            console.error('Diagnostic error:', error);
+            alert(`Error loading users: ${error.message}`);
+            
+            // Additional error debugging
+            console.log("🔍 Error details:", {
+                error: error.message,
+                stack: error.stack,
+                code: error.code
+            });
+        }
+    }
+    
+    // Comprehensive Firestore structure check
+    async function checkFirestoreStructure() {
+        try {
+            console.log('=== COMPREHENSIVE FIRESTORE CHECK ===');
+            
+            // Check current authentication state
+            const currentUser = window.firebaseAuth.currentUser;
+            console.log('Current authenticated user:', currentUser?.email || 'No user logged in');
+            
+            // Check users collection
+            const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
+            const usersSnapshot = await window.firebaseFirestore.getDocs(usersRef);
+            
+            console.log('=== USERS COLLECTION ANALYSIS ===');
+            console.log('Total documents in users collection:', usersSnapshot.size);
+            
+            if (usersSnapshot.empty) {
+                console.log('❌ USERS COLLECTION IS EMPTY!');
+                alert('❌ No users found in Firestore! The users collection is completely empty.');
+                return;
+            }
+            
+            const allUsers = [];
+            let validUsers = 0;
+            let invalidUsers = 0;
+            
+            usersSnapshot.forEach(doc => {
+                const userData = doc.data();
+                const docId = doc.id;
+                
+                const userInfo = {
+                    documentId: docId,
+                    documentData: userData,
+                    hasEmail: !!userData.email,
+                    hasFirstName: !!userData.firstName,
+                    hasLastName: !!userData.lastName,
+                    dataKeys: Object.keys(userData || {}),
+                    dataValues: Object.values(userData || {}),
+                    isValid: !!(userData.email && userData.firstName && userData.lastName)
+                };
+                
+                allUsers.push(userInfo);
+                
+                if (userInfo.isValid) {
+                    validUsers++;
+                } else {
+                    invalidUsers++;
+                }
+                
+                console.log(`Document ID: "${docId}"`);
+                console.log(`  Email: ${userData.email || 'MISSING'}`);
+                console.log(`  First Name: ${userData.firstName || 'MISSING'}`);
+                console.log(`  Last Name: ${userData.lastName || 'MISSING'}`);
+                console.log(`  Data Keys: [${Object.keys(userData || {}).join(', ')}]`);
+                console.log(`  Status: ${userInfo.isValid ? '✅ VALID' : '❌ INVALID'}`);
+                console.log('---');
+            });
+            
+            // Create detailed report
+            const report = {
+                totalDocuments: usersSnapshot.size,
+                validUsers: validUsers,
+                invalidUsers: invalidUsers,
+                allUsers: allUsers
+            };
+            
+            console.log('=== FIRESTORE SUMMARY ===');
+            console.log('Total documents:', report.totalDocuments);
+            console.log('Valid users:', report.validUsers);
+            console.log('Invalid users:', report.invalidUsers);
+            console.log('Complete data:', JSON.stringify(report, null, 2));
+            
+            // Display alert with findings
+            let alertMessage = `📊 FIRESTORE ANALYSIS RESULTS:
+
+📈 Collection Stats:
+• Total documents: ${report.totalDocuments}
+• Valid users: ${report.validUsers}
+• Invalid users: ${report.invalidUsers}
+
+🔍 Document IDs found:
+`;
+            
+            allUsers.forEach(user => {
+                alertMessage += `• "${user.documentId}" (${user.isValid ? '✅ Valid' : '❌ Invalid'})\n`;
+            });
+            
+            if (invalidUsers > 0) {
+                alertMessage += `
+⚠️ INVALID USERS FOUND:
+These documents are missing required fields (email, firstName, lastName).
+Check the console for detailed information about each invalid user.
+`;
+            }
+            
+            alertMessage += `
+💡 Next Steps:
+1. Check the browser console for complete details
+2. Verify user creation process
+3. Check if new users are being created with correct field names
+4. Ensure document IDs match expected format (email addresses)
+
+🔗 Firebase Console Link:
+https://console.firebase.google.com/project/your-project-id/firestore/data/~2Fusers
+
+Replace 'your-project-id' with your actual Firebase project ID.`;
+            
+            alert(alertMessage);
+            
+            // Also check if we can access the authentication data
+            try {
+                console.log('=== AUTHENTICATION CHECK ===');
+                if (currentUser) {
+                    console.log('Current user email:', currentUser.email);
+                    console.log('Current user UID:', currentUser.uid);
+                    
+                    // Check if current user exists in the users collection
+                    const currentUserDoc = allUsers.find(u => u.documentId === currentUser.email);
+                    if (currentUserDoc) {
+                        console.log('✅ Current user found in users collection');
+                    } else {
+                        console.log('❌ Current user NOT found in users collection');
+                        console.log('Available document IDs:', allUsers.map(u => u.documentId));
+                    }
+                } else {
+                    console.log('❌ No user currently logged in');
+                }
+            } catch (authError) {
+                console.error('Error checking authentication:', authError);
+            }
+            
+            console.log('=== FIRESTORE CHECK COMPLETE ===');
+            
+        } catch (error) {
+            console.error('Error checking Firestore structure:', error);
+            alert(`❌ Error checking Firestore: ${error.message}\n\nCheck the browser console for details.`);
         }
     }
 
-    // Load class checkboxes for user allocation
+    // Replace the refresh button to use diagnostic function
+    // Update the refresh button in the HTML to use diagnosticLoadUsers instead
     async function loadUserClassCheckboxes() {
         const userEmailSelect = document.getElementById('userEmailSelect');
         const classCheckboxes = document.getElementById('classCheckboxes');
@@ -478,11 +943,16 @@
             
             // Create checkboxes for all classes
             classCheckboxes.innerHTML = '';
+            console.log('Available classes for checkboxes:', Object.keys(adminClassPasswords));
+            console.log('User has classes:', userClasses);
             Object.keys(adminClassPasswords).forEach(className => {
+                const isChecked = userClasses.some(userClass => 
+                    userClass.trim().toLowerCase() === className.trim().toLowerCase()
+                );
                 const div = document.createElement('div');
                 div.className = 'flex items-center';
                 div.innerHTML = `
-                    <input type="checkbox" id="class-${className}" value="${className}" ${userClasses.includes(className) ? 'checked' : ''} class="mr-2">
+                    <input type="checkbox" id="class-${className}" value="${className}" ${isChecked ? 'checked' : ''} class="mr-2">
                     <label for="class-${className}" class="text-sm text-gray-700">${className}</label>
                 `;
                 classCheckboxes.appendChild(div);
@@ -522,16 +992,19 @@
         }
         
         const selectedClasses = [];
-        document.querySelectorAll('#classCheckboxes input[type="checkbox"]:checked').forEach(checkbox => {
-            selectedClasses.push(checkbox.value);
-        });
+            document.querySelectorAll('#classCheckboxes input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedClasses.push(checkbox.value.trim());
+            });
+            console.log('Saving classes for user:', selectedClasses);
         
         try {
             const userClassesRef = window.firebaseFirestore.doc(window.firebaseDB, 'userClasses', userEmail);
+            console.log('About to save classes:', selectedClasses);
             await window.firebaseFirestore.setDoc(userClassesRef, {
                 classes: selectedClasses,
                 updatedAt: new Date().toISOString()
             });
+            console.log('Successfully saved classes for user:', userEmail);
             
             alert('Class allocation saved successfully!');
             
@@ -980,12 +1453,10 @@
         document.getElementById('totalStudents').textContent = '0';
         document.getElementById('totalPoints').textContent = '0';
         
-        // Load top learners for the dashboard
-        loadTopLearners();
-        
-        // Update welcome message with user's first name
+        // Update user information
         const user = window.firebaseAuth.currentUser;
         if (user) {
+            // Update welcome message with user's first name
             try {
                 const userDoc = await window.firebaseFirestore.getDoc(
                     window.firebaseFirestore.doc(window.firebaseDB, 'users', user.uid)
@@ -1001,6 +1472,9 @@
                 console.error('Error fetching user data:', error);
             }
         }
+        
+        // Load top learners for the dashboard
+        loadTopLearners();
     }
     
     // Function to load and display top learners with real-time updates
@@ -1272,40 +1746,7 @@
         }
     }
     
-    // Function to clear all top learners data
-    async function clearAllTopLearners() {
-        if (!confirm('Are you sure you want to clear ALL top learners data? This action cannot be undone.')) {
-            return;
-        }
-        
-        // Double confirmation for critical action
-        if (!confirm('This will permanently delete all top learners records. Proceed?')) {
-            return;
-        }
-        
-        try {
-            const bestLearnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'bestLearners');
-            const snapshot = await window.firebaseFirestore.getDocs(bestLearnersRef);
-            
-            if (snapshot.empty) {
-                alert('No top learners data found to clear.');
-                return;
-            }
-            
-            // Delete each document in the collection
-            const batch = window.firebaseFirestore.writeBatch(window.firebaseDB);
-            snapshot.forEach((doc) => {
-                batch.delete(doc.ref);
-            });
-            
-            await batch.commit();
-            alert('All top learners data has been cleared successfully.');
-            
-        } catch (error) {
-            console.error('Error clearing top learners data:', error);
-            alert('Error clearing top learners data. Please try again.');
-        }
-    }
+
     
     async function initializeFirstAdmin() {
         try {
@@ -1353,6 +1794,10 @@
             const adminsSnapshot = await window.firebaseFirestore.getDocs(adminsRef);
             
             const adminList = document.getElementById('adminList');
+            if (!adminList) {
+                console.error('adminList element not found');
+                return;
+            }
             adminList.innerHTML = '';
             
             if (adminsSnapshot.empty) {
@@ -1385,11 +1830,35 @@
         }
     }
     
-    // Function to clear all top learners data
-    function clearAllTopLearners() {
-        // Implementation for clearing top learners data
-        console.log('Clearing all top learners data...');
-        // Add actual implementation here
+
+    
+    // Setup admin tabs functionality
+    function setupAdminTabs() {
+        console.log('Setting up admin tabs...');
+        
+        // Ensure admin elements exist
+        const adminBtn = document.getElementById('adminBtn');
+        if (adminBtn) {
+            adminBtn.addEventListener('click', () => {
+                loadContent('Admin');
+            });
+        }
+        
+        // Add event listeners for admin panel elements
+        const addClassBtn = document.getElementById('addClassBtn');
+        if (addClassBtn) {
+            addClassBtn.addEventListener('click', addNewClass);
+        }
+        
+        const saveAllocationBtn = document.getElementById('saveAllocationBtn');
+        if (saveAllocationBtn) {
+            saveAllocationBtn.addEventListener('click', saveUserClassAllocation);
+        }
+        
+        const clearLearnersBtn = document.getElementById('clearLearnersBtn');
+        if (clearLearnersBtn) {
+            clearLearnersBtn.addEventListener('click', clearAllTopLearners);
+        }
     }
     
     // Event listeners

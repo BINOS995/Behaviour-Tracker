@@ -647,6 +647,21 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             if (snapshot.empty) {
                 console.log('No classes found in Firestore');
                 adminClassPasswords = {};
+                
+                // Show "No Classes Found" message with refresh button
+                const classesList = document.getElementById('classesList');
+                if (classesList) {
+                    classesList.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-users-slash text-4xl text-gray-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
+                            <p class="text-gray-600 mb-4">There are no classes in the system yet.</p>
+                            <button onclick="loadClasses()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    `;
+                }
             } else {
                 // TEMPORARY: All users have access to all classes (feature coming soon)
                 console.log('TEMPORARY: All users have access to all classes (feature coming soon)');
@@ -1121,21 +1136,44 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         }
     }
 
+    // Toggle password visibility
+    function togglePasswordVisibility(button) {
+        const passwordSpan = button.previousElementSibling;
+        const password = passwordSpan.getAttribute('data-password');
+        const icon = button.querySelector('i');
+        
+        if (passwordSpan.textContent === '*'.repeat(password.length)) {
+            passwordSpan.textContent = password;
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordSpan.textContent = '*'.repeat(password.length);
+            icon.className = 'fas fa-eye';
+        }
+    }
+
     // Update classes list in admin panel
     function updateClassesList() {
+        console.log('updateClassesList called, adminClassPasswords:', adminClassPasswords);
         const classesList = document.getElementById('classesList');
-        if (!classesList) return;
+        if (!classesList) {
+            console.error('classesList element not found!');
+            return;
+        }
 
         classesList.innerHTML = '';
         
         const classes = Object.keys(adminClassPasswords);
+        console.log('Found classes:', classes);
+        
         if (classes.length === 0) {
             classesList.innerHTML = '<p class="text-gray-500">No classes created yet. Add a class above to get started.</p>';
+            console.log('No classes to display');
             return;
         }
         
         classes.forEach(className => {
             const classData = adminClassPasswords[className];
+            console.log('Creating item for class:', className);
             const classItem = document.createElement('div');
             classItem.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
             classItem.innerHTML = `
@@ -1153,16 +1191,23 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
-
                 </div>
-                <div class="ml-4">
-                    <button class="text-red-500 hover:text-red-700 p-2" onclick="removeClass('${className}')">
+                <div class="ml-4 flex gap-2">
+                    <button class="text-blue-500 hover:text-blue-700 p-2" onclick="editClassName('${className}')" title="Edit class name">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-green-500 hover:text-green-700 p-2" onclick="editClassPassword('${className}')" title="Change password">
+                        <i class="fas fa-key"></i>
+                    </button>
+                    <button class="text-red-500 hover:text-red-700 p-2" onclick="removeClass('${className}')" title="Delete class">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             `;
             classesList.appendChild(classItem);
         });
+        
+        console.log('Updated classes list with', classes.length, 'classes');
     }
 
     // Add new class
@@ -1220,6 +1265,96 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         } catch (error) {
             console.error('Error removing class:', error);
             alert('Error removing class. Please try again.');
+        }
+    }
+
+    // Edit class name
+    async function editClassName(oldClassName) {
+        const newClassName = prompt('Enter new class name:', oldClassName);
+        
+        if (!newClassName || newClassName.trim() === '' || newClassName === oldClassName) {
+            return; // User cancelled or entered same name
+        }
+        
+        const trimmedNewName = newClassName.trim();
+        
+        // Check if new name already exists
+        if (adminClassPasswords[trimmedNewName]) {
+            alert('A class with this name already exists. Please choose a different name.');
+            return;
+        }
+        
+        try {
+            const oldClassRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', oldClassName);
+            const newClassRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', trimmedNewName);
+            
+            // Get old class data
+            const oldClassDoc = await window.firebaseFirestore.getDoc(oldClassRef);
+            if (!oldClassDoc.exists()) {
+                alert('Class not found. Please refresh and try again.');
+                return;
+            }
+            
+            const classData = oldClassDoc.data();
+            
+            // Create new class with same data
+            await window.firebaseFirestore.setDoc(newClassRef, classData);
+            
+            // Delete old class
+            await window.firebaseFirestore.deleteDoc(oldClassRef);
+            
+            // Also need to update all learners from the old class to the new class name
+            try {
+                const oldLearnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', oldClassName, 'learners');
+                const learnersSnapshot = await window.firebaseFirestore.getDocs(oldLearnersRef);
+                
+                // Move all learners to new class
+                const moveLearnersPromises = [];
+                learnersSnapshot.forEach(doc => {
+                    const learnerData = doc.data();
+                    const newLearnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', trimmedNewName, 'learners', doc.id);
+                    moveLearnersPromises.push(window.firebaseFirestore.setDoc(newLearnerRef, learnerData));
+                    moveLearnersPromises.push(window.firebaseFirestore.deleteDoc(window.firebaseFirestore.doc(window.firebaseDB, 'classes', oldClassName, 'learners', doc.id)));
+                });
+                
+                await Promise.all(moveLearnersPromises);
+            } catch (learnersError) {
+                console.warn('Could not migrate learners:', learnersError);
+                // Continue anyway - class was renamed successfully
+            }
+            
+            alert(`Class name changed from "${oldClassName}" to "${trimmedNewName}"`);
+            loadClasses(); // Reload classes
+            
+        } catch (error) {
+            console.error('Error editing class name:', error);
+            alert('Error changing class name. Please try again.');
+        }
+    }
+
+    // Edit class password
+    async function editClassPassword(className) {
+        const newPassword = prompt('Enter new password for ' + className + ':');
+        
+        if (!newPassword || newPassword.trim() === '') {
+            return; // User cancelled or entered empty password
+        }
+        
+        const trimmedPassword = newPassword.trim();
+        
+        try {
+            const classRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className);
+            
+            await window.firebaseFirestore.updateDoc(classRef, {
+                password: trimmedPassword
+            });
+            
+            alert(`Password for "${className}" has been updated successfully.`);
+            loadClasses(); // Reload classes to show updated password
+            
+        } catch (error) {
+            console.error('Error editing class password:', error);
+            alert('Error changing class password. Please try again.');
         }
     }
 
@@ -2707,10 +2842,15 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     }
 
     function updateChartSummary(totalClasses, avgPoints, highestPoints, mostActiveClass) {
-        document.getElementById('chartTotalClasses').textContent = totalClasses;
-        document.getElementById('chartAvgPoints').textContent = avgPoints;
-        document.getElementById('chartHighestPoints').textContent = highestPoints;
-        document.getElementById('chartMostActive').textContent = mostActiveClass;
+        const chartTotalClassesEl = document.getElementById('chartTotalClasses');
+        const chartAvgPointsEl = document.getElementById('chartAvgPoints');
+        const chartHighestPointsEl = document.getElementById('chartHighestPoints');
+        const chartMostActiveEl = document.getElementById('chartMostActive');
+
+        if (chartTotalClassesEl) chartTotalClassesEl.textContent = totalClasses;
+        if (chartAvgPointsEl) chartAvgPointsEl.textContent = avgPoints;
+        if (chartHighestPointsEl) chartHighestPointsEl.textContent = highestPoints;
+        if (chartMostActiveEl) chartMostActiveEl.textContent = mostActiveClass;
     }
 
     // Populate class selector
@@ -2762,9 +2902,13 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 });
             }
 
-            document.getElementById('totalClasses').textContent = classesSnapshot.size;
-            document.getElementById('totalStudents').textContent = totalStudents;
-            document.getElementById('totalPoints').textContent = totalPoints;
+            const totalClassesEl = document.getElementById('totalClasses');
+            const totalStudentsEl = document.getElementById('totalStudents');
+            const totalPointsEl = document.getElementById('totalPoints');
+
+            if (totalClassesEl) totalClassesEl.textContent = classesSnapshot.size;
+            if (totalStudentsEl) totalStudentsEl.textContent = totalStudents;
+            if (totalPointsEl) totalPointsEl.textContent = totalPoints;
 
         } catch (error) {
             console.error('Error updating dashboard stats:', error);

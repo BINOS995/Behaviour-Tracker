@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register & Login</title>
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Behaviour Tracker - Login & Register</title>
   
   <!-- Prevent caching to ensure auth checks work on back button -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -12,6 +12,9 @@
   
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Custom Styles -->
   <link rel="stylesheet" href="style.css">
@@ -33,26 +36,41 @@
       
       <div class="input-group">
         <i class="fas fa-user"></i>
-        <input type="text" id="fName" name="fName" placeholder="First Name" required>
+        <input type="text" id="fName" name="fName" required>
         <label for="fName">First Name</label>
       </div>
 
       <div class="input-group">
         <i class="fas fa-user"></i>
-        <input type="text" id="lName" name="lName" placeholder="Last Name" required>
+        <input type="text" id="lName" name="lName" required>
         <label for="lName">Last Name</label>
       </div>
 
       <div class="input-group">
         <i class="fas fa-envelope"></i>
-        <input type="email" id="rEmail" name="rEmail" placeholder="Email" required>
+        <input type="email" id="rEmail" name="rEmail" required>
         <label for="rEmail">Email</label>
       </div>
 
       <div class="input-group">
         <i class="fas fa-lock"></i>
-        <input type="password" id="rPassword" name="rPassword" placeholder="Password" required>
+        <input type="password" id="rPassword" name="rPassword" required minlength="6">
         <label for="rPassword">Password</label>
+        <i class="fas fa-eye password-toggle" onclick="togglePassword('rPassword', this)"></i>
+      </div>
+
+      <div class="input-group">
+        <i class="fas fa-lock"></i>
+        <input type="password" id="rConfirmPassword" name="rConfirmPassword" required minlength="6">
+        <label for="rConfirmPassword">Confirm Password</label>
+        <i class="fas fa-eye password-toggle" onclick="togglePassword('rConfirmPassword', this)"></i>
+      </div>
+
+      <div class="password-strength" id="passwordStrength">
+        <div class="strength-bar">
+          <div class="strength-fill" id="strengthFill"></div>
+        </div>
+        <span id="strengthText">Password strength</span>
       </div>
 
       <button class="btn" id="submitSignUp" type="submit">Sign Up</button>
@@ -78,18 +96,19 @@
 
       <div class="input-group">
         <i class="fas fa-envelope"></i>
-        <input type="email" id="email" name="email" placeholder="Email" required>
+        <input type="email" id="email" name="email" required>
         <label for="email">Email</label>
       </div>
 
       <div class="input-group">
         <i class="fas fa-lock"></i>
-        <input type="password" id="password" name="password" placeholder="Password" required>
+        <input type="password" id="password" name="password" required minlength="6">
         <label for="password">Password</label>
+        <i class="fas fa-eye password-toggle" onclick="togglePassword('password', this)"></i>
       </div>
 
       <p class="recover">
-        <a href="#">Recover Password</a>
+        <a href="#">Forgot Password?</a>
       </p>
 
       <button class="btn" id="submitSignIn" type="submit">Sign In</button>
@@ -108,6 +127,125 @@
   </div>
 
   <script src="script.js"></script>
+  
+  <script>
+    // Password visibility toggle function
+    function togglePassword(inputId, icon) {
+        const input = document.getElementById(inputId);
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove("fa-eye");
+            icon.classList.add("fa-eye-slash");
+        } else {
+            input.type = "password";
+            icon.classList.remove("fa-eye-slash");
+            icon.classList.add("fa-eye");
+        }
+    }
+
+    // Password strength checker
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        
+        if (password.length >= 6) strength += 1;
+        if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength += 1;
+        if (password.match(/[0-9]/)) strength += 1;
+        if (password.match(/[^a-zA-Z0-9]/)) strength += 1;
+
+        const strengthFill = document.getElementById('strengthFill');
+        const strengthText = document.getElementById('strengthText');
+        
+        if (strength <= 1) {
+            strengthFill.className = 'strength-fill weak';
+            strengthText.textContent = 'Weak password';
+            strengthText.style.color = '#ff6b6b';
+        } else if (strength === 2) {
+            strengthFill.className = 'strength-fill medium';
+            strengthText.textContent = 'Medium password';
+            strengthText.style.color = '#ffa726';
+        } else {
+            strengthFill.className = 'strength-fill strong';
+            strengthText.textContent = 'Strong password';
+            strengthText.style.color = '#66bb6a';
+        }
+    }
+
+    // Form validation
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+
+    function showError(input, message) {
+        const inputGroup = input.parentElement;
+        const errorDiv = inputGroup.querySelector('.error-message') || document.createElement('div');
+        
+        if (!inputGroup.querySelector('.error-message')) {
+            errorDiv.className = 'error-message';
+            inputGroup.appendChild(errorDiv);
+        }
+        
+        errorDiv.textContent = message;
+        inputGroup.classList.add('error');
+        inputGroup.classList.remove('success');
+    }
+
+    function showSuccess(input) {
+        const inputGroup = input.parentElement;
+        const errorDiv = inputGroup.querySelector('.error-message');
+        
+        if (errorDiv) {
+            errorDiv.remove();
+        }
+        
+        inputGroup.classList.remove('error');
+        inputGroup.classList.add('success');
+    }
+
+    // Event listeners for real-time validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const rPassword = document.getElementById('rPassword');
+        const rConfirmPassword = document.getElementById('rConfirmPassword');
+        const rEmail = document.getElementById('rEmail');
+        const email = document.getElementById('email');
+
+        if (rPassword) {
+            rPassword.addEventListener('input', function() {
+                checkPasswordStrength(this.value);
+            });
+        }
+
+        if (rConfirmPassword) {
+            rConfirmPassword.addEventListener('blur', function() {
+                if (this.value !== rPassword.value) {
+                    showError(this, 'Passwords do not match');
+                } else {
+                    showSuccess(this);
+                }
+            });
+        }
+
+        if (rEmail) {
+            rEmail.addEventListener('blur', function() {
+                if (!validateEmail(this.value)) {
+                    showError(this, 'Please enter a valid email address');
+                } else {
+                    showSuccess(this);
+                }
+            });
+        }
+
+        if (email) {
+            email.addEventListener('blur', function() {
+                if (!validateEmail(this.value)) {
+                    showError(this, 'Please enter a valid email address');
+                } else {
+                    showSuccess(this);
+                }
+            });
+        }
+    });
+  </script>
   
   <script type="module">
     // Check if user is already authenticated and redirect to dashboard

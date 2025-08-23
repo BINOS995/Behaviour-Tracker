@@ -240,6 +240,70 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     }
     </script>
     
+    <!-- Quick Tips Modal -->
+    <div id="quickTipsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Quick Tips</h3>
+                <button onclick="hideQuickTips()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-yellow-800 mb-2">💡 Daily Workflow Tips</h4>
+                    <ul class="text-sm text-yellow-700 space-y-1">
+                        <li>• Start your day by selecting your class</li>
+                        <li>• Award points immediately when you see good behavior</li>
+                        <li>• Use the search bar to find students quickly</li>
+                        <li>• Check the "Weekly Top Performers" to motivate students</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-blue-800 mb-2">📱 Mobile Tips</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• Tap the hamburger menu (☰) to open navigation</li>
+                        <li>• Use your phone in portrait mode for best experience</li>
+                        <li>• Add the app to your home screen for quick access</li>
+                        <li>• The app works offline - points sync when reconnected</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-green-800 mb-2">🏆 Point System Guide</h4>
+                    <ul class="text-sm text-green-700 space-y-1">
+                        <li>• <strong>+1 point:</strong> Small positive behaviors</li>
+                        <li>• <strong>+3 points:</strong> Significant achievements</li>
+                        <li>• <strong>+5 points:</strong> Exceptional performance</li>
+                        <li>• <strong>-1 point:</strong> Minor rule violations</li>
+                        <li>• <strong>-3 points:</strong> Serious misbehavior</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-purple-800 mb-2">🎯 Pro Tips</h4>
+                    <ul class="text-sm text-purple-700 space-y-1">
+                        <li>• Set weekly goals with your class</li>
+                        <li>• Share progress with parents via screenshots</li>
+                        <li>• Use consistent point values for similar behaviors</li>
+                        <li>• Review weekly reports to identify patterns</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-between">
+                <button onclick="hideGettingStarted()" class="text-sm text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-eye-slash mr-1"></i> Hide getting started guide
+                </button>
+                <button onclick="hideQuickTips()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <style>
         .class-content-blur {
             filter: blur(12px);
@@ -276,26 +340,38 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         </div>
         
         <nav class="px-4 py-2">
-            <button class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600" data-content="Dashboard">
+            <button class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 relative group" data-content="Dashboard">
                 <i class="fas fa-home"></i> Dashboard
+                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    View overall stats and quick actions
+                </div>
             </button>
             
-            <button id="adminBtn" class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-green-500 rounded-lg hover:bg-green-600" style="display:none;" data-content="Admin">
+            <button id="adminBtn" class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-green-500 rounded-lg hover:bg-green-600 relative group" style="display:none;" data-content="Admin">
                 <i class="fas fa-user-shield"></i> Admin
+                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    Manage users and system settings
+                </div>
             </button>
             
             <div class="mb-4">
-                <button id="classesDropdownBtn" class="flex items-center justify-between w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
+                <button id="classesDropdownBtn" class="flex items-center justify-between w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group">
                     <span><i class="fas fa-chalkboard-teacher mr-2"></i>Classes</span>
                     <i class="fas fa-chevron-down"></i>
+                    <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                        Manage your classes and students
+                    </div>
                 </button>
                 <div id="classesDropdownMenu" class="hidden mt-2 ml-4">
                     <!-- Classes will be loaded here -->
                 </div>
             </div>
             
-            <button class="flex items-center gap-3 w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg" data-content="Logout">
+            <button class="flex items-center gap-3 w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group" data-content="Logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
+                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    Sign out of your account
+                </div>
             </button>
         </nav>
     </aside>
@@ -393,6 +469,47 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             
 
             
+            <!-- Getting Started Guide -->
+            <div id="gettingStarted" class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
+                <div class="flex items-start">
+                    <i class="fas fa-graduation-cap text-blue-600 text-2xl mr-4 mt-1"></i>
+                    <div class="flex-1">
+                        <h2 class="text-xl font-bold text-blue-800 mb-2">🎯 Getting Started Guide</h2>
+                        <p class="text-blue-700 mb-4">Welcome! Here's how to use the Behaviour Tracker effectively:</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white rounded-lg p-4">
+                                <h3 class="font-semibold text-gray-800 mb-2">📋 Step 1: Setup Your Class</h3>
+                                <ol class="text-sm text-gray-600 space-y-1">
+                                    <li>1. Click "Classes" in the sidebar</li>
+                                    <li>2. Create your class with a password</li>
+                                    <li>3. Add your students</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="bg-white rounded-lg p-4">
+                                <h3 class="font-semibold text-gray-800 mb-2">⭐ Step 2: Award Points</h3>
+                                <ol class="text-sm text-gray-600 space-y-1">
+                                    <li>1. Select your class</li>
+                                    <li>2. Find a student</li>
+                                    <li>3. Click [+] for positive behavior</li>
+                                    <li>4. Choose reason and save</li>
+                                </ol>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 flex items-center space-x-4">
+                            <button onclick="hideGettingStarted()" class="text-sm text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-times mr-1"></i> Hide this guide
+                            </button>
+                            <button onclick="showQuickTips()" class="text-sm text-green-600 hover:text-green-800">
+                                <i class="fas fa-lightbulb mr-1"></i> Show Quick Tips
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 md:p-6 text-white">
                     <div class="flex items-center justify-between">
@@ -2792,6 +2909,40 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     setTimeout(() => {
         updateNetworkStatus(navigator.onLine);
     }, 1000);
+    
+    // Instructional functions
+    function hideGettingStarted() {
+        document.getElementById('gettingStarted').style.display = 'none';
+        localStorage.setItem('hideGettingStarted', 'true');
+    }
+    
+    function showQuickTips() {
+        document.getElementById('quickTipsModal').style.display = 'flex';
+    }
+    
+    function hideQuickTips() {
+        document.getElementById('quickTipsModal').style.display = 'none';
+    }
+    
+    function showGettingStarted() {
+        document.getElementById('gettingStarted').style.display = 'block';
+        localStorage.removeItem('hideGettingStarted');
+    }
+    
+    // Show getting started guide on first visit
+    window.addEventListener('DOMContentLoaded', function() {
+        if (!localStorage.getItem('hideGettingStarted')) {
+            document.getElementById('gettingStarted').style.display = 'block';
+        }
+    });
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', function(event) {
+        const quickTipsModal = document.getElementById('quickTipsModal');
+        if (event.target === quickTipsModal) {
+            hideQuickTips();
+        }
+    });
 </script>
 </body>
 </html>

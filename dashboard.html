@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <!-- Firebase SDK -->
     <script type="module">
@@ -97,8 +98,10 @@
         });
     </script>
     
-    <!-- Additional diagnostic functions -->
+
+
     <script>
+
     // Comprehensive Firestore structure check
     async function checkFirestoreStructure() {
         try {
@@ -457,6 +460,21 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 </div>
             </div>
 
+            <!-- Export All Data Section -->
+            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-1">
+                            <i class="fas fa-file-excel text-green-500 mr-2"></i> Export All Data
+                        </h2>
+                        <p class="text-sm text-gray-600">Export all learner data from all classes to Excel format</p>
+                    </div>
+                    <button onclick="exportAllClassesData()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center">
+                        <i class="fas fa-download mr-2"></i> Export All Classes
+                    </button>
+                </div>
+            </div>
+
             <!-- Top Learners Section -->
             <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
                 <h2 class="text-lg font-semibold text-gray-800 mb-3">
@@ -500,6 +518,22 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                 <span class="text-sm text-gray-600">Most Active Class</span>
                                 <span id="chartMostActive" class="font-semibold">-</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Class Export Instructions -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-600 text-xl mr-3"></i>
+                    <div>
+                        <h3 class="text-sm font-medium text-blue-800">📊 Export Individual Class Data</h3>
+                        <p class="text-xs text-blue-700 mt-1">
+                            Click any class name in the sidebar → Enter class password → Look for the green "Export to Excel" button
+                        </p>
+                        <div class="mt-2 text-xs text-blue-600">
+                            <strong>Available classes:</strong> <span id="availableClasses">Loading...</span>
                         </div>
                     </div>
                 </div>
@@ -1890,6 +1924,12 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     <h1 class="text-xl md:text-2xl font-bold text-gray-800">${className}</h1>
                 </div>
 
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">${className}</h1>
+                    <button onclick="exportToExcel('${className}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center">
+                        <i class="fas fa-file-excel mr-2"></i>Export Class Data
+                    </button>
+                </div>
                 <div class="class-content-blur" id="${className}-content">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                         <div class="lg:col-span-2">
@@ -1899,8 +1939,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                     <div class="flex flex-wrap gap-2 mb-4">
                                         <input type="text" id="${className}-new-learner" placeholder="Learner name" class="flex-grow p-2 border rounded-lg text-sm">
                                         <button onclick="addLearner('${className}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center">
-                                            <i class="fas fa-plus mr-2"></i>Add Learner
-                                        </button>
+                                        <i class="fas fa-plus mr-2"></i>Add Learner
+                                    </button>
+
                                     </div>
                                     <div class="border border-gray-300 rounded-lg overflow-hidden">
                                         <div class="max-h-96 overflow-y-auto" id="${className}-table-container">
@@ -2096,9 +2137,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
 
     // Update dashboard stats and welcome message
     async function updateDashboardStats() {
-        document.getElementById('totalClasses').textContent = Object.keys(adminClassPasswords).length;
+        const classes = Object.keys(adminClassPasswords);
+        document.getElementById('totalClasses').textContent = classes.length;
         document.getElementById('totalStudents').textContent = '0';
         document.getElementById('totalPoints').textContent = '0';
+        
+        // Update available classes list in instructions
+        const classesListElement = document.getElementById('availableClasses');
+        if (classesListElement) {
+            classesListElement.textContent = classes.length > 0 ? classes.join(', ') : 'No classes configured';
+        }
         
         // Update user information
         const user = window.firebaseAuth.currentUser;
@@ -2970,6 +3018,219 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         updateNetworkStatus(navigator.onLine);
     }, 1000);
     
+    // Export learner data to Excel
+    async function exportToExcel(className) {
+        try {
+            const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+            const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+            
+            if (learnersSnapshot.empty) {
+                alert('No learners to export');
+                return;
+            }
+            
+            // Collect all learner data
+            const learners = [];
+            learnersSnapshot.forEach(doc => {
+                const learnerData = doc.data();
+                
+                // Calculate total adjustments
+                const totalAdjustments = learnerData.adjustments ? learnerData.adjustments.length : 0;
+                
+                // Get last adjustment details
+                let lastAdjustmentDate = '';
+                let lastAdjustmentReason = '';
+                let lastAdjustmentBy = '';
+                let lastAdjustmentPoints = '';
+                
+                if (learnerData.lastAdjustment) {
+                    const lastAdj = learnerData.lastAdjustment;
+                    lastAdjustmentDate = new Date(lastAdj.date).toLocaleDateString();
+                    lastAdjustmentReason = lastAdj.reason;
+                    lastAdjustmentBy = lastAdj.adjustedBy;
+                    lastAdjustmentPoints = lastAdj.points;
+                }
+                
+                // Create detailed adjustment history
+                let adjustmentHistory = '';
+                if (learnerData.adjustments && learnerData.adjustments.length > 0) {
+                    adjustmentHistory = learnerData.adjustments.map(adj => {
+                        const adjDate = new Date(adj.date).toLocaleDateString();
+                        const adjTime = new Date(adj.date).toLocaleTimeString();
+                        return `${adjDate} ${adjTime}: ${adj.points > 0 ? '+' : ''}${adj.points} points - ${adj.reason} (by ${adj.adjustedBy})`;
+                    }).join('; ');
+                }
+                
+                learners.push({
+                    'Learner Name': learnerData.name,
+                    'Current Points': learnerData.points,
+                    'Total Adjustments': totalAdjustments,
+                    'Last Adjustment Date': lastAdjustmentDate,
+                    'Last Adjustment Reason': lastAdjustmentReason,
+                    'Last Adjustment By': lastAdjustmentBy,
+                    'Last Adjustment Points': lastAdjustmentPoints,
+                    'Adjustment History': adjustmentHistory,
+                    'Learner ID': doc.id
+                });
+            });
+            
+            // Sort by points (highest first)
+            learners.sort((a, b) => b['Current Points'] - a['Current Points']);
+            
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(learners);
+            
+            // Set column widths
+            const colWidths = [
+                { wch: 20 }, // Learner Name
+                { wch: 12 }, // Current Points
+                { wch: 15 }, // Total Adjustments
+                { wch: 15 }, // Last Adjustment Date
+                { wch: 25 }, // Last Adjustment Reason
+                { wch: 20 }, // Last Adjustment By
+                { wch: 15 }, // Last Adjustment Points
+                { wch: 50 }, // Adjustment History
+                { wch: 20 }  // Learner ID
+            ];
+            ws['!cols'] = colWidths;
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Learners');
+            
+            // Generate filename with class name and date
+            const date = new Date().toISOString().split('T')[0];
+            const filename = `${className}_Learners_${date}.xlsx`;
+            
+            // Save file
+            XLSX.writeFile(wb, filename);
+            
+            console.log(`Successfully exported ${learners.length} learners to Excel`);
+            
+        } catch (error) {
+            console.error('Error exporting to Excel:', error);
+            alert('Error exporting data to Excel. Please try again.');
+        }
+    }
+
+    // Export all classes data to Excel
+    async function exportAllClassesData() {
+        try {
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
+            
+            if (classesSnapshot.empty) {
+                alert('No classes found to export');
+                return;
+            }
+            
+            const allLearners = [];
+            let totalLearners = 0;
+            
+            // Process each class
+            for (const classDoc of classesSnapshot.docs) {
+                const className = classDoc.id;
+                const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+                const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+                
+                if (!learnersSnapshot.empty) {
+                    learnersSnapshot.forEach(doc => {
+                        const learnerData = doc.data();
+                        
+                        // Calculate total adjustments
+                        const totalAdjustments = learnerData.adjustments ? learnerData.adjustments.length : 0;
+                        
+                        // Get last adjustment details
+                        let lastAdjustmentDate = '';
+                        let lastAdjustmentReason = '';
+                        let lastAdjustmentBy = '';
+                        let lastAdjustmentPoints = '';
+                        
+                        if (learnerData.lastAdjustment) {
+                            const lastAdj = learnerData.lastAdjustment;
+                            lastAdjustmentDate = new Date(lastAdj.date).toLocaleDateString();
+                            lastAdjustmentReason = lastAdj.reason;
+                            lastAdjustmentBy = lastAdj.adjustedBy;
+                            lastAdjustmentPoints = lastAdj.points;
+                        }
+                        
+                        // Create detailed adjustment history
+                        let adjustmentHistory = '';
+                        if (learnerData.adjustments && learnerData.adjustments.length > 0) {
+                            adjustmentHistory = learnerData.adjustments.map(adj => {
+                                const adjDate = new Date(adj.date).toLocaleDateString();
+                                const adjTime = new Date(adj.date).toLocaleTimeString();
+                                return `${adjDate} ${adjTime}: ${adj.points > 0 ? '+' : ''}${adj.points} points - ${adj.reason} (by ${adj.adjustedBy})`;
+                            }).join('; ');
+                        }
+                        
+                        allLearners.push({
+                            'Class': className,
+                            'Learner Name': learnerData.name,
+                            'Current Points': learnerData.points,
+                            'Total Adjustments': totalAdjustments,
+                            'Last Adjustment Date': lastAdjustmentDate,
+                            'Last Adjustment Reason': lastAdjustmentReason,
+                            'Last Adjustment By': lastAdjustmentBy,
+                            'Last Adjustment Points': lastAdjustmentPoints,
+                            'Adjustment History': adjustmentHistory,
+                            'Learner ID': doc.id
+                        });
+                        
+                        totalLearners++;
+                    });
+                }
+            }
+            
+            if (totalLearners === 0) {
+                alert('No learners found in any class');
+                return;
+            }
+            
+            // Sort by class name, then by points (highest first)
+            allLearners.sort((a, b) => {
+                if (a.Class === b.Class) {
+                    return b['Current Points'] - a['Current Points'];
+                }
+                return a.Class.localeCompare(b.Class);
+            });
+            
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(allLearners);
+            
+            // Set column widths
+            const colWidths = [
+                { wch: 15 }, // Class
+                { wch: 20 }, // Learner Name
+                { wch: 12 }, // Current Points
+                { wch: 15 }, // Total Adjustments
+                { wch: 15 }, // Last Adjustment Date
+                { wch: 25 }, // Last Adjustment Reason
+                { wch: 20 }, // Last Adjustment By
+                { wch: 15 }, // Last Adjustment Points
+                { wch: 50 }, // Adjustment History
+                { wch: 20 }  // Learner ID
+            ];
+            ws['!cols'] = colWidths;
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'All Classes Data');
+            
+            // Generate filename with date
+            const date = new Date().toISOString().split('T')[0];
+            const filename = `All_Classes_Learners_${date}.xlsx`;
+            
+            // Save file
+            XLSX.writeFile(wb, filename);
+            
+            console.log(`Successfully exported ${totalLearners} learners from ${classesSnapshot.size} classes to Excel`);
+            
+        } catch (error) {
+            console.error('Error exporting all classes data to Excel:', error);
+            alert('Error exporting data to Excel. Please try again.');
+        }
+    }
 
 </script>
 </body>

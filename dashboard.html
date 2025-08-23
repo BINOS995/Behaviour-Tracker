@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Performance Tracker</title>
+    <link rel="icon" type="image/png" href="images/logo1.png">
     
     <!-- Prevent caching to ensure auth checks work on back button -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1920,11 +1921,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
 
         return `
             <div class="bg-white rounded-xl shadow-sm p-4 md:p-6">
-                <div class="flex items-center justify-between mb-4 md:mb-6">
-                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">${className}</h1>
-                </div>
-
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-4 md:mb-6">
                     <h1 class="text-xl md:text-2xl font-bold text-gray-800">${className}</h1>
                     <button onclick="exportToExcel('${className}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center">
                         <i class="fas fa-file-excel mr-2"></i>Export Class Data
@@ -1967,9 +1964,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             </div>
                             
                             <div class="bg-gray-50 rounded-xl p-3 md:p-4">
-                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Students</h3>
                                 <div id="${className}-students" class="space-y-2 md:space-y-3 max-h-60 md:max-h-80 overflow-y-auto pr-2">
-                                    <p class="text-sm md:text-base text-gray-700">Student list will appear here.</p>
+                                    <!-- Student list will be populated here -->
                                 </div>
                             </div>
                         </div>
@@ -2010,7 +2006,6 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             </div>
                             
                             <div class="bg-gray-50 rounded-xl p-3 md:p-4">
-                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Performance Chart</h3>
                                 <canvas id="${className}-chart" width="300" height="200"></canvas>
                             </div>
                         </div>

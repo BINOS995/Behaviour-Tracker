@@ -1,0 +1,14 @@
+{
+  "name": "behaviour-tracker",
+  "version": "1.0.0",
+  "description": "Behaviour tracking application for schools",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./tailwind.css -o ./style.css",
+    "watch:css": "tailwindcss -i ./tailwind.css -o ./style.css --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tailwindcss": "^3.3.0"
+  }
+}

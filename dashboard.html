@@ -10,14 +10,14 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBNGdPWISw803XD8xVo0RyCGoGpNX8o_jM",
@@ -43,7 +43,8 @@
             getDoc,
             deleteDoc,
             onSnapshot,
-            getDocs
+            getDocs,
+            updateDoc
         };
         
         // Create a collection reference for best learners
@@ -396,11 +397,49 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
 
             <!-- Top Learners Section -->
             <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
-                <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4">
-                    <i class="fas fa-trophy text-yellow-500 mr-2"></i> Top Learners By Class
+                <h2 class="text-lg font-semibold text-gray-800 mb-3">
+                    <i class="fas fa-trophy text-yellow-500 mr-2"></i> Top Learners (>100 points)
                 </h2>
                 <div id="topLearnersContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                    <p class="text-gray-500 italic col-span-full text-center py-4">No top learners data available yet</p>
+                    <p class="text-gray-500 italic col-span-full text-center py-4">Loading top learners...</p>
+                </div>
+            </div>
+
+            <!-- Performance Chart Section -->
+            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-chart-line text-blue-500 mr-2"></i> Class Performance Overview
+                    </h2>
+                    <select id="classSelector" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="all">All Classes</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <canvas id="performanceChart" width="400" height="200"></canvas>
+                    </div>
+                    <div>
+                        <h3 class="text-md font-medium text-gray-700 mb-3">Performance Summary</h3>
+                        <div id="performanceSummary" class="space-y-2">
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">Total Classes</span>
+                                <span id="chartTotalClasses" class="font-semibold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">Average Points</span>
+                                <span id="chartAvgPoints" class="font-semibold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">Highest Points</span>
+                                <span id="chartHighestPoints" class="font-semibold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">Most Active Class</span>
+                                <span id="chartMostActive" class="font-semibold">-</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -463,11 +502,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <input type="password" id="newClassPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base" placeholder="Enter password">
                         </div>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Google Sheet URL</label>
-                        <input type="url" id="newClassSheet" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base" placeholder="https://docs.google.com/spreadsheets/d/...">
-                        <p class="text-xs text-gray-500 mt-1">Paste the Google Sheets URL for behavior tracking</p>
-                    </div>
+
                     <button id="addClassBtn" class="bg-purple-500 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-purple-600 text-sm md:text-base">
                         <i class="fas fa-plus mr-2"></i>Add Class
                     </button>
@@ -565,9 +600,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 
                 // All users see all classes (temporary implementation)
                 adminClassPasswords[className] = {
-                    password: classData.password,
-                    sheetUrl: classData.sheetUrl
-                };
+                password: classData.password
+            };
                 console.log(`✓ Loaded class: "${className}" for all users (temporary)`);
             });
             }
@@ -598,69 +632,76 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             console.log('Loading users from Firestore...');
             const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
             const snapshot = await window.firebaseFirestore.getDocs(usersRef);
-            const userSelect = document.getElementById('userEmailSelect');
             
-            if (!userSelect) {
-                console.error('userEmailSelect element not found');
-                return;
-            }
-            
-            console.log(`Found ${snapshot.size} total documents in 'users' collection`);
-            
-            userSelect.innerHTML = '<option value="">Select a user...</option>';
-            
-            if (snapshot.empty) {
-                console.log('No users found in Firestore');
-                userSelect.innerHTML = '<option value="">No users found</option>';
-                return;
-            }
-            
-            let userCount = 0;
-            
-            snapshot.forEach(doc => {
-                const userData = doc.data();
-                const userEmail = doc.id; // Document ID is the email
-                
-                console.log(`Processing user: ${userEmail}`, userData);
-                
-                // Use the data from the document, but ensure we have the required fields
-                const email = userData.email || userEmail;
-                const firstName = userData.firstName || '';
-                const lastName = userData.lastName || '';
-                
-                if (email && firstName && lastName) {
-                    const option = document.createElement('option');
-                    option.value = email;
-                    option.textContent = `${firstName} ${lastName} (${email})`;
-                    userSelect.appendChild(option);
-                    userCount++;
-                    console.log(`✓ Added user: ${firstName} ${lastName} (${email})`);
-                } else {
-                    console.warn(`Skipping user ${userEmail}: missing required fields`, {
-                        email: email,
-                        firstName: firstName,
-                        lastName: lastName
+            // Wait for DOM to be ready
+            const checkUserSelect = setInterval(() => {
+                const userSelect = document.getElementById('userEmailSelect');
+                if (userSelect) {
+                    clearInterval(checkUserSelect);
+                    
+                    console.log(`Found ${snapshot.size} total documents in 'users' collection`);
+                    
+                    userSelect.innerHTML = '<option value="">Select a user...</option>';
+                    
+                    if (snapshot.empty) {
+                        console.log('No users found in Firestore');
+                        userSelect.innerHTML = '<option value="">No users found</option>';
+                        return;
+                    }
+                    
+                    let userCount = 0;
+                    
+                    snapshot.forEach(doc => {
+                        const userData = doc.data();
+                        const userEmail = doc.id; // Document ID is the email
+                        
+                        console.log(`Processing user: ${userEmail}`, userData);
+                        
+                        // Use the data from the document, but ensure we have the required fields
+                        const email = userData.email || userEmail;
+                        const firstName = userData.firstName || '';
+                        const lastName = userData.lastName || '';
+                        
+                        if (email && firstName && lastName) {
+                            const option = document.createElement('option');
+                            option.value = email;
+                            option.textContent = `${firstName} ${lastName} (${email})`;
+                            userSelect.appendChild(option);
+                            userCount++;
+                            console.log(`✓ Added user: ${firstName} ${lastName} (${email})`);
+                        } else {
+                            console.warn(`Skipping user ${userEmail}: missing required fields`, {
+                                email: email,
+                                firstName: firstName,
+                                lastName: lastName
+                            });
+                        }
                     });
+                    
+                    console.log(`Successfully loaded ${userCount} users`);
+                    
+                    if (userCount === 0) {
+                        userSelect.innerHTML = '<option value="">No valid users found</option>';
+                        console.warn('No users with complete data found');
+                    }
+                    
+                    // Remove existing event listener to prevent duplicates
+                    userSelect.removeEventListener('change', loadUserClassCheckboxes);
+                    userSelect.addEventListener('change', loadUserClassCheckboxes);
+                } else {
+                    console.warn('userEmailSelect element still not found, retrying...');
                 }
-            });
-            
-            console.log(`Successfully loaded ${userCount} users`);
-            
-            if (userCount === 0) {
-                userSelect.innerHTML = '<option value="">No valid users found</option>';
-                console.warn('No users with complete data found');
-            }
-            
-            // Remove existing event listener to prevent duplicates
-            userSelect.removeEventListener('change', loadUserClassCheckboxes);
-            userSelect.addEventListener('change', loadUserClassCheckboxes);
+            }, 100);
             
         } catch (error) {
             console.error('Error loading users:', error);
-            const userSelect = document.getElementById('userEmailSelect');
-            if (userSelect) {
-                userSelect.innerHTML = '<option value="">Error loading users</option>';
-            }
+            const checkUserSelect = setInterval(() => {
+                const userSelect = document.getElementById('userEmailSelect');
+                if (userSelect) {
+                    clearInterval(checkUserSelect);
+                    userSelect.innerHTML = '<option value="">Error loading users</option>';
+                }
+            }, 100);
         }
     }
     
@@ -1050,14 +1091,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
-                    <div class="text-sm text-gray-600">
-                        <strong>Sheet URL:</strong>
-                        ${classData.sheetUrl ? `
-                        <a href="${classData.sheetUrl}" target="_blank" class="text-blue-600 hover:underline ml-1">
-                            ${classData.sheetUrl.length > 50 ? classData.sheetUrl.substring(0, 50) + '...' : classData.sheetUrl}
-                        </a>
-                        ` : '<span class="text-gray-400 ml-1">No sheet URL provided</span>'}
-                    </div>
+
                 </div>
                 <div class="ml-4">
                     <button class="text-red-500 hover:text-red-700 p-2" onclick="removeClass('${className}')">
@@ -1073,21 +1107,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     async function addNewClass() {
         const className = document.getElementById('newClassName').value.trim();
         const password = document.getElementById('newClassPassword').value.trim();
-        const sheetUrl = document.getElementById('newClassSheet').value.trim();
 
         if (!className || !password) {
             alert('Please enter both class name and password');
-            return;
-        }
-
-        if (!sheetUrl) {
-            alert('Please enter a Google Sheet URL');
-            return;
-        }
-
-        // Validate Google Sheets URL
-        if (!sheetUrl.includes('docs.google.com/spreadsheets')) {
-            alert('Please enter a valid Google Sheets URL');
             return;
         }
 
@@ -1101,14 +1123,12 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             const classRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className);
             await window.firebaseFirestore.setDoc(classRef, {
                 password: password,
-                sheetUrl: sheetUrl,
                 createdAt: new Date().toISOString()
             });
 
             // Clear fields
             document.getElementById('newClassName').value = '';
             document.getElementById('newClassPassword').value = '';
-            document.getElementById('newClassSheet').value = '';
             
             // Success prompt
             alert(`✅ Class "${className}" has been successfully created!`);
@@ -1141,6 +1161,505 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         }
     }
 
+    // Learners collection functions
+    async function addLearner(className) {
+        const learnerNameInput = document.getElementById(`${className}-new-learner`);
+        const learnerName = learnerNameInput.value.trim();
+        
+        if (!learnerName) {
+            alert('Please enter a learner name');
+            return;
+        }
+        
+        try {
+            // Create a unique ID for the learner
+            const learnerId = Date.now().toString();
+            const currentDate = new Date();
+            const currentUser = window.firebaseAuth.currentUser;
+            const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+            
+            // Add learner to Firestore with default 100 points and initial adjustment record
+            await window.firebaseFirestore.setDoc(
+                window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId),
+                {
+                    name: learnerName,
+                    points: 100,
+                    createdAt: currentDate.toISOString(),
+                    adjustments: [
+                        {
+                            points: 100,
+                            reason: 'Initial points',
+                            adjustedBy: userName,
+                            date: currentDate.toISOString()
+                        }
+                    ],
+                    lastAdjustment: {
+                        points: 100,
+                        reason: 'Initial points',
+                        adjustedBy: userName,
+                        date: currentDate.toISOString()
+                    }
+                }
+            );
+            
+            // Clear input field
+            learnerNameInput.value = '';
+            
+            // Reload learners list and scroll to the newly added learner
+            loadLearners(className, learnerId);
+            
+            // Update top learners on dashboard
+            updateTopLearnersOnDashboard();
+        } catch (error) {
+            console.error('Error adding learner:', error);
+            alert('Error adding learner. Please try again.');
+        }
+    }
+    
+    // Load learners for a specific class
+    async function loadLearners(className, scrollToLearnerId = null) {
+        try {
+            const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+            const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+            
+            const learnersTable = document.getElementById(`${className}-learners-table`);
+            
+            if (learnersTable) {
+                // Clear existing content
+                learnersTable.innerHTML = '';
+                
+                if (learnersSnapshot.empty) {
+                    learnersTable.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="px-4 py-3 text-sm text-gray-500 text-center">No learners added yet</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                // Sort learners by points (highest first)
+                const learners = [];
+                learnersSnapshot.forEach(doc => {
+                    learners.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                learners.sort((a, b) => b.points - a.points);
+                
+                // Add learners to table
+                learners.forEach(learner => {
+                    const row = document.createElement('tr');
+                    row.className = learner.points > 100 ? 'bg-green-50' : '';
+                    
+                    // Add data-id attribute for scrolling
+                    row.setAttribute('data-learner-id', learner.id);
+                    
+                    // Format the last adjustment information
+                    let lastAdjustmentInfo = 'No adjustments yet';
+                    if (learner.lastAdjustment) {
+                        const adjustment = learner.lastAdjustment;
+                        const date = new Date(adjustment.date);
+                        const formattedDate = date.toLocaleDateString();
+                        const formattedTime = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        const pointsText = adjustment.points > 0 ? `+${adjustment.points}` : adjustment.points;
+                        
+                        lastAdjustmentInfo = `
+                            <div class="text-xs">
+                                <div class="font-medium">${pointsText} points: ${adjustment.reason}</div>
+                                <div class="text-gray-500">By: ${adjustment.adjustedBy}</div>
+                                <div class="text-gray-500">${formattedDate} ${formattedTime}</div>
+                                <button onclick="viewAdjustmentHistory('${className}', '${learner.id}', '${learner.name}')" 
+                                    class="text-blue-500 hover:text-blue-700 text-xs mt-1">
+                                    View History
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
+                    row.innerHTML = `
+                        <td class="px-4 py-3 text-sm">${learner.name}</td>
+                        <td class="px-4 py-3 text-sm font-medium ${learner.points > 100 ? 'text-green-600' : ''}">${
+                            learner.points} points</td>
+                        <td class="px-4 py-3 text-sm">${lastAdjustmentInfo}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <div class="flex items-center space-x-2">
+                                <div class="flex items-center space-x-1">
+                                    <button onclick="adjustPoints('${className}', '${learner.id}', 5)" 
+                                        class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs">
+                                        +5
+                                    </button>
+                                    <button onclick="adjustPoints('${className}', '${learner.id}', -5)" 
+                                        class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs">
+                                        -5
+                                    </button>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <button onclick="customAdjustPoints('${className}', '${learner.id}')" 
+                                        class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteLearner('${className}', '${learner.id}')" 
+                                        class="text-red-500 hover:text-red-700 px-2 py-1 rounded text-xs">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                    
+                    learnersTable.appendChild(row);
+                });
+                
+                // Update class stats
+                document.getElementById(`${className}-count`).textContent = learners.length;
+                
+                // Scroll to the newly added learner if specified
+                if (scrollToLearnerId) {
+                    setTimeout(() => {
+                        const targetRow = learnersTable.querySelector(`tr[data-learner-id="${scrollToLearnerId}"]`);
+                        if (targetRow) {
+                            const tableContainer = document.getElementById(`${className}-table-container`);
+                            if (tableContainer) {
+                                targetRow.classList.add('bg-yellow-100');
+                                tableContainer.scrollTop = targetRow.offsetTop - tableContainer.offsetTop;
+                                
+                                // Remove highlight after a short delay
+                                setTimeout(() => {
+                                    targetRow.classList.remove('bg-yellow-100');
+                                    if (targetRow.classList.contains('bg-green-50')) {
+                                        targetRow.classList.add('bg-green-50');
+                                    }
+                                }, 1500);
+                            }
+                        }
+                    }, 100);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading learners:', error);
+        }
+    }
+    
+    // Adjust points for a learner
+    async function adjustPoints(className, learnerId, pointsChange) {
+        try {
+            // Prompt for reason
+            const reason = prompt(`Please enter a reason for ${pointsChange > 0 ? 'adding' : 'deducting'} ${Math.abs(pointsChange)} points:`);
+            if (reason === null) return; // User cancelled the prompt
+            
+            const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+            const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            
+            if (learnerDoc.exists()) {
+                const learnerData = learnerDoc.data();
+                const currentPoints = learnerData.points;
+                const newPoints = Math.max(0, currentPoints + pointsChange); // Ensure points don't go below 0
+                
+                // Get current user info
+                const currentUser = window.firebaseAuth.currentUser;
+                const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+                const currentDate = new Date();
+                
+                // Create adjustment record
+                const adjustmentRecord = {
+                    points: pointsChange,
+                    reason: reason.trim() || (pointsChange > 0 ? 'Points added' : 'Points deducted'),
+                    adjustedBy: userName,
+                    date: currentDate.toISOString()
+                };
+                
+                // Get existing adjustments or create new array
+                const adjustments = learnerData.adjustments || [];
+                adjustments.push(adjustmentRecord);
+                
+                // Update the document
+                await window.firebaseFirestore.updateDoc(learnerRef, {
+                    points: newPoints,
+                    adjustments: adjustments,
+                    lastAdjustment: adjustmentRecord
+                });
+                
+                // Reload learners list and scroll to the updated learner
+                loadLearners(className, learnerId);
+                
+                // Update top learners on dashboard
+                updateTopLearnersOnDashboard();
+            }
+        } catch (error) {
+            console.error('Error adjusting points:', error);
+            alert('Error adjusting points. Please try again.');
+        }
+    }
+    
+    // View full adjustment history for a learner
+    async function viewAdjustmentHistory(className, learnerId, learnerName) {
+        try {
+            const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+            const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            
+            if (learnerDoc.exists()) {
+                const learnerData = learnerDoc.data();
+                const adjustments = learnerData.adjustments || [];
+                
+                // Create modal content
+                let modalContent = `
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold mb-4">Adjustment History for ${learnerName}</h3>
+                `;
+                
+                if (adjustments.length === 0) {
+                    modalContent += `<p class="text-gray-500">No adjustment history available.</p>`;
+                } else {
+                    // Sort adjustments by date (newest first)
+                    adjustments.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    modalContent += `
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adjusted By</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                    `;
+                    
+                    adjustments.forEach(adjustment => {
+                        const date = new Date(adjustment.date);
+                        const formattedDate = date.toLocaleDateString();
+                        const formattedTime = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        const pointsText = adjustment.points > 0 ? `+${adjustment.points}` : adjustment.points;
+                        const pointsClass = adjustment.points > 0 ? 'text-green-600' : 'text-red-600';
+                        
+                        modalContent += `
+                            <tr>
+                                <td class="px-4 py-2 text-sm">${formattedDate} ${formattedTime}</td>
+                                <td class="px-4 py-2 text-sm font-medium ${pointsClass}">${pointsText}</td>
+                                <td class="px-4 py-2 text-sm">${adjustment.reason}</td>
+                                <td class="px-4 py-2 text-sm">${adjustment.adjustedBy}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    modalContent += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+                
+                modalContent += `
+                        <div class="mt-4 flex justify-end">
+                            <button id="closeHistoryModal" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Create modal container
+                const modalContainer = document.createElement('div');
+                modalContainer.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modalContainer.id = 'adjustmentHistoryModal';
+                modalContainer.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4">
+                        ${modalContent}
+                    </div>
+                `;
+                
+                // Add modal to body
+                document.body.appendChild(modalContainer);
+                
+                // Add event listener to close button
+                document.getElementById('closeHistoryModal').addEventListener('click', () => {
+                    document.body.removeChild(modalContainer);
+                });
+                
+                // Close modal when clicking outside
+                modalContainer.addEventListener('click', (e) => {
+                    if (e.target === modalContainer) {
+                        document.body.removeChild(modalContainer);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error viewing adjustment history:', error);
+            alert('Error viewing adjustment history. Please try again.');
+        }
+    }
+    
+    // Custom point adjustment with any value
+    async function customAdjustPoints(className, learnerId) {
+        try {
+            const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+            const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            
+            if (learnerDoc.exists()) {
+                const learnerData = learnerDoc.data();
+                const currentPoints = learnerData.points;
+                
+                // Prompt for points change
+                const pointsChangeStr = prompt(`Current points: ${currentPoints}\nEnter points to add (positive) or deduct (negative):`);
+                if (pointsChangeStr === null) return; // User cancelled
+                
+                const pointsChange = parseInt(pointsChangeStr);
+                if (isNaN(pointsChange)) {
+                    alert('Please enter a valid number');
+                    return;
+                }
+                
+                // Prompt for reason
+                const reason = prompt(`Please enter a reason for ${pointsChange > 0 ? 'adding' : 'deducting'} ${Math.abs(pointsChange)} points:`);
+                if (reason === null) return; // User cancelled the prompt
+                
+                const newPoints = Math.max(0, currentPoints + pointsChange); // Ensure points don't go below 0
+                
+                // Get current user info
+                const currentUser = window.firebaseAuth.currentUser;
+                const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+                const currentDate = new Date();
+                
+                // Create adjustment record
+                const adjustmentRecord = {
+                    points: pointsChange,
+                    reason: reason.trim() || (pointsChange > 0 ? 'Points added' : 'Points deducted'),
+                    adjustedBy: userName,
+                    date: currentDate.toISOString()
+                };
+                
+                // Get existing adjustments or create new array
+                const adjustments = learnerData.adjustments || [];
+                adjustments.push(adjustmentRecord);
+                
+                // Update the document
+                await window.firebaseFirestore.updateDoc(learnerRef, {
+                    points: newPoints,
+                    adjustments: adjustments,
+                    lastAdjustment: adjustmentRecord
+                });
+                
+                // Reload learners list and scroll to the updated learner
+                loadLearners(className, learnerId);
+                
+                // Update top learners on dashboard
+                updateTopLearnersOnDashboard();
+            }
+        } catch (error) {
+            console.error('Error adjusting points:', error);
+            alert('Error adjusting points. Please try again.');
+        }
+    }
+    
+    // Delete a learner
+    async function deleteLearner(className, learnerId) {
+        if (!confirm('Are you sure you want to remove this learner?')) return;
+        
+        try {
+            await window.firebaseFirestore.deleteDoc(
+                window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId)
+            );
+            
+            // Reload learners list
+            loadLearners(className);
+            
+            // Update top learners on dashboard
+            updateTopLearnersOnDashboard();
+        } catch (error) {
+            console.error('Error deleting learner:', error);
+            alert('Error deleting learner. Please try again.');
+        }
+    }
+    
+    // Update top learners on dashboard
+    async function updateTopLearnersOnDashboard() {
+        try {
+            const topLearnersContainer = document.getElementById('topLearnersContainer');
+            if (!topLearnersContainer) return;
+            
+            // Clear existing content
+            topLearnersContainer.innerHTML = '<h3 class="text-lg font-semibold mb-3">Top Learners (>100 points)</h3>';
+            
+            // Get all classes
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
+            
+            let topLearners = [];
+            
+            // Get learners from all classes
+            for (const classDoc of classesSnapshot.docs) {
+                const className = classDoc.id;
+                const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+                const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+                
+                learnersSnapshot.forEach(doc => {
+                    const learner = doc.data();
+                    if (learner.points > 100) {
+                        topLearners.push({
+                            id: doc.id,
+                            className: className,
+                            ...learner
+                        });
+                    }
+                });
+            }
+            
+            // Sort by points (highest first)
+            topLearners.sort((a, b) => b.points - a.points);
+            
+            // Limit to top 10
+            topLearners = topLearners.slice(0, 10);
+            
+            if (topLearners.length === 0) {
+                topLearnersContainer.innerHTML += `
+                    <p class="text-gray-500 text-sm">No learners with more than 100 points yet.</p>
+                `;
+                return;
+            }
+            
+            // Create list
+            const list = document.createElement('ul');
+            list.className = 'space-y-2';
+            
+            topLearners.forEach((learner, index) => {
+                    const item = document.createElement('li');
+                    item.className = 'flex items-center justify-between bg-white p-3 rounded-lg shadow-sm';
+                    
+                    // Format last adjustment info if available
+                    let adjustmentInfo = '';
+                    if (learner.lastAdjustment) {
+                        const adjustment = learner.lastAdjustment;
+                        const date = new Date(adjustment.date);
+                        const formattedDate = date.toLocaleDateString();
+                        adjustmentInfo = `
+                            <span class="text-xs text-gray-500 block">
+                                Last: ${adjustment.reason} (${formattedDate})
+                            </span>
+                        `;
+                    }
+                    
+                    item.innerHTML = `
+                        <div>
+                            <span class="font-medium">${index + 1}. ${learner.name}</span>
+                            <span class="text-xs text-gray-500 block">Class: ${learner.className}</span>
+                            ${adjustmentInfo}
+                        </div>
+                        <span class="text-green-600 font-semibold">${learner.points} points</span>
+                    `;
+                
+                list.appendChild(item);
+            });
+            
+            topLearnersContainer.appendChild(list);
+        } catch (error) {
+            console.error('Error updating top learners:', error);
+        }
+    }
+    
     // Function to save best learner data to Firestore
     async function saveBestLearner(className) {
         try {
@@ -1221,21 +1740,20 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
 
         // Update sidebar navigation
         updateSidebarNavigation();
+        
+        // Load learners for each class
+        Object.keys(adminClassPasswords).forEach(className => {
+            setTimeout(() => loadLearners(className), 500);
+        });
+        
+        // Update top learners on dashboard
+        updateTopLearnersOnDashboard();
     }
 
     // Create content for a specific class
     function createClassContent(className) {
         const classData = adminClassPasswords[className];
-        const sheetUrl = classData?.sheetUrl || '';
-        
-        // Convert Google Sheets URL to embed format
-        let embedUrl = '';
-        if (sheetUrl) {
-            const match = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-            if (match) {
-                embedUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/edit?usp=sharing&rm=minimal`;
-            }
-        }
+        // We no longer need to convert Google Sheets URL as we're using our own table system
         
         // Load best learner data if available
         let bestLearnerName = '';
@@ -1268,18 +1786,34 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                         <div class="lg:col-span-2">
                             <div class="bg-gray-50 rounded-xl p-3 md:p-4 mb-4 md:mb-6">
                                 <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Behavior Tracker</h3>
-                                ${embedUrl ? `
-                                <div class="border border-gray-300 rounded-lg overflow-hidden" style="height: 400px; max-height: 80vh;">
-                                    <iframe 
-                                        src="${embedUrl}" 
-                                        width="100%" 
-                                        height="100%" 
-                                        frameborder="0"
-                                        style="border:0;"
-                                        allowfullscreen>
-                                    </iframe>
+                                <div class="mb-4">
+                                    <div class="flex flex-wrap gap-2 mb-4">
+                                        <input type="text" id="${className}-new-learner" placeholder="Learner name" class="flex-grow p-2 border rounded-lg text-sm">
+                                        <button onclick="addLearner('${className}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center">
+                                            <i class="fas fa-plus mr-2"></i>Add Learner
+                                        </button>
+                                    </div>
+                                    <div class="border border-gray-300 rounded-lg overflow-hidden">
+                                        <div class="max-h-96 overflow-y-auto" id="${className}-table-container">
+                                            <table class="min-w-full divide-y divide-gray-200">
+                                                <thead class="bg-gray-100 sticky top-0">
+                                                    <tr>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Adjustment</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="${className}-learners-table" class="bg-white divide-y divide-gray-200">
+                                                    <!-- Learners will be loaded here -->
+                                                    <tr>
+                                                        <td colspan="4" class="px-4 py-3 text-sm text-gray-500 text-center">No learners added yet</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
-                                ` : '<p class="text-sm md:text-base text-gray-500">No Google Sheet configured for this class.</p>'}
                             </div>
                             
                             <div class="bg-gray-50 rounded-xl p-3 md:p-4">
@@ -1400,6 +1934,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             if (contentDiv) {
                 contentDiv.classList.remove('class-content-blur');
                 contentDiv.classList.add('class-content-unblur');
+                
+                // Load learners for this class after password verification
+                loadLearners(currentClass);
             }
         } else {
             document.getElementById('passwordError').classList.remove('hidden');
@@ -1793,37 +2330,42 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             const adminsRef = window.firebaseFirestore.collection(window.firebaseDB, 'admins');
             const adminsSnapshot = await window.firebaseFirestore.getDocs(adminsRef);
             
-            const adminList = document.getElementById('adminList');
-            if (!adminList) {
-                console.error('adminList element not found');
-                return;
-            }
-            adminList.innerHTML = '';
-            
-            if (adminsSnapshot.empty) {
-                adminList.innerHTML = '<p class="text-gray-500">No admins found</p>';
-                return;
-            }
-            
-            adminsSnapshot.forEach((doc) => {
-                const admin = doc.data();
-                const adminDiv = document.createElement('div');
-                adminDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg border';
-                adminDiv.innerHTML = `
-                    <div>
-                        <p class="font-medium">${admin.firstName} ${admin.lastName}</p>
-                        <p class="text-sm text-gray-600">${admin.email}</p>
-                        <p class="text-xs text-gray-500">Granted: ${new Date(admin.grantedAt).toLocaleDateString()}</p>
-                    </div>
-                    ${doc.id !== window.firebaseAuth.currentUser.uid && !admin.isInitialAdmin ? 
-                        `<button onclick="revokeAdminPrivileges('${doc.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
-                            <i class="fas fa-user-times"></i> Revoke
-                        </button>` :
-                        '<span class="text-sm text-green-600">' + (admin.isInitialAdmin ? 'System Admin' : 'Current User') + '</span>'
+            // Wait for DOM to be ready
+            const checkAdminList = setInterval(() => {
+                const adminList = document.getElementById('adminList');
+                if (adminList) {
+                    clearInterval(checkAdminList);
+                    
+                    adminList.innerHTML = '';
+                    
+                    if (adminsSnapshot.empty) {
+                        adminList.innerHTML = '<p class="text-gray-500">No admins found</p>';
+                        return;
                     }
-                `;
-                adminList.appendChild(adminDiv);
-            });
+                    
+                    adminsSnapshot.forEach((doc) => {
+                        const admin = doc.data();
+                        const adminDiv = document.createElement('div');
+                        adminDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg border';
+                        adminDiv.innerHTML = `
+                            <div>
+                                <p class="font-medium">${admin.firstName} ${admin.lastName}</p>
+                                <p class="text-sm text-gray-600">${admin.email}</p>
+                                <p class="text-xs text-gray-500">Granted: ${new Date(admin.grantedAt).toLocaleDateString()}</p>
+                            </div>
+                            ${doc.id !== window.firebaseAuth.currentUser.uid && !admin.isInitialAdmin ? 
+                                `<button onclick="revokeAdminPrivileges('${doc.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                                    <i class="fas fa-user-times"></i> Revoke
+                                </button>` :
+                                '<span class="text-sm text-green-600">' + (admin.isInitialAdmin ? 'System Admin' : 'Current User') + '</span>'
+                            }
+                        `;
+                        adminList.appendChild(adminDiv);
+                    });
+                } else {
+                    console.warn('adminList element still not found, retrying...');
+                }
+            }, 100);
             
         } catch (error) {
             console.error('Error loading admin list:', error);
@@ -1922,9 +2464,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 snapshot.forEach(doc => {
                     const classData = doc.data();
                     adminClassPasswords[doc.id] = {
-                        password: classData.password,
-                        sheetUrl: classData.sheetUrl
-                    };
+                    password: classData.password
+                };
                 });
                 updateClassesList();
                 updateTabContentWithClasses();

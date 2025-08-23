@@ -240,69 +240,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     }
     </script>
     
-    <!-- Quick Tips Modal -->
-    <div id="quickTipsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Quick Tips</h3>
-                <button onclick="hideQuickTips()" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            
-            <div class="space-y-4">
-                <div class="bg-yellow-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-yellow-800 mb-2">💡 Daily Workflow Tips</h4>
-                    <ul class="text-sm text-yellow-700 space-y-1">
-                        <li>• Start your day by selecting your class</li>
-                        <li>• Award points immediately when you see good behavior</li>
-                        <li>• Use the search bar to find students quickly</li>
-                        <li>• Check the "Weekly Top Performers" to motivate students</li>
-                    </ul>
-                </div>
-                
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-blue-800 mb-2">📱 Mobile Tips</h4>
-                    <ul class="text-sm text-blue-700 space-y-1">
-                        <li>• Tap the hamburger menu (☰) to open navigation</li>
-                        <li>• Use your phone in portrait mode for best experience</li>
-                        <li>• Add the app to your home screen for quick access</li>
-                        <li>• The app works offline - points sync when reconnected</li>
-                    </ul>
-                </div>
-                
-                <div class="bg-green-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-green-800 mb-2">🏆 Point System Guide</h4>
-                    <ul class="text-sm text-green-700 space-y-1">
-                        <li>• <strong>+1 point:</strong> Small positive behaviors</li>
-                        <li>• <strong>+3 points:</strong> Significant achievements</li>
-                        <li>• <strong>+5 points:</strong> Exceptional performance</li>
-                        <li>• <strong>-1 point:</strong> Minor rule violations</li>
-                        <li>• <strong>-3 points:</strong> Serious misbehavior</li>
-                    </ul>
-                </div>
-                
-                <div class="bg-purple-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-purple-800 mb-2">🎯 Pro Tips</h4>
-                    <ul class="text-sm text-purple-700 space-y-1">
-                        <li>• Set weekly goals with your class</li>
-                        <li>• Share progress with parents via screenshots</li>
-                        <li>• Use consistent point values for similar behaviors</li>
-                        <li>• Review weekly reports to identify patterns</li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="mt-6 flex justify-between">
-                <button onclick="hideGettingStarted()" class="text-sm text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-eye-slash mr-1"></i> Hide getting started guide
-                </button>
-                <button onclick="hideQuickTips()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
-                    Got it!
-                </button>
-            </div>
-        </div>
-    </div>
+
     
     <style>
         .class-content-blur {
@@ -340,24 +278,27 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         </div>
         
         <nav class="px-4 py-2">
-            <button class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 relative group" data-content="Dashboard">
-                <i class="fas fa-home"></i> Dashboard
+            <button class="flex items-center justify-center w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 relative group" data-content="Dashboard">
+                <i class="fas fa-home text-lg mr-2"></i>
+                <span class="text-sm font-medium">Dashboard</span>
                 <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                     View overall stats and quick actions
                 </div>
             </button>
             
-            <button id="adminBtn" class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-green-500 rounded-lg hover:bg-green-600 relative group" style="display:none;" data-content="Admin">
-                <i class="fas fa-user-shield"></i> Admin
+            <button id="adminBtn" class="flex items-center justify-center w-full px-4 py-3 mb-2 text-white bg-green-500 rounded-lg hover:bg-green-600 relative group" style="display:none;" data-content="Admin">
+                <i class="fas fa-user-shield text-lg mr-2"></i>
+                <span class="text-sm font-medium">Admin</span>
                 <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                     Manage users and system settings
                 </div>
             </button>
             
             <div class="mb-4">
-                <button id="classesDropdownBtn" class="flex items-center justify-between w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group">
-                    <span><i class="fas fa-chalkboard-teacher mr-2"></i>Classes</span>
-                    <i class="fas fa-chevron-down"></i>
+                <button id="classesDropdownBtn" class="flex items-center justify-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group">
+                    <i class="fas fa-chalkboard-teacher text-lg mr-2"></i>
+                    <span class="text-sm font-medium">Classes</span>
+                    <i class="fas fa-chevron-down ml-auto"></i>
                     <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                         Manage your classes and students
                     </div>
@@ -367,8 +308,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 </div>
             </div>
             
-            <button class="flex items-center gap-3 w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group" data-content="Logout">
-                <i class="fas fa-sign-out-alt"></i> Logout
+
+            
+            <button class="flex items-center justify-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group" data-content="Logout">
+                <i class="fas fa-sign-out-alt text-lg mr-2"></i>
+                <span class="text-sm font-medium">Logout</span>
                 <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                     Sign out of your account
                 </div>
@@ -469,46 +413,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             
 
             
-            <!-- Getting Started Guide -->
-            <div id="gettingStarted" class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-                <div class="flex items-start">
-                    <i class="fas fa-graduation-cap text-blue-600 text-2xl mr-4 mt-1"></i>
-                    <div class="flex-1">
-                        <h2 class="text-xl font-bold text-blue-800 mb-2">🎯 Getting Started Guide</h2>
-                        <p class="text-blue-700 mb-4">Welcome! Here's how to use the Behaviour Tracker effectively:</p>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-white rounded-lg p-4">
-                                <h3 class="font-semibold text-gray-800 mb-2">📋 Step 1: Setup Your Class</h3>
-                                <ol class="text-sm text-gray-600 space-y-1">
-                                    <li>1. Click "Classes" in the sidebar</li>
-                                    <li>2. Create your class with a password</li>
-                                    <li>3. Add your students</li>
-                                </ol>
-                            </div>
-                            
-                            <div class="bg-white rounded-lg p-4">
-                                <h3 class="font-semibold text-gray-800 mb-2">⭐ Step 2: Award Points</h3>
-                                <ol class="text-sm text-gray-600 space-y-1">
-                                    <li>1. Select your class</li>
-                                    <li>2. Find a student</li>
-                                    <li>3. Click [+] for positive behavior</li>
-                                    <li>4. Choose reason and save</li>
-                                </ol>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-4 flex items-center space-x-4">
-                            <button onclick="hideGettingStarted()" class="text-sm text-blue-600 hover:text-blue-800">
-                                <i class="fas fa-times mr-1"></i> Hide this guide
-                            </button>
-                            <button onclick="showQuickTips()" class="text-sm text-green-600 hover:text-green-800">
-                                <i class="fas fa-lightbulb mr-1"></i> Show Quick Tips
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 md:p-6 text-white">
@@ -548,7 +453,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     <i class="fas fa-trophy text-yellow-500 mr-2"></i> Top Learners (>100 points)
                 </h2>
                 <div id="topLearnersContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                    <p class="text-gray-500 italic col-span-full text-center py-4">Loading top learners...</p>
+                    <p class="text-gray-700 italic col-span-full text-center py-4">Loading top learners...</p>
                 </div>
             </div>
 
@@ -659,7 +564,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">Existing Classes</h3>
                     <div id="classesList" class="space-y-3">
-                        <p class="text-gray-500">Loading classes...</p>
+                        <p class="text-gray-700">Loading classes...</p>
                     </div>
                 </div>
 
@@ -689,7 +594,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Available Classes (Auto-Assigned)</label>
                         <div id="classCheckboxes" class="space-y-2">
-                            <p class="text-gray-500 italic">All users currently have access to all classes by default</p>
+                            <p class="text-gray-700 italic">All users currently have access to all classes by default</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -1119,7 +1024,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         const userEmail = userEmailSelect.value;
         
         if (!userEmail) {
-            classCheckboxes.innerHTML = '<p class="text-gray-500">Select a user first</p>';
+            classCheckboxes.innerHTML = '<p class="text-gray-700">Select a user first</p>';
             return;
         }
         
@@ -1414,8 +1319,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                         lastAdjustmentInfo = `
                             <div class="text-xs">
                                 <div class="font-medium">${pointsText} points: ${adjustment.reason}</div>
-                                <div class="text-gray-500">By: ${adjustment.adjustedBy}</div>
-                                <div class="text-gray-500">${formattedDate} ${formattedTime}</div>
+                                <div class="text-gray-700">By: ${adjustment.adjustedBy}</div>
+                        <div class="text-gray-700">${formattedDate} ${formattedTime}</div>
                                 <button onclick="viewAdjustmentHistory('${className}', '${learner.id}', '${learner.name}')" 
                                     class="text-blue-500 hover:text-blue-700 text-xs mt-1">
                                     View History
@@ -1425,10 +1330,10 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     }
                     
                     row.innerHTML = `
-                        <td class="px-4 py-3 text-sm">${learner.name}</td>
-                        <td class="px-4 py-3 text-sm font-medium ${learner.points > 100 ? 'text-green-600' : ''}">${
+                        <td class="px-4 py-3 text-sm text-gray-800">${learner.name}</td>
+                        <td class="px-4 py-3 text-sm font-medium ${learner.points > 100 ? 'text-green-700' : 'text-gray-700'}">${
                             learner.points} points</td>
-                        <td class="px-4 py-3 text-sm">${lastAdjustmentInfo}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${lastAdjustmentInfo}</td>
                         <td class="px-4 py-3 text-sm">
                             <div class="flex items-center space-x-2">
                                 <div class="flex items-center space-x-1">
@@ -1555,7 +1460,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 `;
                 
                 if (adjustments.length === 0) {
-                    modalContent += `<p class="text-gray-500">No adjustment history available.</p>`;
+                    modalContent += `<p class="text-gray-700">No adjustment history available.</p>`;
                 } else {
                     // Sort adjustments by date (newest first)
                     adjustments.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1565,10 +1470,10 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-100">
                                     <tr>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adjusted By</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Date</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Points</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Reason</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Adjusted By</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
@@ -1857,16 +1762,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                             <table class="min-w-full divide-y divide-gray-200">
                                                 <thead class="bg-gray-100 sticky top-0">
                                                     <tr>
-                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
-                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Adjustment</th>
-                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Points</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Last Adjustment</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="${className}-learners-table" class="bg-white divide-y divide-gray-200">
                                                     <!-- Learners will be loaded here -->
                                                     <tr>
-                                                        <td colspan="4" class="px-4 py-3 text-sm text-gray-500 text-center">No learners added yet</td>
+                                                        <td colspan="4" class="px-4 py-3 text-sm text-gray-700 text-center">No learners added yet</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -1878,7 +1783,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <div class="bg-gray-50 rounded-xl p-3 md:p-4">
                                 <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Students</h3>
                                 <div id="${className}-students" class="space-y-2 md:space-y-3 max-h-60 md:max-h-80 overflow-y-auto pr-2">
-                                    <p class="text-sm md:text-base text-gray-500">Student list will appear here.</p>
+                                    <p class="text-sm md:text-base text-gray-700">Student list will appear here.</p>
                                 </div>
                             </div>
                         </div>
@@ -1888,11 +1793,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                 <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Class Stats</h3>
                                 <div class="space-y-2">
                                     <div class="flex justify-between">
-                                        <span class="text-xs md:text-sm text-gray-600">Total Students:</span>
+                                        <span class="text-xs md:text-sm text-gray-700">Total Students:</span>
                                         <span class="font-semibold text-sm md:text-base" id="${className}-count">0</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-xs md:text-sm text-gray-600">Average Points:</span>
+                                        <span class="text-xs md:text-sm text-gray-700">Average Points:</span>
                                         <span class="font-semibold text-sm md:text-base" id="${className}-avg">0</span>
                                     </div>
                                 </div>
@@ -1914,7 +1819,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                     <button onclick="saveBestLearner('${className}')" class="w-full bg-green-500 text-white py-1.5 md:py-2 rounded-lg hover:bg-green-600 mt-2 text-sm md:text-base">
                                         <i class="fas fa-plus mr-2"></i>Add Top Learner
                                     </button>
-                                    <p class="text-xs text-gray-500 mt-2">You can add multiple top learners for this class. They will be ranked by points on the dashboard.</p>
+                                    <p class="text-xs text-gray-600 mt-2">You can add multiple top learners for this class. They will be ranked by points on the dashboard.</p>
                                 </div>
                             </div>
                             
@@ -1938,9 +1843,10 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         
         Object.keys(adminClassPasswords).forEach(className => {
             const classButton = document.createElement('button');
-            classButton.className = 'class-btn flex items-center gap-2 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-left';
+            classButton.className = 'class-btn flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg';
             classButton.setAttribute('data-content', className);
-            classButton.innerHTML = `<i class="fas fa-book"></i> ${className}`;
+            classButton.innerHTML = `<i class="fas fa-book text-lg mr-2"></i><span class="text-sm font-medium">${className}</span>`;
+            classButton.title = className; // Add tooltip for accessibility
             classesDropdownMenu.appendChild(classButton);
         });
 
@@ -2105,8 +2011,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 topLearnersContainer.innerHTML = `
                     <div class="col-span-full text-center py-8">
                         <i class="fas fa-spinner fa-spin text-blue-500 text-2xl mb-4"></i>
-                        <p class="text-gray-500">Loading top learners...</p>
-                        <p class="text-sm text-gray-400 mt-2">Connecting to database...</p>
+                        <p class="text-gray-700">Loading top learners...</p>
+                        <p class="text-sm text-gray-600 mt-2">Connecting to database...</p>
                     </div>
                 `;
             }
@@ -2131,9 +2037,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     topLearnersContainer.innerHTML = `
                         <div class="col-span-full text-center py-8">
                             <i class="fas fa-trophy text-gray-300 text-4xl mb-4"></i>
-                            <p class="text-gray-500 italic">No top learners added yet</p>
-                            <p class="text-sm text-gray-400 mt-2">Add learners with 100+ points from each class to see them here</p>
-                            <p class="text-sm text-gray-400 mt-1">Tip: Go to a class, find a learner with 100+ points, and click "Add to Top Learners"</p>
+                            <p class="text-gray-700 italic">No top learners added yet</p>
+                            <p class="text-sm text-gray-600 mt-2">Add learners with 100+ points from each class to see them here</p>
+                            <p class="text-sm text-gray-600 mt-1">Tip: Go to a class, find a learner with 100+ points, and click "Add to Top Learners"</p>
                         </div>
                     `;
                     return;
@@ -2207,7 +2113,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                     </div>
                                     <div class="flex items-center mt-1">
                                         <span class="text-lg font-bold text-yellow-500">${learner.points}</span>
-                                        <span class="text-xs text-gray-500 ml-1">points</span>
+                                        <span class="text-xs text-gray-600 ml-1">points</span>
                                     </div>
                                 </div>
                             </div>
@@ -2910,39 +2816,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         updateNetworkStatus(navigator.onLine);
     }, 1000);
     
-    // Instructional functions
-    function hideGettingStarted() {
-        document.getElementById('gettingStarted').style.display = 'none';
-        localStorage.setItem('hideGettingStarted', 'true');
-    }
-    
-    function showQuickTips() {
-        document.getElementById('quickTipsModal').style.display = 'flex';
-    }
-    
-    function hideQuickTips() {
-        document.getElementById('quickTipsModal').style.display = 'none';
-    }
-    
-    function showGettingStarted() {
-        document.getElementById('gettingStarted').style.display = 'block';
-        localStorage.removeItem('hideGettingStarted');
-    }
-    
-    // Show getting started guide on first visit
-    window.addEventListener('DOMContentLoaded', function() {
-        if (!localStorage.getItem('hideGettingStarted')) {
-            document.getElementById('gettingStarted').style.display = 'block';
-        }
-    });
-    
-    // Close modals when clicking outside
-    window.addEventListener('click', function(event) {
-        const quickTipsModal = document.getElementById('quickTipsModal');
-        if (event.target === quickTipsModal) {
-            hideQuickTips();
-        }
-    });
+
 </script>
 </body>
 </html>

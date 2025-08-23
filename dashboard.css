@@ -582,11 +582,13 @@ tbody a {
 }
 
 .mobile-menu-overlay.active {
-    display: block;
-    opacity: 1;
-}
+        display: block;
+        opacity: 1;
+    }
+    
 
-/* Mobile menu toggle */
+    
+    Mobile menu toggle */
 .mobile-menu-toggle {
     display: none;
     background: none;
@@ -604,6 +606,11 @@ tbody a {
 .mobile-menu-toggle:hover {
     transform: scale(1.1);
 }
+
+/* Instructional Elements */
+
+
+
 
 /* Responsive styles */
 @media screen and (max-width: 768px) {

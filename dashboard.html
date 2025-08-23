@@ -379,6 +379,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             // Close sidebar when clicking on overlay
             overlay.addEventListener('click', closeMobileMenu);
             
+            // Close sidebar when clicking anywhere outside (on main content)
+            document.addEventListener('click', function(event) {
+                const isClickInsideSidebar = sidebar.contains(event.target);
+                const isClickOnHamburger = mobileMenuBtn.contains(event.target);
+                
+                if (!isClickInsideSidebar && !isClickOnHamburger && !sidebar.classList.contains('hidden')) {
+                    closeMobileMenu();
+                }
+            });
+            
             // Close sidebar when clicking on a menu item (mobile only)
             const menuItems = sidebar.querySelectorAll('button[data-content]');
             menuItems.forEach(item => {

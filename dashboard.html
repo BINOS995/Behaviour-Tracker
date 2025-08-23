@@ -405,6 +405,44 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 </div>
             </div>
 
+            <!-- Performance Chart Section -->
+            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-chart-line text-blue-500 mr-2"></i> Class Performance Overview
+                    </h2>
+                    <select id="classSelector" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="all">All Classes</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <canvas id="performanceChart" width="400" height="200"></canvas>
+                    </div>
+                    <div>
+                        <h3 class="text-md font-medium text-gray-700 mb-3">Performance Summary</h3>
+                        <div id="performanceSummary" class="space-y-2">
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">Total Classes</span>
+                                <span id="chartTotalClasses" class="font-semibold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">Average Points</span>
+                                <span id="chartAvgPoints" class="font-semibold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">Highest Points</span>
+                                <span id="chartHighestPoints" class="font-semibold">-</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-600">Most Active Class</span>
+                                <span id="chartMostActive" class="font-semibold">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Quick Actions section removed -->
         `,
         "Admin": `
@@ -464,11 +502,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <input type="password" id="newClassPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base" placeholder="Enter password">
                         </div>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Google Sheet URL</label>
-                        <input type="url" id="newClassSheet" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base" placeholder="https://docs.google.com/spreadsheets/d/...">
-                        <p class="text-xs text-gray-500 mt-1">Paste the Google Sheets URL for behavior tracking</p>
-                    </div>
+
                     <button id="addClassBtn" class="bg-purple-500 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-purple-600 text-sm md:text-base">
                         <i class="fas fa-plus mr-2"></i>Add Class
                     </button>
@@ -566,9 +600,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 
                 // All users see all classes (temporary implementation)
                 adminClassPasswords[className] = {
-                    password: classData.password,
-                    sheetUrl: classData.sheetUrl
-                };
+                password: classData.password
+            };
                 console.log(`✓ Loaded class: "${className}" for all users (temporary)`);
             });
             }
@@ -599,69 +632,76 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             console.log('Loading users from Firestore...');
             const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
             const snapshot = await window.firebaseFirestore.getDocs(usersRef);
-            const userSelect = document.getElementById('userEmailSelect');
             
-            if (!userSelect) {
-                console.error('userEmailSelect element not found');
-                return;
-            }
-            
-            console.log(`Found ${snapshot.size} total documents in 'users' collection`);
-            
-            userSelect.innerHTML = '<option value="">Select a user...</option>';
-            
-            if (snapshot.empty) {
-                console.log('No users found in Firestore');
-                userSelect.innerHTML = '<option value="">No users found</option>';
-                return;
-            }
-            
-            let userCount = 0;
-            
-            snapshot.forEach(doc => {
-                const userData = doc.data();
-                const userEmail = doc.id; // Document ID is the email
-                
-                console.log(`Processing user: ${userEmail}`, userData);
-                
-                // Use the data from the document, but ensure we have the required fields
-                const email = userData.email || userEmail;
-                const firstName = userData.firstName || '';
-                const lastName = userData.lastName || '';
-                
-                if (email && firstName && lastName) {
-                    const option = document.createElement('option');
-                    option.value = email;
-                    option.textContent = `${firstName} ${lastName} (${email})`;
-                    userSelect.appendChild(option);
-                    userCount++;
-                    console.log(`✓ Added user: ${firstName} ${lastName} (${email})`);
-                } else {
-                    console.warn(`Skipping user ${userEmail}: missing required fields`, {
-                        email: email,
-                        firstName: firstName,
-                        lastName: lastName
+            // Wait for DOM to be ready
+            const checkUserSelect = setInterval(() => {
+                const userSelect = document.getElementById('userEmailSelect');
+                if (userSelect) {
+                    clearInterval(checkUserSelect);
+                    
+                    console.log(`Found ${snapshot.size} total documents in 'users' collection`);
+                    
+                    userSelect.innerHTML = '<option value="">Select a user...</option>';
+                    
+                    if (snapshot.empty) {
+                        console.log('No users found in Firestore');
+                        userSelect.innerHTML = '<option value="">No users found</option>';
+                        return;
+                    }
+                    
+                    let userCount = 0;
+                    
+                    snapshot.forEach(doc => {
+                        const userData = doc.data();
+                        const userEmail = doc.id; // Document ID is the email
+                        
+                        console.log(`Processing user: ${userEmail}`, userData);
+                        
+                        // Use the data from the document, but ensure we have the required fields
+                        const email = userData.email || userEmail;
+                        const firstName = userData.firstName || '';
+                        const lastName = userData.lastName || '';
+                        
+                        if (email && firstName && lastName) {
+                            const option = document.createElement('option');
+                            option.value = email;
+                            option.textContent = `${firstName} ${lastName} (${email})`;
+                            userSelect.appendChild(option);
+                            userCount++;
+                            console.log(`✓ Added user: ${firstName} ${lastName} (${email})`);
+                        } else {
+                            console.warn(`Skipping user ${userEmail}: missing required fields`, {
+                                email: email,
+                                firstName: firstName,
+                                lastName: lastName
+                            });
+                        }
                     });
+                    
+                    console.log(`Successfully loaded ${userCount} users`);
+                    
+                    if (userCount === 0) {
+                        userSelect.innerHTML = '<option value="">No valid users found</option>';
+                        console.warn('No users with complete data found');
+                    }
+                    
+                    // Remove existing event listener to prevent duplicates
+                    userSelect.removeEventListener('change', loadUserClassCheckboxes);
+                    userSelect.addEventListener('change', loadUserClassCheckboxes);
+                } else {
+                    console.warn('userEmailSelect element still not found, retrying...');
                 }
-            });
-            
-            console.log(`Successfully loaded ${userCount} users`);
-            
-            if (userCount === 0) {
-                userSelect.innerHTML = '<option value="">No valid users found</option>';
-                console.warn('No users with complete data found');
-            }
-            
-            // Remove existing event listener to prevent duplicates
-            userSelect.removeEventListener('change', loadUserClassCheckboxes);
-            userSelect.addEventListener('change', loadUserClassCheckboxes);
+            }, 100);
             
         } catch (error) {
             console.error('Error loading users:', error);
-            const userSelect = document.getElementById('userEmailSelect');
-            if (userSelect) {
-                userSelect.innerHTML = '<option value="">Error loading users</option>';
-            }
+            const checkUserSelect = setInterval(() => {
+                const userSelect = document.getElementById('userEmailSelect');
+                if (userSelect) {
+                    clearInterval(checkUserSelect);
+                    userSelect.innerHTML = '<option value="">Error loading users</option>';
+                }
+            }, 100);
         }
     }
     
@@ -1051,14 +1091,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
-                    <div class="text-sm text-gray-600">
-                        <strong>Sheet URL:</strong>
-                        ${classData.sheetUrl ? `
-                        <a href="${classData.sheetUrl}" target="_blank" class="text-blue-600 hover:underline ml-1">
-                            ${classData.sheetUrl.length > 50 ? classData.sheetUrl.substring(0, 50) + '...' : classData.sheetUrl}
-                        </a>
-                        ` : '<span class="text-gray-400 ml-1">No sheet URL provided</span>'}
-                    </div>
+
                 </div>
                 <div class="ml-4">
                     <button class="text-red-500 hover:text-red-700 p-2" onclick="removeClass('${className}')">
@@ -1074,21 +1107,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     async function addNewClass() {
         const className = document.getElementById('newClassName').value.trim();
         const password = document.getElementById('newClassPassword').value.trim();
-        const sheetUrl = document.getElementById('newClassSheet').value.trim();
 
         if (!className || !password) {
             alert('Please enter both class name and password');
-            return;
-        }
-
-        if (!sheetUrl) {
-            alert('Please enter a Google Sheet URL');
-            return;
-        }
-
-        // Validate Google Sheets URL
-        if (!sheetUrl.includes('docs.google.com/spreadsheets')) {
-            alert('Please enter a valid Google Sheets URL');
             return;
         }
 
@@ -1102,14 +1123,12 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             const classRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className);
             await window.firebaseFirestore.setDoc(classRef, {
                 password: password,
-                sheetUrl: sheetUrl,
                 createdAt: new Date().toISOString()
             });
 
             // Clear fields
             document.getElementById('newClassName').value = '';
             document.getElementById('newClassPassword').value = '';
-            document.getElementById('newClassSheet').value = '';
             
             // Success prompt
             alert(`✅ Class "${className}" has been successfully created!`);
@@ -2311,37 +2330,42 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             const adminsRef = window.firebaseFirestore.collection(window.firebaseDB, 'admins');
             const adminsSnapshot = await window.firebaseFirestore.getDocs(adminsRef);
             
-            const adminList = document.getElementById('adminList');
-            if (!adminList) {
-                console.error('adminList element not found');
-                return;
-            }
-            adminList.innerHTML = '';
-            
-            if (adminsSnapshot.empty) {
-                adminList.innerHTML = '<p class="text-gray-500">No admins found</p>';
-                return;
-            }
-            
-            adminsSnapshot.forEach((doc) => {
-                const admin = doc.data();
-                const adminDiv = document.createElement('div');
-                adminDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg border';
-                adminDiv.innerHTML = `
-                    <div>
-                        <p class="font-medium">${admin.firstName} ${admin.lastName}</p>
-                        <p class="text-sm text-gray-600">${admin.email}</p>
-                        <p class="text-xs text-gray-500">Granted: ${new Date(admin.grantedAt).toLocaleDateString()}</p>
-                    </div>
-                    ${doc.id !== window.firebaseAuth.currentUser.uid && !admin.isInitialAdmin ? 
-                        `<button onclick="revokeAdminPrivileges('${doc.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
-                            <i class="fas fa-user-times"></i> Revoke
-                        </button>` :
-                        '<span class="text-sm text-green-600">' + (admin.isInitialAdmin ? 'System Admin' : 'Current User') + '</span>'
+            // Wait for DOM to be ready
+            const checkAdminList = setInterval(() => {
+                const adminList = document.getElementById('adminList');
+                if (adminList) {
+                    clearInterval(checkAdminList);
+                    
+                    adminList.innerHTML = '';
+                    
+                    if (adminsSnapshot.empty) {
+                        adminList.innerHTML = '<p class="text-gray-500">No admins found</p>';
+                        return;
                     }
-                `;
-                adminList.appendChild(adminDiv);
-            });
+                    
+                    adminsSnapshot.forEach((doc) => {
+                        const admin = doc.data();
+                        const adminDiv = document.createElement('div');
+                        adminDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg border';
+                        adminDiv.innerHTML = `
+                            <div>
+                                <p class="font-medium">${admin.firstName} ${admin.lastName}</p>
+                                <p class="text-sm text-gray-600">${admin.email}</p>
+                                <p class="text-xs text-gray-500">Granted: ${new Date(admin.grantedAt).toLocaleDateString()}</p>
+                            </div>
+                            ${doc.id !== window.firebaseAuth.currentUser.uid && !admin.isInitialAdmin ? 
+                                `<button onclick="revokeAdminPrivileges('${doc.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                                    <i class="fas fa-user-times"></i> Revoke
+                                </button>` :
+                                '<span class="text-sm text-green-600">' + (admin.isInitialAdmin ? 'System Admin' : 'Current User') + '</span>'
+                            }
+                        `;
+                        adminList.appendChild(adminDiv);
+                    });
+                } else {
+                    console.warn('adminList element still not found, retrying...');
+                }
+            }, 100);
             
         } catch (error) {
             console.error('Error loading admin list:', error);
@@ -2440,9 +2464,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 snapshot.forEach(doc => {
                     const classData = doc.data();
                     adminClassPasswords[doc.id] = {
-                        password: classData.password,
-                        sheetUrl: classData.sheetUrl
-                    };
+                    password: classData.password
+                };
                 });
                 updateClassesList();
                 updateTabContentWithClasses();

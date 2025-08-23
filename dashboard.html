@@ -300,6 +300,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         </nav>
     </aside>
 
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
     <!-- Main Content -->
     <main class="flex-1 p-4 md:p-6 lg:p-8">
         <div id="content" class="max-w-7xl mx-auto">
@@ -330,20 +333,47 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     document.addEventListener('DOMContentLoaded', function() {
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileMenuOverlay');
         
-        if (mobileMenuBtn && sidebar) {
+        if (mobileMenuBtn && sidebar && overlay) {
+            function openMobileMenu() {
+                sidebar.classList.remove('hidden');
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Prevent body scroll
+            }
+            
+            function closeMobileMenu() {
+                sidebar.classList.add('hidden');
+                overlay.classList.remove('active');
+                document.body.style.overflow = ''; // Restore body scroll
+            }
+            
             mobileMenuBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('hidden');
+                if (sidebar.classList.contains('hidden')) {
+                    openMobileMenu();
+                } else {
+                    closeMobileMenu();
+                }
             });
+            
+            // Close sidebar when clicking on overlay
+            overlay.addEventListener('click', closeMobileMenu);
             
             // Close sidebar when clicking on a menu item (mobile only)
             const menuItems = sidebar.querySelectorAll('button[data-content]');
             menuItems.forEach(item => {
                 item.addEventListener('click', function() {
                     if (window.innerWidth < 768) { // md breakpoint
-                        sidebar.classList.add('hidden');
+                        closeMobileMenu();
                     }
                 });
+            });
+            
+            // Close menu when window is resized to desktop
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    closeMobileMenu();
+                }
             });
         }
     });

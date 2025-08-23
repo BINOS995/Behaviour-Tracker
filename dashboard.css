@@ -11,6 +11,8 @@ body {
     background-color: #0b0e19;
     color: white;
     overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
 }
 
 .container {
@@ -181,6 +183,366 @@ table {
     }
 }
 
+/* Enhanced Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+    }
+    
+    .sidebar {
+        width: 100%;
+        min-width: 100%;
+        height: auto;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+    
+    .sidebar h2 {
+        font-size: 16px;
+        margin-bottom: 0;
+        margin-right: 10px;
+    }
+    
+    .nav {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .nav-item {
+        margin-bottom: 0;
+    }
+    
+    .nav-item a {
+        padding: 6px 8px;
+        font-size: 14px;
+        gap: 5px;
+    }
+    
+    .settings {
+        font-size: 12px;
+        margin-left: 10px;
+    }
+    
+    .main-content {
+        padding: 15px;
+        width: 100%;
+        overflow-x: hidden;
+    }
+    
+    header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .search-bar {
+        width: 100%;
+        padding: 10px;
+    }
+    
+    .filters {
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .filters button {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .table-container {
+        margin: 0 -15px;
+        padding: 0 15px;
+    }
+    
+    table {
+        min-width: 500px;
+    }
+    
+    thead th,
+    tbody td {
+        padding: 8px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar {
+        padding: 10px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .sidebar h2 {
+        font-size: 14px;
+        text-align: center;
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .nav {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .nav-item a {
+        padding: 8px;
+        justify-content: center;
+    }
+    
+    .settings {
+        margin-left: 0;
+        margin-top: 10px;
+        text-align: center;
+    }
+    
+    .main-content {
+        padding: 10px;
+    }
+    
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filters button {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    .table-container {
+        margin: 0 -10px;
+        padding: 0 10px;
+        border-radius: 0.25rem;
+    }
+    
+    table {
+        min-width: 400px;
+        font-size: 12px;
+    }
+    
+    thead th,
+    tbody td {
+        padding: 6px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 390px) {
+    .sidebar {
+        padding: 8px;
+    }
+    
+    .main-content {
+        padding: 8px;
+    }
+    
+    table {
+        min-width: 350px;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    .nav-item a:hover {
+        background-color: #1d2237;
+    }
+    
+    .filters button:hover {
+        background-color: #1d2237;
+    }
+}
+
+/* Landscape orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+    .container {
+        flex-direction: row;
+    }
+    
+    .sidebar {
+        width: 180px;
+        min-width: 180px;
+        flex-direction: column;
+        padding: 10px;
+    }
+    
+    .sidebar h2 {
+        font-size: 14px;
+    }
+    
+    .nav-item a {
+        padding: 4px 6px;
+        font-size: 12px;
+    }
+    
+    .main-content {
+        padding: 10px;
+    }
+}
+
+/* High DPI screens */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .sidebar {
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* Print styles */
+@media print {
+    .sidebar {
+        display: none;
+    }
+    
+    .container {
+        flex-direction: column;
+    }
+    
+    body {
+        background-color: white;
+        color: black;
+    }
+}
+
+/* Scrollbar styles for webkit browsers */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1d2237;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2d3354;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3d4264;
+}
+
+/* Focus styles for accessibility */
+.nav-item a:focus,
+.filters button:focus,
+.search-bar:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #2d3354;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Responsive table improvements */
+@media (max-width: 768px) {
+    .responsive-table-container {
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .responsive-table-container::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .responsive-table-container::-webkit-scrollbar-thumb {
+        background: #2d3354;
+        border-radius: 2px;
+    }
+}
+
+/* Mobile menu toggle (hidden by default) */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: block;
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 1001;
+    }
+    
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 250px;
+        transform: translateX(-100%);
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 60px 20px 20px;
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .sidebar h2 {
+        font-size: 16px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .nav {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .settings {
+        margin-top: auto;
+        text-align: center;
+    }
+    
+    .main-content {
+        margin-top: 0;
+        padding-top: 60px;
+    }
+    
+    header {
+        position: relative;
+    }
+}
+
 thead {
     background-color: #1d2237;
 }
@@ -205,6 +567,25 @@ tbody a {
     text-decoration: none;
 }
 
+/* Mobile menu overlay */
+.mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.mobile-menu-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
 /* Mobile menu toggle */
 .mobile-menu-toggle {
     display: none;
@@ -217,6 +598,11 @@ tbody a {
     top: 20px;
     left: 20px;
     z-index: 1001;
+    transition: transform 0.3s ease;
+}
+
+.mobile-menu-toggle:hover {
+    transform: scale(1.1);
 }
 
 /* Responsive styles */
@@ -230,8 +616,11 @@ tbody a {
         top: 0;
         left: 0;
         height: 100vh;
+        width: 280px;
         transform: translateX(-100%);
         z-index: 1000;
+        transition: transform 0.3s ease-in-out;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     }
     
     .sidebar.active {
@@ -246,6 +635,33 @@ tbody a {
     
     .mobile-menu-toggle {
         display: block;
+    }
+    
+    /* Mobile menu animations */
+    @keyframes slideIn {
+        from {
+            transform: translateX(-100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+        }
+        to {
+            transform: translateX(-100%);
+        }
+    }
+    
+    .sidebar.slide-in {
+        animation: slideIn 0.3s ease-in-out;
+    }
+    
+    .sidebar.slide-out {
+        animation: slideOut 0.3s ease-in-out;
     }
     
     header {

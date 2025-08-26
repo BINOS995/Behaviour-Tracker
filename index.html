@@ -24,9 +24,18 @@
   <script type="module" src="firebaseauth.js"></script>
 </head>
 <body>
-  <div class="logo-container">
-    <img src="images/logo1.png" alt="Behaviour Tracker" class="logo">
-    <h1 class="student-behaviour-tracker">Student Behaviour Tracker</h1>
+  <div class="flex justify-center mt-8 mb-6">
+    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full mx-4 transform transition-all duration-300 hover:shadow-2xl">
+      <div class="flex flex-col items-center space-y-4">
+        <div id="logo-circle" style="display: flex; align-items: center; justify-content: center; width: 100px; height: 100px; border-radius: 50%; border: 2px solid #4CAF50; background: linear-gradient(135deg, #f0fdf4, #dcfce7); cursor: pointer; transition: all 0.3s ease; animation: logoPulse 2s ease-in-out infinite;">
+          <img src="images/logo1.png" alt="Behaviour Tracker" style="width: 80%; height: 80%; object-fit: contain; transition: transform 0.3s ease;">
+        </div>
+        <div class="text-center">
+          <h1 class="text-2xl font-bold text-gray-800 mb-2">Student Behaviour Tracker</h1>
+          <p class="text-sm text-gray-600">Track, manage, and improve student behavior</p>
+        </div>
+      </div>
+    </div>
   </div> 
 
   <!-- Register Section -->
@@ -119,6 +128,53 @@
     </div>
   </div>
 
+  <style>
+    @keyframes logoPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+      }
+    }
+    
+    #logo-circle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(76, 175, 80, 0.6);
+    }
+    
+    #logo-circle:hover img {
+      transform: rotate(10deg) scale(1.1);
+    }
+  </style>
+  
+  <script>
+    // Logo animation control
+    document.addEventListener('DOMContentLoaded', function() {
+      const logoCircle = document.getElementById('logo-circle');
+      const logoImg = logoCircle.querySelector('img');
+      
+      // Add click animation
+      logoCircle.addEventListener('click', function() {
+        this.style.animation = 'none';
+        setTimeout(() => {
+          this.style.animation = 'logoPulse 2s ease-in-out infinite';
+        }, 10);
+      });
+      
+      // Add mouse enter/leave effects
+      logoCircle.addEventListener('mouseenter', function() {
+        this.style.animationPlayState = 'paused';
+      });
+      
+      logoCircle.addEventListener('mouseleave', function() {
+        this.style.animationPlayState = 'running';
+      });
+    });
+  </script>
+  
   <script src="script.js"></script>
   
   <!-- Forgot Password Modal -->

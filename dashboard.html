@@ -14,6 +14,22 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script>
+    window.addEventListener('error', function(e) {
+        console.error('JavaScript error detected:', e.message, '\nLine:', e.lineno, '\nColumn:', e.colno, '\nFile:', e.filename);
+        alert('JavaScript error: ' + e.message + ' at line ' + e.lineno);
+    });
+    
+    // Ensure jsPDF is properly initialized
+    window.addEventListener('load', function() {
+        if (typeof window.jspdf === 'undefined') {
+            console.warn('jsPDF not found in window object. Creating empty object.');
+            window.jspdf = { jsPDF: function() { return {}; } };
+        }
+    });
+    </script>
     
     <!-- Firebase SDK -->
     <script type="module">
@@ -1501,10 +1517,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                 <div class="font-medium">${pointsText} points: ${adjustment.reason}</div>
                                 <div class="text-gray-700">By: ${adjustment.adjustedBy}</div>
                         <div class="text-gray-700">${formattedDate} ${formattedTime}</div>
-                                <button onclick="viewAdjustmentHistory('${className}', '${learner.id}', '${learner.name}')" 
-                                    class="text-blue-500 hover:text-blue-700 text-xs mt-1">
-                                    View History
-                                </button>
+                                <div class="flex space-x-2">
+                                    <button onclick="viewAdjustmentHistory('${className}', '${learner.id}', '${learner.name}')" 
+                                        class="text-blue-500 hover:text-blue-700 text-xs mt-1">
+                                        View History
+                                    </button>
+                                    <button onclick="generateLearnerPDF('${className}', '${learner.id}', '${learner.name}')" 
+                                        class="text-purple-500 hover:text-purple-700 text-xs mt-1">
+                                        <i class="fas fa-file-pdf mr-1"></i>PDF Report
+                                    </button>
+                                </div>
                             </div>
                         `;
                     }
@@ -1583,45 +1605,227 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
             const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
             
-            if (learnerDoc.exists()) {
-                const learnerData = learnerDoc.data();
-                const currentPoints = learnerData.points;
-                const newPoints = Math.max(0, currentPoints + pointsChange); // Ensure points don't go below 0
-                
-                // Get current user info
-                const currentUser = window.firebaseAuth.currentUser;
-                const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
-                const currentDate = new Date();
-                
-                // Create adjustment record
-                const adjustmentRecord = {
-                    points: pointsChange,
-                    reason: reason.trim() || (pointsChange > 0 ? 'Points added' : 'Points deducted'),
-                    adjustedBy: userName,
-                    date: currentDate.toISOString()
-                };
-                
-                // Get existing adjustments or create new array
-                const adjustments = learnerData.adjustments || [];
-                adjustments.push(adjustmentRecord);
-                
-                // Update the document
-                await window.firebaseFirestore.updateDoc(learnerRef, {
-                    points: newPoints,
-                    adjustments: adjustments,
-                    lastAdjustment: adjustmentRecord
-                });
-                
-                // Reload learners list and scroll to the updated learner
-                loadLearners(className, learnerId);
-                
-
+            const learnerData = learnerDoc.data();
+            if (!learnerData) {
+                throw new Error('Learner data not available');
             }
+            const currentPoints = learnerData.points;
+            const newPoints = Math.max(0, currentPoints + pointsChange); // Ensure points don't go below 0
+            
+            // Get current user info
+            const currentUser = window.firebaseAuth.currentUser;
+            const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+            const currentDate = new Date();
+            
+            // Create adjustment record
+            const adjustmentRecord = {
+                points: pointsChange,
+                reason: reason.trim() || (pointsChange > 0 ? 'Points added' : 'Points deducted'),
+                adjustedBy: userName,
+                date: currentDate.toISOString()
+            };
+            
+            // Get existing adjustments or create new array
+            const adjustments = learnerData.adjustments || [];
+            adjustments.push(adjustmentRecord);
+            
+            // Update the document
+            await window.firebaseFirestore.updateDoc(learnerRef, {
+                points: newPoints,
+                adjustments: adjustments,
+                lastAdjustment: adjustmentRecord
+            });
+            
+            // Reload learners list and scroll to the updated learner
+            loadLearners(className, learnerId);
         } catch (error) {
             console.error('Error adjusting points:', error);
             alert('Error adjusting points. Please try again.');
         }
     }
+    
+    // Generate PDF report for a learner
+    async function generateLearnerPDF(className, learnerId, learnerName) {
+        try {
+            // Alert the user that we're generating a PDF
+            alert('Generating PDF for ' + learnerName + '. This may take a moment.');
+            
+            // Fetch the learner data from Firebase
+            const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+            const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            
+            if (!learnerDoc.exists()) {
+                throw new Error('Learner data not found');
+            }
+            
+            const learnerData = learnerDoc.data();
+            learnerData.id = learnerId;
+            learnerData.name = learnerName;
+            
+            // Process the learner data
+            const adjustments = learnerData.adjustments || [];
+            
+            // Check if jsPDF is available
+            if (typeof window.jspdf === 'undefined') {
+                throw new Error('jsPDF library not loaded');
+            }
+            
+            // Initialize jsPDF
+            try {
+                // Ensure jsPDF is properly destructured
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+             
+                 // Add title and header information
+                 doc.setFontSize(20);
+                 doc.setTextColor(0, 0, 128);
+                 doc.text(`Learner Report: ${learnerName}`, 14, 20);
+                    
+                 doc.setFontSize(12);
+                 doc.setTextColor(0, 0, 0);
+                 doc.text(`Class: ${className}`, 14, 30);
+                 doc.text(`Current Points: ${learnerData.points}`, 14, 37);
+                 doc.text(`Total Adjustments: ${adjustments.length}`, 14, 44);
+                 doc.text(`Report Generated: ${new Date().toLocaleString()}`, 14, 51);
+                 
+                 // Add adjustment history table
+                 doc.setFontSize(16);
+                 doc.setTextColor(0, 0, 128);
+                 doc.text('Adjustment History', 14, 65);
+                    
+                 if (adjustments.length === 0) {
+                     doc.setFontSize(12);
+                     doc.setTextColor(100, 100, 100);
+                     doc.text('No adjustment history available.', 14, 75);
+                 } else {
+                     // Prepare table data
+                     const tableColumn = ['Date', 'Points', 'Reason', 'Adjusted By'];
+                     const tableRows = [];
+                     
+                     adjustments.forEach(adjustment => {
+                         const date = new Date(adjustment.date);
+                         const formattedDate = date.toLocaleDateString() + ' ' + 
+                                             date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                         const pointsText = adjustment.points > 0 ? `+${adjustment.points}` : adjustment.points;
+                         
+                         tableRows.push([
+                             formattedDate,
+                             pointsText,
+                             adjustment.reason,
+                             adjustment.adjustedBy
+                         ]);
+                     });
+                     
+                     // Add table to PDF
+                     doc.autoTable({
+                         head: [tableColumn],
+                         body: tableRows,
+                         startY: 70,
+                         styles: { fontSize: 10 },
+                         columnStyles: {
+                             0: { cellWidth: 40 },
+                             1: { cellWidth: 20, halign: 'center' },
+                             2: { cellWidth: 70 },
+                             3: { cellWidth: 40 }
+                         },
+                         headStyles: {
+                             fillColor: [0, 51, 102],
+                             textColor: 255
+                         },
+                         alternateRowStyles: {
+                             fillColor: [240, 240, 240]
+                         },
+                         didDrawCell: (data) => {
+                             // Color positive points green and negative points red
+                             if (data.column.index === 1 && data.section === 'body') {
+                                 const text = data.cell.text[0];
+                                 if (text.startsWith('+')) {
+                                     doc.setTextColor(0, 128, 0); // Green for positive
+                                 } else if (text.startsWith('-')) {
+                                     doc.setTextColor(220, 0, 0); // Red for negative
+                                 }
+                             }
+                         }
+                     });
+                     
+                     // Reset text color after table
+                     doc.setTextColor(0, 0, 0);
+                 }
+                 
+                 // Add summary section
+                 const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 75;
+                 doc.setFontSize(16);
+                 doc.setTextColor(0, 0, 128);
+                 doc.text('Summary', 14, finalY);
+                 
+                 // Calculate statistics
+                 let positiveAdjustments = 0;
+                 let negativeAdjustments = 0;
+                 let totalPositivePoints = 0;
+                 let totalNegativePoints = 0;
+                 
+                 adjustments.forEach(adj => {
+                     if (adj.points > 0) {
+                         positiveAdjustments++;
+                         totalPositivePoints += adj.points;
+                     } else if (adj.points < 0) {
+                         negativeAdjustments++;
+                         totalNegativePoints += Math.abs(adj.points);
+                     }
+                 });
+                 
+                 doc.setFontSize(12);
+                 doc.setTextColor(0, 0, 0);
+                 doc.text(`Positive Adjustments: ${positiveAdjustments} (Total: +${totalPositivePoints} points)`, 14, finalY + 10);
+                 doc.text(`Negative Adjustments: ${negativeAdjustments} (Total: -${totalNegativePoints} points)`, 14, finalY + 20);
+                 
+                 if (adjustments.length > 0) {
+                     // Most common reasons
+                     const reasonCounts = {};
+                     adjustments.forEach(adj => {
+                         reasonCounts[adj.reason] = (reasonCounts[adj.reason] || 0) + 1;
+                     });
+                     
+                     const sortedReasons = Object.entries(reasonCounts)
+                         .sort((a, b) => b[1] - a[1])
+                         .slice(0, 3);
+                     
+                     if (sortedReasons.length > 0) {
+                         doc.setFontSize(14);
+                         doc.text('Most Common Reasons:', 14, finalY + 35);
+                         
+                         doc.setFontSize(12);
+                         sortedReasons.forEach((reason, index) => {
+                             doc.text(`${index + 1}. ${reason[0]} (${reason[1]} times)`, 20, finalY + 45 + (index * 8));
+                         });
+                     }
+                 }
+                 
+                 // Add footer
+                 const pageCount = doc.internal.getNumberOfPages();
+                 for (let i = 1; i <= pageCount; i++) {
+                     doc.setPage(i);
+                     doc.setFontSize(10);
+                     doc.setTextColor(100, 100, 100);
+                     doc.text(
+                         `Behaviour Tracker - Page ${i} of ${pageCount}`,
+                         doc.internal.pageSize.getWidth() / 2,
+                         doc.internal.pageSize.getHeight() - 10,
+                         { align: 'center' }
+                     );
+                 }
+                 
+                 // Save the PDF
+                 doc.save(`${className}_${learnerName}_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+             } catch (jspdfError) {
+                 console.error('Error creating PDF:', jspdfError);
+                 alert('Error creating PDF: ' + jspdfError.message);
+             }
+         } catch (error) {
+             console.error('Error generating PDF report:', error);
+             alert('Error generating PDF report. Please try again.');
+         }
+     }
     
     // View full adjustment history for a learner
     async function viewAdjustmentHistory(className, learnerId, learnerName) {

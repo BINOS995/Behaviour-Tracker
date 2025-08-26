@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Performance Tracker</title>
+    <link rel="icon" type="image/png" href="images/logo1.png">
     
     <!-- Prevent caching to ensure auth checks work on back button -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -12,6 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <!-- Firebase SDK -->
     <script type="module">
@@ -97,8 +99,10 @@
         });
     </script>
     
-    <!-- Additional diagnostic functions -->
+
+
     <script>
+
     // Comprehensive Firestore structure check
     async function checkFirestoreStructure() {
         try {
@@ -240,6 +244,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     }
     </script>
     
+
+    
     <style>
         .class-content-blur {
             filter: blur(12px);
@@ -276,29 +282,50 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         </div>
         
         <nav class="px-4 py-2">
-            <button class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600" data-content="Dashboard">
-                <i class="fas fa-home"></i> Dashboard
+            <button class="flex items-center justify-center w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 relative group" data-content="Dashboard">
+                <i class="fas fa-home text-lg mr-2"></i>
+                <span class="text-sm font-medium">Dashboard</span>
+                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    View overall stats and quick actions
+                </div>
             </button>
             
-            <button id="adminBtn" class="flex items-center gap-3 w-full px-4 py-3 mb-2 text-white bg-green-500 rounded-lg hover:bg-green-600" style="display:none;" data-content="Admin">
-                <i class="fas fa-user-shield"></i> Admin
+            <button id="adminBtn" class="flex items-center justify-center w-full px-4 py-3 mb-2 text-white bg-green-500 rounded-lg hover:bg-green-600 relative group" style="display:none;" data-content="Admin">
+                <i class="fas fa-user-shield text-lg mr-2"></i>
+                <span class="text-sm font-medium">Admin</span>
+                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    Manage users and system settings
+                </div>
             </button>
             
             <div class="mb-4">
-                <button id="classesDropdownBtn" class="flex items-center justify-between w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg">
-                    <span><i class="fas fa-chalkboard-teacher mr-2"></i>Classes</span>
-                    <i class="fas fa-chevron-down"></i>
+                <button id="classesDropdownBtn" class="flex items-center justify-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group">
+                    <i class="fas fa-chalkboard-teacher text-lg mr-2"></i>
+                    <span class="text-sm font-medium">Classes</span>
+                    <i class="fas fa-chevron-down ml-auto"></i>
+                    <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                        Manage your classes and students
+                    </div>
                 </button>
                 <div id="classesDropdownMenu" class="hidden mt-2 ml-4">
                     <!-- Classes will be loaded here -->
                 </div>
             </div>
             
-            <button class="flex items-center gap-3 w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg" data-content="Logout">
-                <i class="fas fa-sign-out-alt"></i> Logout
+
+            
+            <button class="flex items-center justify-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group" data-content="Logout">
+                <i class="fas fa-sign-out-alt text-lg mr-2"></i>
+                <span class="text-sm font-medium">Logout</span>
+                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    Sign out of your account
+                </div>
             </button>
         </nav>
     </aside>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
 
     <!-- Main Content -->
     <main class="flex-1 p-4 md:p-6 lg:p-8">
@@ -330,10 +357,40 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     document.addEventListener('DOMContentLoaded', function() {
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobileMenuOverlay');
         
-        if (mobileMenuBtn && sidebar) {
+        if (mobileMenuBtn && sidebar && overlay) {
+            function openMobileMenu() {
+                sidebar.classList.remove('hidden');
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Prevent body scroll
+            }
+            
+            function closeMobileMenu() {
+                sidebar.classList.add('hidden');
+                overlay.classList.remove('active');
+                document.body.style.overflow = ''; // Restore body scroll
+            }
+            
             mobileMenuBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('hidden');
+                if (sidebar.classList.contains('hidden')) {
+                    openMobileMenu();
+                } else {
+                    closeMobileMenu();
+                }
+            });
+            
+            // Close sidebar when clicking on overlay
+            overlay.addEventListener('click', closeMobileMenu);
+            
+            // Close sidebar when clicking anywhere outside (on main content)
+            document.addEventListener('click', function(event) {
+                const isClickInsideSidebar = sidebar.contains(event.target);
+                const isClickOnHamburger = mobileMenuBtn.contains(event.target);
+                
+                if (!isClickInsideSidebar && !isClickOnHamburger && !sidebar.classList.contains('hidden')) {
+                    closeMobileMenu();
+                }
             });
             
             // Close sidebar when clicking on a menu item (mobile only)
@@ -341,9 +398,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             menuItems.forEach(item => {
                 item.addEventListener('click', function() {
                     if (window.innerWidth < 768) { // md breakpoint
-                        sidebar.classList.add('hidden');
+                        closeMobileMenu();
                     }
                 });
+            });
+            
+            // Close menu when window is resized to desktop
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    closeMobileMenu();
+                }
             });
         }
     });
@@ -363,6 +427,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             
 
             
+
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
                 <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 md:p-6 text-white">
                     <div class="flex items-center justify-between">
@@ -395,13 +461,28 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 </div>
             </div>
 
+            <!-- Export All Data Section -->
+            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-1">
+                            <i class="fas fa-file-excel text-green-500 mr-2"></i> Export All Data
+                        </h2>
+                        <p class="text-sm text-gray-600">Export all learner data from all classes to Excel format</p>
+                    </div>
+                    <button onclick="exportAllClassesData()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center">
+                        <i class="fas fa-download mr-2"></i> Export All Classes
+                    </button>
+                </div>
+            </div>
+
             <!-- Top Learners Section -->
             <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6 md:mb-8">
                 <h2 class="text-lg font-semibold text-gray-800 mb-3">
                     <i class="fas fa-trophy text-yellow-500 mr-2"></i> Top Learners (>100 points)
                 </h2>
                 <div id="topLearnersContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                    <p class="text-gray-500 italic col-span-full text-center py-4">Loading top learners...</p>
+                    <p class="text-gray-700 italic col-span-full text-center py-4">Loading top learners...</p>
                 </div>
             </div>
 
@@ -438,6 +519,22 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                 <span class="text-sm text-gray-600">Most Active Class</span>
                                 <span id="chartMostActive" class="font-semibold">-</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Class Export Instructions -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-blue-600 text-xl mr-3"></i>
+                    <div>
+                        <h3 class="text-sm font-medium text-blue-800">📊 Export Individual Class Data</h3>
+                        <p class="text-xs text-blue-700 mt-1">
+                            Click any class name in the sidebar → Enter class password → Look for the green "Export to Excel" button
+                        </p>
+                        <div class="mt-2 text-xs text-blue-600">
+                            <strong>Available classes:</strong> <span id="availableClasses">Loading...</span>
                         </div>
                     </div>
                 </div>
@@ -512,7 +609,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">Existing Classes</h3>
                     <div id="classesList" class="space-y-3">
-                        <p class="text-gray-500">Loading classes...</p>
+                        <p class="text-gray-700">Loading classes...</p>
                     </div>
                 </div>
 
@@ -542,7 +639,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Available Classes (Auto-Assigned)</label>
                         <div id="classCheckboxes" class="space-y-2">
-                            <p class="text-gray-500 italic">All users currently have access to all classes by default</p>
+                            <p class="text-gray-700 italic">All users currently have access to all classes by default</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -585,6 +682,21 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             if (snapshot.empty) {
                 console.log('No classes found in Firestore');
                 adminClassPasswords = {};
+                
+                // Show "No Classes Found" message with refresh button
+                const classesList = document.getElementById('classesList');
+                if (classesList) {
+                    classesList.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-users-slash text-4xl text-gray-400 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
+                            <p class="text-gray-600 mb-4">There are no classes in the system yet.</p>
+                            <button onclick="loadClasses()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    `;
+                }
             } else {
                 // TEMPORARY: All users have access to all classes (feature coming soon)
                 console.log('TEMPORARY: All users have access to all classes (feature coming soon)');
@@ -972,7 +1084,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         const userEmail = userEmailSelect.value;
         
         if (!userEmail) {
-            classCheckboxes.innerHTML = '<p class="text-gray-500">Select a user first</p>';
+            classCheckboxes.innerHTML = '<p class="text-gray-700">Select a user first</p>';
             return;
         }
         
@@ -1059,21 +1171,44 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         }
     }
 
+    // Toggle password visibility
+    function togglePasswordVisibility(button) {
+        const passwordSpan = button.previousElementSibling;
+        const password = passwordSpan.getAttribute('data-password');
+        const icon = button.querySelector('i');
+        
+        if (passwordSpan.textContent === '*'.repeat(password.length)) {
+            passwordSpan.textContent = password;
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            passwordSpan.textContent = '*'.repeat(password.length);
+            icon.className = 'fas fa-eye';
+        }
+    }
+
     // Update classes list in admin panel
     function updateClassesList() {
+        console.log('updateClassesList called, adminClassPasswords:', adminClassPasswords);
         const classesList = document.getElementById('classesList');
-        if (!classesList) return;
+        if (!classesList) {
+            console.error('classesList element not found!');
+            return;
+        }
 
         classesList.innerHTML = '';
         
         const classes = Object.keys(adminClassPasswords);
+        console.log('Found classes:', classes);
+        
         if (classes.length === 0) {
             classesList.innerHTML = '<p class="text-gray-500">No classes created yet. Add a class above to get started.</p>';
+            console.log('No classes to display');
             return;
         }
         
         classes.forEach(className => {
             const classData = adminClassPasswords[className];
+            console.log('Creating item for class:', className);
             const classItem = document.createElement('div');
             classItem.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-lg';
             classItem.innerHTML = `
@@ -1091,16 +1226,23 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
-
                 </div>
-                <div class="ml-4">
-                    <button class="text-red-500 hover:text-red-700 p-2" onclick="removeClass('${className}')">
+                <div class="ml-4 flex gap-2">
+                    <button class="text-blue-500 hover:text-blue-700 p-2" onclick="editClassName('${className}')" title="Edit class name">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-green-500 hover:text-green-700 p-2" onclick="editClassPassword('${className}')" title="Change password">
+                        <i class="fas fa-key"></i>
+                    </button>
+                    <button class="text-red-500 hover:text-red-700 p-2" onclick="removeClass('${className}')" title="Delete class">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             `;
             classesList.appendChild(classItem);
         });
+        
+        console.log('Updated classes list with', classes.length, 'classes');
     }
 
     // Add new class
@@ -1161,6 +1303,96 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         }
     }
 
+    // Edit class name
+    async function editClassName(oldClassName) {
+        const newClassName = prompt('Enter new class name:', oldClassName);
+        
+        if (!newClassName || newClassName.trim() === '' || newClassName === oldClassName) {
+            return; // User cancelled or entered same name
+        }
+        
+        const trimmedNewName = newClassName.trim();
+        
+        // Check if new name already exists
+        if (adminClassPasswords[trimmedNewName]) {
+            alert('A class with this name already exists. Please choose a different name.');
+            return;
+        }
+        
+        try {
+            const oldClassRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', oldClassName);
+            const newClassRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', trimmedNewName);
+            
+            // Get old class data
+            const oldClassDoc = await window.firebaseFirestore.getDoc(oldClassRef);
+            if (!oldClassDoc.exists()) {
+                alert('Class not found. Please refresh and try again.');
+                return;
+            }
+            
+            const classData = oldClassDoc.data();
+            
+            // Create new class with same data
+            await window.firebaseFirestore.setDoc(newClassRef, classData);
+            
+            // Delete old class
+            await window.firebaseFirestore.deleteDoc(oldClassRef);
+            
+            // Also need to update all learners from the old class to the new class name
+            try {
+                const oldLearnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', oldClassName, 'learners');
+                const learnersSnapshot = await window.firebaseFirestore.getDocs(oldLearnersRef);
+                
+                // Move all learners to new class
+                const moveLearnersPromises = [];
+                learnersSnapshot.forEach(doc => {
+                    const learnerData = doc.data();
+                    const newLearnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', trimmedNewName, 'learners', doc.id);
+                    moveLearnersPromises.push(window.firebaseFirestore.setDoc(newLearnerRef, learnerData));
+                    moveLearnersPromises.push(window.firebaseFirestore.deleteDoc(window.firebaseFirestore.doc(window.firebaseDB, 'classes', oldClassName, 'learners', doc.id)));
+                });
+                
+                await Promise.all(moveLearnersPromises);
+            } catch (learnersError) {
+                console.warn('Could not migrate learners:', learnersError);
+                // Continue anyway - class was renamed successfully
+            }
+            
+            alert(`Class name changed from "${oldClassName}" to "${trimmedNewName}"`);
+            loadClasses(); // Reload classes
+            
+        } catch (error) {
+            console.error('Error editing class name:', error);
+            alert('Error changing class name. Please try again.');
+        }
+    }
+
+    // Edit class password
+    async function editClassPassword(className) {
+        const newPassword = prompt('Enter new password for ' + className + ':');
+        
+        if (!newPassword || newPassword.trim() === '') {
+            return; // User cancelled or entered empty password
+        }
+        
+        const trimmedPassword = newPassword.trim();
+        
+        try {
+            const classRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className);
+            
+            await window.firebaseFirestore.updateDoc(classRef, {
+                password: trimmedPassword
+            });
+            
+            alert(`Password for "${className}" has been updated successfully.`);
+            loadClasses(); // Reload classes to show updated password
+            
+        } catch (error) {
+            console.error('Error editing class password:', error);
+            alert('Error changing class password. Please try again.');
+        }
+    }
+
     // Learners collection functions
     async function addLearner(className) {
         const learnerNameInput = document.getElementById(`${className}-new-learner`);
@@ -1208,8 +1440,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             // Reload learners list and scroll to the newly added learner
             loadLearners(className, learnerId);
             
-            // Update top learners on dashboard
-            updateTopLearnersOnDashboard();
+            //
         } catch (error) {
             console.error('Error adding learner:', error);
             alert('Error adding learner. Please try again.');
@@ -1268,8 +1499,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                         lastAdjustmentInfo = `
                             <div class="text-xs">
                                 <div class="font-medium">${pointsText} points: ${adjustment.reason}</div>
-                                <div class="text-gray-500">By: ${adjustment.adjustedBy}</div>
-                                <div class="text-gray-500">${formattedDate} ${formattedTime}</div>
+                                <div class="text-gray-700">By: ${adjustment.adjustedBy}</div>
+                        <div class="text-gray-700">${formattedDate} ${formattedTime}</div>
                                 <button onclick="viewAdjustmentHistory('${className}', '${learner.id}', '${learner.name}')" 
                                     class="text-blue-500 hover:text-blue-700 text-xs mt-1">
                                     View History
@@ -1279,10 +1510,10 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     }
                     
                     row.innerHTML = `
-                        <td class="px-4 py-3 text-sm">${learner.name}</td>
-                        <td class="px-4 py-3 text-sm font-medium ${learner.points > 100 ? 'text-green-600' : ''}">${
+                        <td class="px-4 py-3 text-sm text-gray-800">${learner.name}</td>
+                        <td class="px-4 py-3 text-sm font-medium ${learner.points > 100 ? 'text-green-700' : 'text-gray-700'}">${
                             learner.points} points</td>
-                        <td class="px-4 py-3 text-sm">${lastAdjustmentInfo}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${lastAdjustmentInfo}</td>
                         <td class="px-4 py-3 text-sm">
                             <div class="flex items-center space-x-2">
                                 <div class="flex items-center space-x-1">
@@ -1384,8 +1615,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 // Reload learners list and scroll to the updated learner
                 loadLearners(className, learnerId);
                 
-                // Update top learners on dashboard
-                updateTopLearnersOnDashboard();
+
             }
         } catch (error) {
             console.error('Error adjusting points:', error);
@@ -1410,7 +1640,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 `;
                 
                 if (adjustments.length === 0) {
-                    modalContent += `<p class="text-gray-500">No adjustment history available.</p>`;
+                    modalContent += `<p class="text-gray-700">No adjustment history available.</p>`;
                 } else {
                     // Sort adjustments by date (newest first)
                     adjustments.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1420,10 +1650,10 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-100">
                                     <tr>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adjusted By</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Date</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Points</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Reason</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Adjusted By</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
@@ -1546,8 +1776,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 // Reload learners list and scroll to the updated learner
                 loadLearners(className, learnerId);
                 
-                // Update top learners on dashboard
-                updateTopLearnersOnDashboard();
+
             }
         } catch (error) {
             console.error('Error adjusting points:', error);
@@ -1567,98 +1796,14 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             // Reload learners list
             loadLearners(className);
             
-            // Update top learners on dashboard
-            updateTopLearnersOnDashboard();
+            //
         } catch (error) {
             console.error('Error deleting learner:', error);
             alert('Error deleting learner. Please try again.');
         }
     }
     
-    // Update top learners on dashboard
-    async function updateTopLearnersOnDashboard() {
-        try {
-            const topLearnersContainer = document.getElementById('topLearnersContainer');
-            if (!topLearnersContainer) return;
-            
-            // Clear existing content
-            topLearnersContainer.innerHTML = '<h3 class="text-lg font-semibold mb-3">Top Learners (>100 points)</h3>';
-            
-            // Get all classes
-            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
-            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
-            
-            let topLearners = [];
-            
-            // Get learners from all classes
-            for (const classDoc of classesSnapshot.docs) {
-                const className = classDoc.id;
-                const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
-                const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
-                
-                learnersSnapshot.forEach(doc => {
-                    const learner = doc.data();
-                    if (learner.points > 100) {
-                        topLearners.push({
-                            id: doc.id,
-                            className: className,
-                            ...learner
-                        });
-                    }
-                });
-            }
-            
-            // Sort by points (highest first)
-            topLearners.sort((a, b) => b.points - a.points);
-            
-            // Limit to top 10
-            topLearners = topLearners.slice(0, 10);
-            
-            if (topLearners.length === 0) {
-                topLearnersContainer.innerHTML += `
-                    <p class="text-gray-500 text-sm">No learners with more than 100 points yet.</p>
-                `;
-                return;
-            }
-            
-            // Create list
-            const list = document.createElement('ul');
-            list.className = 'space-y-2';
-            
-            topLearners.forEach((learner, index) => {
-                    const item = document.createElement('li');
-                    item.className = 'flex items-center justify-between bg-white p-3 rounded-lg shadow-sm';
-                    
-                    // Format last adjustment info if available
-                    let adjustmentInfo = '';
-                    if (learner.lastAdjustment) {
-                        const adjustment = learner.lastAdjustment;
-                        const date = new Date(adjustment.date);
-                        const formattedDate = date.toLocaleDateString();
-                        adjustmentInfo = `
-                            <span class="text-xs text-gray-500 block">
-                                Last: ${adjustment.reason} (${formattedDate})
-                            </span>
-                        `;
-                    }
-                    
-                    item.innerHTML = `
-                        <div>
-                            <span class="font-medium">${index + 1}. ${learner.name}</span>
-                            <span class="text-xs text-gray-500 block">Class: ${learner.className}</span>
-                            ${adjustmentInfo}
-                        </div>
-                        <span class="text-green-600 font-semibold">${learner.points} points</span>
-                    `;
-                
-                list.appendChild(item);
-            });
-            
-            topLearnersContainer.appendChild(list);
-        } catch (error) {
-            console.error('Error updating top learners:', error);
-        }
-    }
+
     
     // Function to save best learner data to Firestore
     async function saveBestLearner(className) {
@@ -1746,8 +1891,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             setTimeout(() => loadLearners(className), 500);
         });
         
-        // Update top learners on dashboard
-        updateTopLearnersOnDashboard();
+
     }
 
     // Create content for a specific class
@@ -1777,10 +1921,12 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
 
         return `
             <div class="bg-white rounded-xl shadow-sm p-4 md:p-6">
-                <div class="flex items-center justify-between mb-4 md:mb-6">
+                <div class="flex justify-between items-center mb-4 md:mb-6">
                     <h1 class="text-xl md:text-2xl font-bold text-gray-800">${className}</h1>
+                    <button onclick="exportToExcel('${className}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm flex items-center">
+                        <i class="fas fa-file-excel mr-2"></i>Export Class Data
+                    </button>
                 </div>
-
                 <div class="class-content-blur" id="${className}-content">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                         <div class="lg:col-span-2">
@@ -1790,24 +1936,25 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                     <div class="flex flex-wrap gap-2 mb-4">
                                         <input type="text" id="${className}-new-learner" placeholder="Learner name" class="flex-grow p-2 border rounded-lg text-sm">
                                         <button onclick="addLearner('${className}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center">
-                                            <i class="fas fa-plus mr-2"></i>Add Learner
-                                        </button>
+                                        <i class="fas fa-plus mr-2"></i>Add Learner
+                                    </button>
+
                                     </div>
                                     <div class="border border-gray-300 rounded-lg overflow-hidden">
                                         <div class="max-h-96 overflow-y-auto" id="${className}-table-container">
                                             <table class="min-w-full divide-y divide-gray-200">
                                                 <thead class="bg-gray-100 sticky top-0">
                                                     <tr>
-                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Points</th>
-                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Adjustment</th>
-                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Points</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Last Adjustment</th>
+                                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="${className}-learners-table" class="bg-white divide-y divide-gray-200">
                                                     <!-- Learners will be loaded here -->
                                                     <tr>
-                                                        <td colspan="4" class="px-4 py-3 text-sm text-gray-500 text-center">No learners added yet</td>
+                                                        <td colspan="4" class="px-4 py-3 text-sm text-gray-700 text-center">No learners added yet</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -1817,9 +1964,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             </div>
                             
                             <div class="bg-gray-50 rounded-xl p-3 md:p-4">
-                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Students</h3>
                                 <div id="${className}-students" class="space-y-2 md:space-y-3 max-h-60 md:max-h-80 overflow-y-auto pr-2">
-                                    <p class="text-sm md:text-base text-gray-500">Student list will appear here.</p>
+                                    <!-- Student list will be populated here -->
                                 </div>
                             </div>
                         </div>
@@ -1829,11 +1975,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                 <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Class Stats</h3>
                                 <div class="space-y-2">
                                     <div class="flex justify-between">
-                                        <span class="text-xs md:text-sm text-gray-600">Total Students:</span>
+                                        <span class="text-xs md:text-sm text-gray-700">Total Students:</span>
                                         <span class="font-semibold text-sm md:text-base" id="${className}-count">0</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-xs md:text-sm text-gray-600">Average Points:</span>
+                                        <span class="text-xs md:text-sm text-gray-700">Average Points:</span>
                                         <span class="font-semibold text-sm md:text-base" id="${className}-avg">0</span>
                                     </div>
                                 </div>
@@ -1855,12 +2001,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                     <button onclick="saveBestLearner('${className}')" class="w-full bg-green-500 text-white py-1.5 md:py-2 rounded-lg hover:bg-green-600 mt-2 text-sm md:text-base">
                                         <i class="fas fa-plus mr-2"></i>Add Top Learner
                                     </button>
-                                    <p class="text-xs text-gray-500 mt-2">You can add multiple top learners for this class. They will be ranked by points on the dashboard.</p>
+                                    <p class="text-xs text-gray-600 mt-2">You can add multiple top learners for this class. They will be ranked by points on the dashboard.</p>
                                 </div>
                             </div>
                             
                             <div class="bg-gray-50 rounded-xl p-3 md:p-4">
-                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Performance Chart</h3>
                                 <canvas id="${className}-chart" width="300" height="200"></canvas>
                             </div>
                         </div>
@@ -1879,9 +2024,10 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         
         Object.keys(adminClassPasswords).forEach(className => {
             const classButton = document.createElement('button');
-            classButton.className = 'class-btn flex items-center gap-2 w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-left';
+            classButton.className = 'class-btn flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg';
             classButton.setAttribute('data-content', className);
-            classButton.innerHTML = `<i class="fas fa-book"></i> ${className}`;
+            classButton.innerHTML = `<i class="fas fa-book text-lg mr-2"></i><span class="text-sm font-medium">${className}</span>`;
+            classButton.title = className; // Add tooltip for accessibility
             classesDropdownMenu.appendChild(classButton);
         });
 
@@ -1986,9 +2132,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
 
     // Update dashboard stats and welcome message
     async function updateDashboardStats() {
-        document.getElementById('totalClasses').textContent = Object.keys(adminClassPasswords).length;
+        const classes = Object.keys(adminClassPasswords);
+        document.getElementById('totalClasses').textContent = classes.length;
         document.getElementById('totalStudents').textContent = '0';
         document.getElementById('totalPoints').textContent = '0';
+        
+        // Update available classes list in instructions
+        const classesListElement = document.getElementById('availableClasses');
+        if (classesListElement) {
+            classesListElement.textContent = classes.length > 0 ? classes.join(', ') : 'No classes configured';
+        }
         
         // Update user information
         const user = window.firebaseAuth.currentUser;
@@ -2016,11 +2169,48 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     
     // Function to load and display top learners with real-time updates
     function loadTopLearners() {
+        console.log('loadTopLearners function called');
+        
+        // Ensure Firestore is initialized
+        if (!window.firebaseDB || !window.firebaseFirestore) {
+            console.error('Firestore not initialized');
+            const topLearnersContainer = document.getElementById('topLearnersContainer');
+            if (topLearnersContainer) {
+                topLearnersContainer.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                        <p class="text-red-500 font-medium">Database Connection Error</p>
+                        <p class="text-sm text-gray-500 mt-2">Firestore is not properly initialized</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+        
         try {
             const bestLearnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'bestLearners');
             
-            // Use onSnapshot for real-time updates
+            console.log('Setting up top learners listener...');
+            console.log('bestLearners collection reference:', bestLearnersRef);
+            
+            // Show loading state
+            const topLearnersContainer = document.getElementById('topLearnersContainer');
+            if (topLearnersContainer) {
+                topLearnersContainer.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-blue-500 text-2xl mb-4"></i>
+                        <p class="text-gray-700">Loading top learners...</p>
+                        <p class="text-sm text-gray-600 mt-2">Connecting to database...</p>
+                    </div>
+                `;
+            }
+            
+            // Use onSnapshot for real-time updates with offline handling
             window.firebaseFirestore.onSnapshot(bestLearnersRef, (snapshot) => {
+                console.log('Snapshot received from bestLearners:', snapshot);
+                console.log('Snapshot empty:', snapshot.empty);
+                console.log('Snapshot size:', snapshot.size);
+                console.log('Snapshot docs:', snapshot.docs.map(doc => ({id: doc.id, data: doc.data()})));
                 const topLearnersContainer = document.getElementById('topLearnersContainer');
                 
                 if (!topLearnersContainer) {
@@ -2033,7 +2223,12 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 
                 if (snapshot.empty) {
                     topLearnersContainer.innerHTML = `
-                        <p class="text-gray-500 italic col-span-full text-center py-4">No top learners data available yet</p>
+                        <div class="col-span-full text-center py-8">
+                            <i class="fas fa-trophy text-gray-300 text-4xl mb-4"></i>
+                            <p class="text-gray-700 italic">No top learners added yet</p>
+                            <p class="text-sm text-gray-600 mt-2">Add learners with 100+ points from each class to see them here</p>
+                            <p class="text-sm text-gray-600 mt-1">Tip: Go to a class, find a learner with 100+ points, and click "Add to Top Learners"</p>
+                        </div>
                     `;
                     return;
                 }
@@ -2106,7 +2301,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                     </div>
                                     <div class="flex items-center mt-1">
                                         <span class="text-lg font-bold text-yellow-500">${learner.points}</span>
-                                        <span class="text-xs text-gray-500 ml-1">points</span>
+                                        <span class="text-xs text-gray-600 ml-1">points</span>
                                     </div>
                                 </div>
                             </div>
@@ -2115,10 +2310,61 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                         topLearnersContainer.appendChild(learnerCard);
                     });
                 });
+            }, (error) => {
+                console.error('Error in top learners listener:', error);
+                const topLearnersContainer = document.getElementById('topLearnersContainer');
+                if (topLearnersContainer) {
+                    topLearnersContainer.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                            <p class="text-red-500 font-medium">Error loading top learners</p>
+                            <p class="text-sm text-gray-500 mt-2">${error.message}</p>
+                            <p class="text-sm text-gray-500 mt-1">Error: ${error.code || 'Permission denied'}</p>
+                            <p class="text-sm text-gray-500 mt-1">Check Firestore security rules for bestLearners collection</p>
+                        </div>
+                    `;
+                }
             });
             
         } catch (error) {
-            console.error('Error setting up top learners listener:', error);
+                console.error('Error setting up top learners listener:', error);
+                const topLearnersContainer = document.getElementById('topLearnersContainer');
+                if (topLearnersContainer) {
+                    const isOffline = !navigator.onLine;
+                    const errorMessage = isOffline ? 
+                        'You appear to be offline. Data will sync when connection is restored.' : 
+                        error.message;
+                    topLearnersContainer.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                            <p class="text-red-500 font-medium">${isOffline ? 'Offline Mode' : 'Error loading top learners'}</p>
+                            <p class="text-sm text-gray-500 mt-2">${errorMessage}</p>
+                            ${isOffline ? '<p class="text-sm text-gray-500 mt-1">Connection will automatically restore when network is available</p>' : ''}
+                            <p class="text-sm text-gray-500 mt-1">Error: ${error.code || 'Network error'}</p>
+                            <button onclick="loadTopLearners()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                <i class="fas fa-sync mr-2"></i>Retry
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+    }
+
+    // Function to check if the bestLearners collection exists and has data
+    async function checkBestLearnersCollection() {
+        try {
+            const bestLearnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'bestLearners');
+            const snapshot = await window.firebaseFirestore.getDocs(bestLearnersRef);
+            console.log('Best learners collection check:', {
+                exists: true,
+                size: snapshot.size,
+                empty: snapshot.empty,
+                docs: snapshot.docs.map(doc => ({id: doc.id, data: doc.data()}))
+            });
+            return snapshot;
+        } catch (error) {
+            console.error('Error checking bestLearners collection:', error);
+            return null;
         }
     }
 
@@ -2476,6 +2722,511 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             });
         }
     });
+
+    // Performance Chart Functions
+    let performanceChart = null;
+
+    async function updatePerformanceChart(selectedClass = 'all') {
+        try {
+            const ctx = document.getElementById('performanceChart');
+            if (!ctx) return;
+
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
+
+            if (classesSnapshot.empty) {
+                updateChartSummary(0, 0, 0, 'No classes');
+                return;
+            }
+
+            let chartData = [];
+            let totalLearners = 0;
+            let totalPoints = 0;
+            let highestPoints = 0;
+            let mostActiveClass = { name: 'None', learnerCount: 0 };
+
+            // Process each class
+            for (const classDoc of classesSnapshot.docs) {
+                const className = classDoc.id;
+                const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+                const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+
+                let classTotalPoints = 0;
+                let classLearnerCount = 0;
+
+                learnersSnapshot.forEach(doc => {
+                    const learner = doc.data();
+                    classTotalPoints += learner.points || 0;
+                    classLearnerCount++;
+                });
+
+                totalLearners += classLearnerCount;
+                totalPoints += classTotalPoints;
+                highestPoints = Math.max(highestPoints, classTotalPoints);
+
+                if (classLearnerCount > mostActiveClass.learnerCount) {
+                    mostActiveClass = { name: className, learnerCount: classLearnerCount };
+                }
+
+                // Only include data if class has learners
+                if (classLearnerCount > 0) {
+                    const avgPoints = classTotalPoints / classLearnerCount;
+                    chartData.push({
+                        className: className,
+                        learnerCount: classLearnerCount,
+                        totalPoints: classTotalPoints,
+                        avgPoints: Math.round(avgPoints)
+                    });
+                }
+            }
+
+            // Filter data if specific class selected
+            if (selectedClass !== 'all') {
+                chartData = chartData.filter(item => item.className === selectedClass);
+            }
+
+            // Update summary
+            const avgPointsOverall = totalLearners > 0 ? Math.round(totalPoints / totalLearners) : 0;
+            updateChartSummary(
+                classesSnapshot.size,
+                avgPointsOverall,
+                highestPoints,
+                mostActiveClass.name
+            );
+
+            // Create or update chart
+            createOrUpdateChart(chartData);
+
+        } catch (error) {
+            console.error('Error updating performance chart:', error);
+            const chartContainer = document.getElementById('performanceChart');
+            if (chartContainer) {
+                const isOffline = !navigator.onLine;
+                const ctx = chartContainer.getContext('2d');
+                if (ctx) {
+                    ctx.clearRect(0, 0, chartContainer.width, chartContainer.height);
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = isOffline ? '#ef4444' : '#666';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(isOffline ? 'Offline - Check connection' : 'Error loading chart', chartContainer.width / 2, chartContainer.height / 2);
+                }
+            }
+        }
+    }
+
+    function createOrUpdateChart(chartData) {
+        const ctx = document.getElementById('performanceChart');
+        if (!ctx) return;
+
+        // Destroy existing chart if it exists
+        if (performanceChart) {
+            performanceChart.destroy();
+        }
+
+        if (chartData.length === 0) {
+            const context = ctx.getContext('2d');
+            context.clearRect(0, 0, ctx.width, ctx.height);
+            context.font = '14px Arial';
+            context.fillStyle = '#666';
+            context.textAlign = 'center';
+            context.fillText('No data available', ctx.width / 2, ctx.height / 2);
+            return;
+        }
+
+        const labels = chartData.map(item => item.className);
+        const data = chartData.map(item => item.avgPoints);
+        const backgroundColors = [
+            '#FF6384',
+            '#36A2EB',
+            '#FFCE56',
+            '#4BC0C0',
+            '#9966FF',
+            '#FF9F40',
+            '#FF6384',
+            '#C9CBCF'
+        ];
+
+        performanceChart = new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Average Points per Learner',
+                    data: data,
+                    backgroundColor: backgroundColors.slice(0, labels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Average Points'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Class Name'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateChartSummary(totalClasses, avgPoints, highestPoints, mostActiveClass) {
+        const chartTotalClassesEl = document.getElementById('chartTotalClasses');
+        const chartAvgPointsEl = document.getElementById('chartAvgPoints');
+        const chartHighestPointsEl = document.getElementById('chartHighestPoints');
+        const chartMostActiveEl = document.getElementById('chartMostActive');
+
+        if (chartTotalClassesEl) chartTotalClassesEl.textContent = totalClasses;
+        if (chartAvgPointsEl) chartAvgPointsEl.textContent = avgPoints;
+        if (chartHighestPointsEl) chartHighestPointsEl.textContent = highestPoints;
+        if (chartMostActiveEl) chartMostActiveEl.textContent = mostActiveClass;
+    }
+
+    // Populate class selector
+    async function populateClassSelector() {
+        const classSelector = document.getElementById('classSelector');
+        if (!classSelector) return;
+
+        try {
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
+
+            // Clear existing options except 'all'
+            classSelector.innerHTML = '<option value="all">All Classes</option>';
+
+            classesSnapshot.forEach(doc => {
+                const className = doc.id;
+                const option = document.createElement('option');
+                option.value = className;
+                option.textContent = className;
+                classSelector.appendChild(option);
+            });
+
+            // Add event listener
+            classSelector.addEventListener('change', (e) => {
+                updatePerformanceChart(e.target.value);
+            });
+        } catch (error) {
+            console.error('Error populating class selector:', error);
+        }
+    }
+
+    // Update dashboard stats
+    async function updateDashboardStats() {
+        try {
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
+
+            let totalStudents = 0;
+            let totalPoints = 0;
+
+            for (const classDoc of classesSnapshot.docs) {
+                const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', classDoc.id, 'learners');
+                const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+
+                learnersSnapshot.forEach(doc => {
+                    const learner = doc.data();
+                    totalStudents++;
+                    totalPoints += learner.points || 0;
+                });
+            }
+
+            const totalClassesEl = document.getElementById('totalClasses');
+            const totalStudentsEl = document.getElementById('totalStudents');
+            const totalPointsEl = document.getElementById('totalPoints');
+
+            if (totalClassesEl) totalClassesEl.textContent = classesSnapshot.size;
+            if (totalStudentsEl) totalStudentsEl.textContent = totalStudents;
+            if (totalPointsEl) totalPointsEl.textContent = totalPoints;
+
+        } catch (error) {
+            console.error('Error updating dashboard stats:', error);
+        }
+    }
+
+    // Enhanced loadClasses to include chart updates
+    window.loadClasses = async function() {
+        populateClassSelector();
+        updatePerformanceChart();
+        updateDashboardStats();
+    };
+
+    // Enhanced updateTopLearnersOnDashboard to include stats update
+    window.updateTopLearnersOnDashboard = async function() {
+        updateDashboardStats();
+    };
+
+    // Initialize dashboard components
+    const checkChartInterval = setInterval(() => {
+        if (document.getElementById('performanceChart')) {
+            clearInterval(checkChartInterval);
+            populateClassSelector();
+            updatePerformanceChart();
+            updateDashboardStats();
+            loadTopLearners(); // Initialize top learners display
+        }
+    }, 500);
+
+    // Network status indicator
+    function updateNetworkStatus(online) {
+        const statusIndicator = document.getElementById('networkStatus') || createNetworkStatusIndicator();
+        if (online) {
+            statusIndicator.className = 'fixed top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm';
+            statusIndicator.innerHTML = '<i class="fas fa-wifi mr-1"></i> Online';
+            setTimeout(() => statusIndicator.style.display = 'none', 3000);
+        } else {
+            statusIndicator.className = 'fixed top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm';
+            statusIndicator.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> Offline';
+            statusIndicator.style.display = 'block';
+        }
+    }
+
+    function createNetworkStatusIndicator() {
+        const indicator = document.createElement('div');
+        indicator.id = 'networkStatus';
+        indicator.className = 'fixed top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm';
+        indicator.style.display = 'none';
+        document.body.appendChild(indicator);
+        return indicator;
+    }
+
+    // Monitor network status
+    window.addEventListener('online', () => updateNetworkStatus(true));
+    window.addEventListener('offline', () => updateNetworkStatus(false));
+    
+    // Initial network check
+    setTimeout(() => {
+        updateNetworkStatus(navigator.onLine);
+    }, 1000);
+    
+    // Export learner data to Excel
+    async function exportToExcel(className) {
+        try {
+            const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+            const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+            
+            if (learnersSnapshot.empty) {
+                alert('No learners to export');
+                return;
+            }
+            
+            // Collect all learner data
+            const learners = [];
+            learnersSnapshot.forEach(doc => {
+                const learnerData = doc.data();
+                
+                // Calculate total adjustments
+                const totalAdjustments = learnerData.adjustments ? learnerData.adjustments.length : 0;
+                
+                // Get last adjustment details
+                let lastAdjustmentDate = '';
+                let lastAdjustmentReason = '';
+                let lastAdjustmentBy = '';
+                let lastAdjustmentPoints = '';
+                
+                if (learnerData.lastAdjustment) {
+                    const lastAdj = learnerData.lastAdjustment;
+                    lastAdjustmentDate = new Date(lastAdj.date).toLocaleDateString();
+                    lastAdjustmentReason = lastAdj.reason;
+                    lastAdjustmentBy = lastAdj.adjustedBy;
+                    lastAdjustmentPoints = lastAdj.points;
+                }
+                
+                // Create detailed adjustment history
+                let adjustmentHistory = '';
+                if (learnerData.adjustments && learnerData.adjustments.length > 0) {
+                    adjustmentHistory = learnerData.adjustments.map(adj => {
+                        const adjDate = new Date(adj.date).toLocaleDateString();
+                        const adjTime = new Date(adj.date).toLocaleTimeString();
+                        return `${adjDate} ${adjTime}: ${adj.points > 0 ? '+' : ''}${adj.points} points - ${adj.reason} (by ${adj.adjustedBy})`;
+                    }).join('; ');
+                }
+                
+                learners.push({
+                    'Learner Name': learnerData.name,
+                    'Current Points': learnerData.points,
+                    'Total Adjustments': totalAdjustments,
+                    'Last Adjustment Date': lastAdjustmentDate,
+                    'Last Adjustment Reason': lastAdjustmentReason,
+                    'Last Adjustment By': lastAdjustmentBy,
+                    'Last Adjustment Points': lastAdjustmentPoints,
+                    'Adjustment History': adjustmentHistory,
+                    'Learner ID': doc.id
+                });
+            });
+            
+            // Sort by points (highest first)
+            learners.sort((a, b) => b['Current Points'] - a['Current Points']);
+            
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(learners);
+            
+            // Set column widths
+            const colWidths = [
+                { wch: 20 }, // Learner Name
+                { wch: 12 }, // Current Points
+                { wch: 15 }, // Total Adjustments
+                { wch: 15 }, // Last Adjustment Date
+                { wch: 25 }, // Last Adjustment Reason
+                { wch: 20 }, // Last Adjustment By
+                { wch: 15 }, // Last Adjustment Points
+                { wch: 50 }, // Adjustment History
+                { wch: 20 }  // Learner ID
+            ];
+            ws['!cols'] = colWidths;
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Learners');
+            
+            // Generate filename with class name and date
+            const date = new Date().toISOString().split('T')[0];
+            const filename = `${className}_Learners_${date}.xlsx`;
+            
+            // Save file
+            XLSX.writeFile(wb, filename);
+            
+            console.log(`Successfully exported ${learners.length} learners to Excel`);
+            
+        } catch (error) {
+            console.error('Error exporting to Excel:', error);
+            alert('Error exporting data to Excel. Please try again.');
+        }
+    }
+
+    // Export all classes data to Excel
+    async function exportAllClassesData() {
+        try {
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
+            
+            if (classesSnapshot.empty) {
+                alert('No classes found to export');
+                return;
+            }
+            
+            const allLearners = [];
+            let totalLearners = 0;
+            
+            // Process each class
+            for (const classDoc of classesSnapshot.docs) {
+                const className = classDoc.id;
+                const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+                const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+                
+                if (!learnersSnapshot.empty) {
+                    learnersSnapshot.forEach(doc => {
+                        const learnerData = doc.data();
+                        
+                        // Calculate total adjustments
+                        const totalAdjustments = learnerData.adjustments ? learnerData.adjustments.length : 0;
+                        
+                        // Get last adjustment details
+                        let lastAdjustmentDate = '';
+                        let lastAdjustmentReason = '';
+                        let lastAdjustmentBy = '';
+                        let lastAdjustmentPoints = '';
+                        
+                        if (learnerData.lastAdjustment) {
+                            const lastAdj = learnerData.lastAdjustment;
+                            lastAdjustmentDate = new Date(lastAdj.date).toLocaleDateString();
+                            lastAdjustmentReason = lastAdj.reason;
+                            lastAdjustmentBy = lastAdj.adjustedBy;
+                            lastAdjustmentPoints = lastAdj.points;
+                        }
+                        
+                        // Create detailed adjustment history
+                        let adjustmentHistory = '';
+                        if (learnerData.adjustments && learnerData.adjustments.length > 0) {
+                            adjustmentHistory = learnerData.adjustments.map(adj => {
+                                const adjDate = new Date(adj.date).toLocaleDateString();
+                                const adjTime = new Date(adj.date).toLocaleTimeString();
+                                return `${adjDate} ${adjTime}: ${adj.points > 0 ? '+' : ''}${adj.points} points - ${adj.reason} (by ${adj.adjustedBy})`;
+                            }).join('; ');
+                        }
+                        
+                        allLearners.push({
+                            'Class': className,
+                            'Learner Name': learnerData.name,
+                            'Current Points': learnerData.points,
+                            'Total Adjustments': totalAdjustments,
+                            'Last Adjustment Date': lastAdjustmentDate,
+                            'Last Adjustment Reason': lastAdjustmentReason,
+                            'Last Adjustment By': lastAdjustmentBy,
+                            'Last Adjustment Points': lastAdjustmentPoints,
+                            'Adjustment History': adjustmentHistory,
+                            'Learner ID': doc.id
+                        });
+                        
+                        totalLearners++;
+                    });
+                }
+            }
+            
+            if (totalLearners === 0) {
+                alert('No learners found in any class');
+                return;
+            }
+            
+            // Sort by class name, then by points (highest first)
+            allLearners.sort((a, b) => {
+                if (a.Class === b.Class) {
+                    return b['Current Points'] - a['Current Points'];
+                }
+                return a.Class.localeCompare(b.Class);
+            });
+            
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(allLearners);
+            
+            // Set column widths
+            const colWidths = [
+                { wch: 15 }, // Class
+                { wch: 20 }, // Learner Name
+                { wch: 12 }, // Current Points
+                { wch: 15 }, // Total Adjustments
+                { wch: 15 }, // Last Adjustment Date
+                { wch: 25 }, // Last Adjustment Reason
+                { wch: 20 }, // Last Adjustment By
+                { wch: 15 }, // Last Adjustment Points
+                { wch: 50 }, // Adjustment History
+                { wch: 20 }  // Learner ID
+            ];
+            ws['!cols'] = colWidths;
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'All Classes Data');
+            
+            // Generate filename with date
+            const date = new Date().toISOString().split('T')[0];
+            const filename = `All_Classes_Learners_${date}.xlsx`;
+            
+            // Save file
+            XLSX.writeFile(wb, filename);
+            
+            console.log(`Successfully exported ${totalLearners} learners from ${classesSnapshot.size} classes to Excel`);
+            
+        } catch (error) {
+            console.error('Error exporting all classes data to Excel:', error);
+            alert('Error exporting data to Excel. Please try again.');
+        }
+    }
+
 </script>
 </body>
 </html>

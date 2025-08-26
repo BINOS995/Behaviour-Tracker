@@ -107,9 +107,121 @@ After deployment, update your Firestore security rules in the Firebase Console:
 
 **Future Fix**: Standardize document ID format across all modules and implement proper user allocation controls.
 
+## App Loader Feature Documentation
+
+### Overview
+The app includes a modern, minimal loading screen that provides visual feedback during page loads, form submissions, and navigation events. The loader is designed to enhance user experience without being intrusive.
+
+### Features
+- **Minimal Design**: Clean white overlay with subtle blur effect
+- **Smooth Animations**: Fade-in/out transitions with staggered element animations
+- **Auto-hide**: Automatically hides 800ms after page load
+- **Form Integration**: Shows during login/register form submissions
+- **Navigation Feedback**: Displays when users navigate away from the app
+- **Emergency Control**: Manual hide via browser console (`window.hideLoader()`)
+
+### Technical Details
+
+#### HTML Structure
+Located in `index.html` (lines 28-34):
+```html
+<!-- App Loader - Modern Loading Screen -->
+<div id="appLoader" class="app-loader">
+    <div class="loader-content">
+        <img src="images/logo1.png" alt="Logo" class="loader-logo">
+        <div class="loader-text">Loading</div>
+        <div class="loader-subtext">Please wait...</div>
+    </div>
+</div>
+```
+
+#### CSS Styling
+Located in `index.html` (lines 174-220):
+- Uses CSS Grid for perfect centering
+- Backdrop blur effect for modern appearance
+- Responsive design that works on all screen sizes
+- Smooth opacity transitions (0.4s ease)
+- Staggered fade-in animations for visual hierarchy
+
+#### JavaScript Control
+Located in `index.html` (lines 290-318):
+- `hideLoader()`: Adds CSS class to smoothly hide loader
+- `showLoader()`: Removes CSS class to display loader
+- Event listeners for page load, form submissions, and navigation
+- Emergency console function for debugging
+
+### Customization Options
+
+#### Colors
+- Background: `rgba(255, 255, 255, 0.95)` (adjust alpha for transparency)
+- Text: `#374151` (main), `#6B7280` (subtext)
+- Logo: Uses existing `images/logo1.png`
+
+#### Timing
+- Auto-hide delay: 800ms (adjust in `setTimeout`)
+- Backup hide: 1500ms (safety net)
+- Animation duration: 0.4s fade, 0.6s element animations
+
+#### Text Content
+- Main text: "Loading" (line 32)
+- Subtext: "Please wait..." (line 33)
+- Easily customizable for different languages or branding
+
+### Testing the Loader
+
+#### Manual Testing
+1. **Initial Load**: Refresh page to see auto-hide behavior
+2. **Form Submission**: Submit login/register forms to see loader
+3. **Navigation**: Click external links to see beforeunload trigger
+4. **Emergency Hide**: Open console (F12) and type `hideLoader()`
+
+#### Debugging
+- Check browser console for JavaScript errors
+- Verify CSS classes are being added/removed correctly
+- Test on different devices and screen sizes
+- Ensure z-index (9999) doesn't conflict with other elements
+
+### Deployment Considerations
+
+#### Performance Impact
+- Minimal: CSS-based animations use GPU acceleration
+- No external dependencies or additional HTTP requests
+- Small footprint: ~2KB additional code
+
+#### Browser Compatibility
+- Modern browsers: Full support for all features
+- Older browsers: Graceful degradation (no blur effect)
+- Mobile devices: Optimized for touch interactions
+
+#### Accessibility
+- Screen readers: Loader is properly hidden from assistive technologies
+- Keyboard navigation: Loader doesn't interfere with tab order
+- High contrast: Maintains readability in all modes
+
+### Troubleshooting
+
+#### Common Issues
+1. **Loader Stuck**: Use emergency `hideLoader()` function
+2. **Animation Jank**: Check for conflicting CSS or JavaScript
+3. **Z-index Issues**: Ensure no other elements use z-index >= 9999
+4. **Logo Not Displaying**: Verify `images/logo1.png` path is correct
+
+#### Debug Commands
+```javascript
+// Force show loader
+showLoader();
+
+// Force hide loader
+hideLoader();
+
+// Check loader state
+document.getElementById('appLoader').classList.contains('hidden');
+```
+
 ## Next Steps
 1. Run `firebase login` if not already logged in
 2. Update `.firebaserc` with your actual project ID
 3. Run `firebase deploy`
 4. Test all functionality on the live deployment
 5. Share the deployed URL with your team/users
+6. Test the app loader on various devices and network conditions

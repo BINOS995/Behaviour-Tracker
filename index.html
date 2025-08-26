@@ -24,9 +24,35 @@
   <script type="module" src="firebaseauth.js"></script>
 </head>
 <body>
-  <div class="logo-container">
-    <img src="images/logo1.png" alt="Behaviour Tracker" class="logo">
-    <h1 class="student-behaviour-tracker">Student Behaviour Tracker</h1>
+  <!-- App Loader - Modern Loading Screen
+       Purpose: Provides visual feedback during page loads and form submissions
+       Features: 
+       - Clean minimal design with subtle animations
+       - Auto-hides after page load (800ms delay)
+       - Shows during form submissions and navigation
+       - Emergency hide via console: window.hideLoader()
+       - Responsive design with backdrop blur effect
+  -->
+    <div id="appLoader" class="app-loader">
+        <div class="loader-content">
+            <img src="images/logo1.png" alt="Logo" class="loader-logo">
+            <div class="loader-text">Loading</div>
+            <div class="loader-subtext">Please wait...</div>
+        </div>
+    </div>
+
+  <div class="flex justify-center mt-8 mb-6">
+    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full mx-4 transform transition-all duration-300 hover:shadow-2xl">
+      <div class="flex flex-col items-center space-y-4">
+        <div id="logo-circle" style="display: flex; align-items: center; justify-content: center; width: 100px; height: 100px; border-radius: 50%; border: 2px solid #4CAF50; background: linear-gradient(135deg, #f0fdf4, #dcfce7); cursor: pointer; transition: all 0.3s ease; animation: logoPulse 2s ease-in-out infinite;">
+          <img src="images/logo1.png" alt="Behaviour Tracker" style="width: 80%; height: 80%; object-fit: contain; transition: transform 0.3s ease;">
+        </div>
+        <div class="text-center">
+          <h1 class="text-2xl font-bold text-gray-800 mb-2">Student Behaviour Tracker</h1>
+          <p class="text-sm text-gray-600">Track, manage, and improve student behavior</p>
+        </div>
+      </div>
+    </div>
   </div> 
 
   <!-- Register Section -->
@@ -119,6 +145,204 @@
     </div>
   </div>
 
+  <style>
+    @keyframes logoPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+      }
+    }
+    
+    #logo-circle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(76, 175, 80, 0.6);
+    }
+    
+    #logo-circle:hover img {
+      transform: rotate(10deg) scale(1.1);
+    }
+    
+    /* App Loader Styles - Modern Minimal Design
+       Usage: Provides smooth loading experience with subtle animations
+       Customization: Modify colors, timing, and animations as needed
+       Performance: Uses CSS transforms for smooth 60fps animations
+    */
+        .app-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95); /* Semi-transparent white overlay */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999; /* Highest z-index to overlay everything */
+            transition: opacity 0.4s ease; /* Smooth fade out */
+            backdrop-filter: blur(10px); /* Modern blur effect */
+        }
+        
+        /* Hidden state - used by JavaScript to hide loader */
+        .app-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+        }
+        
+        .loader-content {
+            text-align: center;
+        }
+        
+        .loader-logo {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards; /* Logo fades in first */
+        }
+        
+        .loader-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease 0.2s forwards; /* Text fades in second */
+        }
+        
+        .loader-subtext {
+            font-size: 13px;
+            color: #6B7280;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease 0.3s forwards; /* Subtext fades in last */
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+  </style>
+  
+  <script>
+    // Logo animation control
+    document.addEventListener('DOMContentLoaded', function() {
+      const logoCircle = document.getElementById('logo-circle');
+      const logoImg = logoCircle.querySelector('img');
+      
+      // Hide loader after page loads
+    setTimeout(() => {
+      const loader = document.getElementById('appLoader');
+      if (loader) {
+        loader.style.opacity = '0';
+        loader.style.visibility = 'hidden';
+        loader.style.pointerEvents = 'none';
+        setTimeout(() => {
+          loader.style.display = 'none';
+        }, 400);
+      }
+    }, 800);
+    
+    // Force hide immediately if needed
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const loader = document.getElementById('appLoader');
+        if (loader && loader.style.display !== 'none') {
+          loader.style.opacity = '0';
+          loader.style.visibility = 'hidden';
+          loader.style.pointerEvents = 'none';
+          setTimeout(() => {
+            loader.style.display = 'none';
+          }, 400);
+        }
+      }, 1000);
+    });
+      
+      // Add click animation
+      logoCircle.addEventListener('click', function() {
+        this.style.animation = 'none';
+        setTimeout(() => {
+          this.style.animation = 'logoPulse 2s ease-in-out infinite';
+        }, 10);
+      });
+      
+      // Add mouse enter/leave effects
+      logoCircle.addEventListener('mouseenter', function() {
+        this.style.animationPlayState = 'paused';
+      });
+      
+      logoCircle.addEventListener('mouseleave', function() {
+        this.style.animationPlayState = 'running';
+      });
+    });
+    
+    /* App Loader JavaScript - Loading Screen Controller
+       
+       Functions:
+       - hideLoader(): Hides the loader by adding 'hidden' class
+       - showLoader(): Shows the loader by removing 'hidden' class
+       
+       Events:
+       - Page load: Auto-hides after 800ms for smooth experience
+       - DOM ready: Backup hide after 1500ms if still visible
+       - Form submissions: Shows loader during login/register form processing
+       - Navigation: Shows loader when user navigates away (beforeunload)
+       
+       Emergency Usage: Type 'hideLoader()' in browser console to force hide
+    */
+    
+    // Hide the loader - adds CSS class for smooth transition
+    function hideLoader() {
+      const loader = document.getElementById('appLoader');
+      if (loader) {
+        loader.classList.add('hidden');
+      }
+    }
+    
+    // Show the loader - removes CSS class to display loading screen
+    function showLoader() {
+      const loader = document.getElementById('appLoader');
+      if (loader) {
+        loader.classList.remove('hidden');
+      }
+    }
+    
+    // Auto-hide after page loads - provides smooth initial experience
+    window.addEventListener('load', function() {
+      setTimeout(hideLoader, 800); // 800ms delay allows content to load
+    });
+    
+    // Force hide backup - ensures loader doesn't get stuck
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(hideLoader, 1500); // 1500ms fallback safety net
+    });
+    
+    // Show loader during form submissions - improves UX for login/register
+    document.addEventListener('submit', function(e) {
+      if (e.target.id === 'loginForm' || e.target.id === 'registerForm') {
+        showLoader(); // Display loading screen while processing
+      }
+    });
+    
+    // Show loader during navigation - provides visual feedback
+    window.addEventListener('beforeunload', function() {
+      showLoader(); // Display when user navigates away
+    });
+    
+    // Emergency console function - allows manual hiding if issues occur
+    window.hideLoader = hideLoader; // Global access via browser console
+  </script>
+  
   <script src="script.js"></script>
   
   <!-- Forgot Password Modal -->

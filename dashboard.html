@@ -495,9 +495,14 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                         </h2>
                         <p class="text-sm text-gray-600">Export all learner data from all classes to Excel format</p>
                     </div>
-                    <button onclick="exportAllClassesData()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center">
-                        <i class="fas fa-download mr-2"></i> Export All Classes
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="exportAllClassesData()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center">
+                            <i class="fas fa-download mr-2"></i> Export All Classes
+                        </button>
+                        <button onclick="location.reload()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center">
+                            <i class="fas fa-sync-alt mr-2"></i> Refresh Page
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -695,80 +700,95 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     // Load classes from Firestore with user permissions
 
 
+    // Real-time listener for classes
+    let classesListener = null;
+    
     async function loadClasses() {
         try {
-            console.log('Loading classes from Firestore...');
+            console.log('Setting up real-time listener for classes...');
             const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
-            const snapshot = await window.firebaseFirestore.getDocs(classesRef);
             adminClassPasswords = {};
             
-            console.log(`Found ${snapshot.size} classes`);
+            // Clean up existing listener
+            if (classesListener) {
+                classesListener();
+                classesListener = null;
+            }
             
-            if (snapshot.empty) {
-                console.log('No classes found in Firestore');
-                adminClassPasswords = {};
+            // Set up real-time listener
+            classesListener = window.firebaseFirestore.onSnapshot(classesRef, (snapshot) => {
+                console.log(`Real-time update: Found ${snapshot.size} classes`);
                 
-                // Show "No Classes Found" message with refresh button
+                if (snapshot.empty) {
+                    console.log('No classes found in Firestore');
+                    adminClassPasswords = {};
+                    
+                    // Show "No Classes Found" message
+                    const classesList = document.getElementById('classesList');
+                    if (classesList) {
+                        classesList.innerHTML = `
+                            <div class="text-center py-8">
+                                <i class="fas fa-users-slash text-4xl text-gray-400 mb-4"></i>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
+                                <p class="text-gray-600 mb-4">There are no classes in the system yet.</p>
+                                <p class="text-sm text-gray-500">New classes will appear here automatically</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // Process all classes in real-time
+                    adminClassPasswords = {};
+                    
+                    snapshot.forEach(doc => {
+                        const classData = doc.data();
+                        const className = String(doc.id || '').trim();
+                        
+                        // All users see all classes
+                        adminClassPasswords[className] = {
+                            password: classData.password
+                        };
+                        console.log(`✓ Real-time update: "${className}"`);
+                    });
+                }
+                
+                // Update UI with new data
+                updateClassesList();
+                updateTabContentWithClasses();
+                
+            }, (error) => {
+                console.error('Error in classes real-time listener:', error);
                 const classesList = document.getElementById('classesList');
                 if (classesList) {
                     classesList.innerHTML = `
-                        <div class="text-center py-8">
-                            <i class="fas fa-users-slash text-4xl text-gray-400 mb-4"></i>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
-                            <p class="text-gray-600 mb-4">There are no classes in the system yet.</p>
+                        <div class="text-red-500 p-4 bg-red-50 rounded-lg">
+                            <strong>Real-time sync error:</strong><br>
+                            ${error.message}<br><br>
                             <button onclick="loadClasses()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                                <i class="fas fa-sync-alt mr-2"></i>Reconnect
                             </button>
                         </div>
                     `;
                 }
-            } else {
-                // TEMPORARY: All users have access to all classes (feature coming soon)
-                console.log('TEMPORARY: All users have access to all classes (feature coming soon)');
-                
-                console.log('Total classes found:', snapshot.size);
-            
-            snapshot.forEach(doc => {
-                const classData = doc.data();
-                const className = String(doc.id || '').trim();
-                
-                // Debug: Log all available classes
-                console.log(`Available class: "${className}"`);
-                
-                // All users see all classes (temporary implementation)
-                adminClassPasswords[className] = {
-                password: classData.password
-            };
-                console.log(`✓ Loaded class: "${className}" for all users (temporary)`);
             });
-            }
             
-            updateClassesList();
-            updateTabContentWithClasses();
-            
-            // Admin panel will load users separately when opened
         } catch (error) {
-            console.error('Error loading classes:', error);
-            // Show error in the classes list
-            const classesList = document.getElementById('classesList');
-            if (classesList) {
-                classesList.innerHTML = `
-                    <div class="text-red-500 p-4 bg-red-50 rounded-lg">
-                        <strong>Error loading classes:</strong><br>
-                        ${error.message}<br><br>
-                        <small>Check console for details</small>
-                    </div>
-                `;
-            }
+            console.error('Error setting up classes listener:', error);
         }
     }
 
-    // Load all users for admin panel
+    // Real-time listener for users in admin panel
+    let usersListener = null;
+    
     async function loadUsers() {
         try {
-            console.log('Loading users from Firestore...');
+            console.log('Setting up real-time user listener...');
             const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
-            const snapshot = await window.firebaseFirestore.getDocs(usersRef);
+            
+            // Clean up existing listener
+            if (usersListener) {
+                usersListener();
+                usersListener = null;
+            }
             
             // Wait for DOM to be ready
             const checkUserSelect = setInterval(() => {
@@ -776,62 +796,60 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 if (userSelect) {
                     clearInterval(checkUserSelect);
                     
-                    console.log(`Found ${snapshot.size} total documents in 'users' collection`);
+                    // Show loading state
+                    userSelect.innerHTML = '<option value="">Loading users...</option>';
                     
-                    userSelect.innerHTML = '<option value="">Select a user...</option>';
-                    
-                    if (snapshot.empty) {
-                        console.log('No users found in Firestore');
-                        userSelect.innerHTML = '<option value="">No users found</option>';
-                        return;
-                    }
-                    
-                    let userCount = 0;
-                    
-                    snapshot.forEach(doc => {
-                        const userData = doc.data();
-                        const userEmail = doc.id; // Document ID is the email
+                    // Set up real-time listener
+                    usersListener = window.firebaseFirestore.onSnapshot(usersRef, (snapshot) => {
+                        console.log(`Real-time users update: ${snapshot.size} users`);
                         
-                        console.log(`Processing user: ${userEmail}`, userData);
+                        userSelect.innerHTML = '<option value="">Select a user...</option>';
                         
-                        // Use the data from the document, but ensure we have the required fields
-                        const email = userData.email || userEmail;
-                        const firstName = userData.firstName || '';
-                        const lastName = userData.lastName || '';
-                        
-                        if (email && firstName && lastName) {
-                            const option = document.createElement('option');
-                            option.value = email;
-                            option.textContent = `${firstName} ${lastName} (${email})`;
-                            userSelect.appendChild(option);
-                            userCount++;
-                            console.log(`✓ Added user: ${firstName} ${lastName} (${email})`);
-                        } else {
-                            console.warn(`Skipping user ${userEmail}: missing required fields`, {
-                                email: email,
-                                firstName: firstName,
-                                lastName: lastName
-                            });
+                        if (snapshot.empty) {
+                            userSelect.innerHTML = '<option value="">No users found</option>';
+                            return;
                         }
+                        
+                        let userCount = 0;
+                        
+                        snapshot.forEach(doc => {
+                            const userData = doc.data();
+                            const userEmail = doc.id; // Document ID is the email
+                            
+                            // Use the data from the document, but ensure we have the required fields
+                            const email = userData.email || userEmail;
+                            const firstName = userData.firstName || '';
+                            const lastName = userData.lastName || '';
+                            
+                            if (email && firstName && lastName) {
+                                const option = document.createElement('option');
+                                option.value = email;
+                                option.textContent = `${firstName} ${lastName} (${email})`;
+                                userSelect.appendChild(option);
+                                userCount++;
+                            }
+                        });
+                        
+                        if (userCount === 0) {
+                            userSelect.innerHTML = '<option value="">No valid users found</option>';
+                        }
+                        
+                        // Remove existing event listener to prevent duplicates
+                        userSelect.removeEventListener('change', loadUserClassCheckboxes);
+                        userSelect.addEventListener('change', loadUserClassCheckboxes);
+                        
+                    }, (error) => {
+                        console.error('Error in users listener:', error);
+                        userSelect.innerHTML = '<option value="">Error loading users</option>';
                     });
                     
-                    console.log(`Successfully loaded ${userCount} users`);
-                    
-                    if (userCount === 0) {
-                        userSelect.innerHTML = '<option value="">No valid users found</option>';
-                        console.warn('No users with complete data found');
-                    }
-                    
-                    // Remove existing event listener to prevent duplicates
-                    userSelect.removeEventListener('change', loadUserClassCheckboxes);
-                    userSelect.addEventListener('change', loadUserClassCheckboxes);
                 } else {
                     console.warn('userEmailSelect element still not found, retrying...');
                 }
             }, 100);
             
         } catch (error) {
-            console.error('Error loading users:', error);
+            console.error('Error setting up users listener:', error);
             const checkUserSelect = setInterval(() => {
                 const userSelect = document.getElementById('userEmailSelect');
                 if (userSelect) {
@@ -1097,6 +1115,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
 
     // Replace the refresh button to use diagnostic function
     // Update the refresh button in the HTML to use diagnosticLoadUsers instead
+    // Real-time listener for user class checkboxes
+    let userClassCheckboxesListener = null;
+    
     async function loadUserClassCheckboxes() {
         const userEmailSelect = document.getElementById('userEmailSelect');
         const classCheckboxes = document.getElementById('classCheckboxes');
@@ -1114,44 +1135,86 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         }
         
         try {
-            // Get user's current classes
-            const userClassesRef = window.firebaseFirestore.doc(window.firebaseDB, 'userClasses', userEmail);
-            const userClassesDoc = await window.firebaseFirestore.getDoc(userClassesRef);
-            const userClasses = userClassesDoc.exists() ? userClassesDoc.data().classes || [] : [];
+            // Clean up existing listener
+            if (userClassCheckboxesListener) {
+                userClassCheckboxesListener();
+                userClassCheckboxesListener = null;
+            }
             
-            // Create checkboxes for all classes
-            classCheckboxes.innerHTML = '';
-            console.log('Available classes for checkboxes:', Object.keys(adminClassPasswords));
-            console.log('User has classes:', userClasses);
-            Object.keys(adminClassPasswords).forEach(className => {
-                const isChecked = userClasses.some(userClass => 
-                    userClass.trim().toLowerCase() === className.trim().toLowerCase()
-                );
-                const div = document.createElement('div');
-                div.className = 'flex items-center';
-                div.innerHTML = `
-                    <input type="checkbox" id="class-${className}" value="${className}" ${isChecked ? 'checked' : ''} class="mr-2">
-                    <label for="class-${className}" class="text-sm text-gray-700">${className}</label>
-                `;
-                classCheckboxes.appendChild(div);
+            // Show loading state
+            classCheckboxes.innerHTML = '<p class="text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading user classes...</p>';
+            
+            // Set up real-time listener for this specific user's classes
+            const userClassesRef = window.firebaseFirestore.doc(window.firebaseDB, 'userClasses', userEmail);
+            
+            userClassCheckboxesListener = window.firebaseFirestore.onSnapshot(userClassesRef, (doc) => {
+                const userClasses = doc.exists() ? doc.data().classes || [] : [];
+                
+                // Create checkboxes for all classes
+                classCheckboxes.innerHTML = '';
+                console.log('Available classes for checkboxes:', Object.keys(adminClassPasswords));
+                console.log('User has classes:', userClasses);
+                
+                if (Object.keys(adminClassPasswords).length === 0) {
+                    classCheckboxes.innerHTML = '<p class="text-gray-500">No classes available. Please create classes first.</p>';
+                    return;
+                }
+                
+                Object.keys(adminClassPasswords).forEach(className => {
+                    const isChecked = userClasses.some(userClass => 
+                        userClass.trim().toLowerCase() === className.trim().toLowerCase()
+                    );
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center';
+                    div.innerHTML = `
+                        <input type="checkbox" id="class-${className}" value="${className}" ${isChecked ? 'checked' : ''} class="mr-2">
+                        <label for="class-${className}" class="text-sm text-gray-700">${className}</label>
+                    `;
+                    classCheckboxes.appendChild(div);
+                });
+            }, (error) => {
+                console.error('Error in user class checkboxes listener:', error);
+                classCheckboxes.innerHTML = `<p class="text-red-500"><i class="fas fa-exclamation-triangle mr-2"></i>Error loading user classes: ${error.message}</p>`;
             });
+            
         } catch (error) {
-            console.error('Error loading user classes:', error);
+            console.error('Error setting up user class checkboxes listener:', error);
+            classCheckboxes.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
         }
     }
 
+    // Real-time listener for user class allocations
+    let userClassesListener = null;
+    
     // Load user class allocations for admin display
     async function loadUserClassAllocations() {
         try {
             const userClassesRef = window.firebaseFirestore.collection(window.firebaseDB, 'userClasses');
-            const snapshot = await window.firebaseFirestore.getDocs(userClassesRef);
             
-            console.log(`Found ${snapshot.size} user class allocations`);
+            // Clean up existing listener
+            if (userClassesListener) {
+                userClassesListener();
+                userClassesListener = null;
+            }
             
-            // This function is mainly for logging/debugging purposes
-            // The actual display happens in loadUserClassCheckboxes when a user is selected
+            // Set up real-time listener
+            userClassesListener = window.firebaseFirestore.onSnapshot(userClassesRef, (snapshot) => {
+                console.log(`Real-time user class allocations update: ${snapshot.size} allocations`);
+                
+                // This function is mainly for logging/debugging purposes
+                // The actual display happens in loadUserClassCheckboxes when a user is selected
+                
+                // Also trigger a reload of user class checkboxes if a user is selected
+                const userEmailSelect = document.getElementById('userEmailSelect');
+                if (userEmailSelect && userEmailSelect.value) {
+                    loadUserClassCheckboxes();
+                }
+            }, (error) => {
+                console.error('Error in user class allocations listener:', error);
+            });
+            
         } catch (error) {
-            console.error('Error loading user class allocations:', error);
+            console.error('Error setting up user class allocations listener:', error);
         }
     }
 
@@ -1473,29 +1536,59 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     }
     
     // Load learners for a specific class
+    // Real-time listener for learners in a class
+    const learnersListeners = {};
+    
     async function loadLearners(className, scrollToLearnerId = null) {
         try {
             const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
-            const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
-            
             const learnersTable = document.getElementById(`${className}-learners-table`);
             
-            if (learnersTable) {
+            if (!learnersTable) {
+                console.error(`Learners table for ${className} not found`);
+                return;
+            }
+            
+            // Clean up existing listener for this class
+            if (learnersListeners[className]) {
+                learnersListeners[className]();
+                delete learnersListeners[className];
+            }
+            
+            // Show loading state
+            learnersTable.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-4 py-3 text-sm text-gray-500 text-center">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading learners...
+                    </td>
+                </tr>
+            `;
+            
+            // Set up real-time listener
+            learnersListeners[className] = window.firebaseFirestore.onSnapshot(learnersRef, (snapshot) => {
+                console.log(`Real-time update for ${className}: ${snapshot.size} learners`);
+                
                 // Clear existing content
                 learnersTable.innerHTML = '';
                 
-                if (learnersSnapshot.empty) {
+                if (snapshot.empty) {
                     learnersTable.innerHTML = `
                         <tr>
                             <td colspan="4" class="px-4 py-3 text-sm text-gray-500 text-center">No learners added yet</td>
                         </tr>
                     `;
+                    
+                    // Update class count
+                    const countElement = document.getElementById(`${className}-count`);
+                    if (countElement) {
+                        countElement.textContent = '0';
+                    }
                     return;
                 }
                 
                 // Sort learners by points (highest first)
                 const learners = [];
-                learnersSnapshot.forEach(doc => {
+                snapshot.forEach(doc => {
                     learners.push({
                         id: doc.id,
                         ...doc.data()
@@ -1525,7 +1618,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                             <div class="text-xs">
                                 <div class="font-medium">${pointsText} points: ${adjustment.reason}</div>
                                 <div class="text-gray-700">By: ${adjustment.adjustedBy}</div>
-                        <div class="text-gray-700">${formattedDate} ${formattedTime}</div>
+                                <div class="text-gray-700">${formattedDate} ${formattedTime}</div>
                                 <div class="flex space-x-2">
                                     <button onclick="viewAdjustmentHistory('${className}', '${learner.id}', '${learner.name}')" 
                                         class="text-blue-500 hover:text-blue-700 text-xs mt-1">
@@ -1542,8 +1635,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     
                     row.innerHTML = `
                         <td class="px-4 py-3 text-sm text-gray-800">${learner.name}</td>
-                        <td class="px-4 py-3 text-sm font-medium ${learner.points > 100 ? 'text-green-700' : 'text-gray-700'}">${
-                            learner.points} points</td>
+                        <td class="px-4 py-3 text-sm font-medium ${learner.points > 100 ? 'text-green-700' : 'text-gray-700'}">${learner.points} points</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${lastAdjustmentInfo}</td>
                         <td class="px-4 py-3 text-sm">
                             <div class="flex items-center space-x-2">
@@ -1575,9 +1667,12 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 });
                 
                 // Update class stats
-                document.getElementById(`${className}-count`).textContent = learners.length;
+                const countElement = document.getElementById(`${className}-count`);
+                if (countElement) {
+                    countElement.textContent = learners.length;
+                }
                 
-                // Scroll to the newly added learner if specified
+                // Scroll to the specified learner if needed
                 if (scrollToLearnerId) {
                     setTimeout(() => {
                         const targetRow = learnersTable.querySelector(`tr[data-learner-id="${scrollToLearnerId}"]`);
@@ -1598,9 +1693,31 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                         }
                     }, 100);
                 }
-            }
+                
+            }, (error) => {
+                console.error(`Error in learners listener for ${className}:`, error);
+                learnersTable.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-4 py-3 text-sm text-red-500 text-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Error loading learners: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            });
+            
         } catch (error) {
-            console.error('Error loading learners:', error);
+            console.error('Error setting up learners listener:', error);
+            const learnersTable = document.getElementById(`${className}-learners-table`);
+            if (learnersTable) {
+                learnersTable.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-4 py-3 text-sm text-red-500 text-center">
+                            Error: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
         }
     }
     
@@ -2782,12 +2899,20 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         }
     }
     
+    // Real-time listener for admin list
+    let adminListListener = null;
+    
     async function loadAdminList() {
         if (!window.isAdmin) return;
         
         try {
             const adminsRef = window.firebaseFirestore.collection(window.firebaseDB, 'admins');
-            const adminsSnapshot = await window.firebaseFirestore.getDocs(adminsRef);
+            
+            // Clean up existing listener
+            if (adminListListener) {
+                adminListListener();
+                adminListListener = null;
+            }
             
             // Wait for DOM to be ready
             const checkAdminList = setInterval(() => {
@@ -2795,39 +2920,51 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 if (adminList) {
                     clearInterval(checkAdminList);
                     
-                    adminList.innerHTML = '';
+                    // Show loading state
+                    adminList.innerHTML = '<p class="text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading admins...</p>';
                     
-                    if (adminsSnapshot.empty) {
-                        adminList.innerHTML = '<p class="text-gray-500">No admins found</p>';
-                        return;
-                    }
-                    
-                    adminsSnapshot.forEach((doc) => {
-                        const admin = doc.data();
-                        const adminDiv = document.createElement('div');
-                        adminDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg border';
-                        adminDiv.innerHTML = `
-                            <div>
-                                <p class="font-medium">${admin.firstName} ${admin.lastName}</p>
-                                <p class="text-sm text-gray-600">${admin.email}</p>
-                                <p class="text-xs text-gray-500">Granted: ${new Date(admin.grantedAt).toLocaleDateString()}</p>
-                            </div>
-                            ${doc.id !== window.firebaseAuth.currentUser.uid && !admin.isInitialAdmin ? 
-                                `<button onclick="revokeAdminPrivileges('${doc.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
-                                    <i class="fas fa-user-times"></i> Revoke
-                                </button>` :
-                                '<span class="text-sm text-green-600">' + (admin.isInitialAdmin ? 'System Admin' : 'Current User') + '</span>'
-                            }
-                        `;
-                        adminList.appendChild(adminDiv);
+                    // Set up real-time listener
+                    adminListListener = window.firebaseFirestore.onSnapshot(adminsRef, (snapshot) => {
+                        console.log(`Real-time admin update: ${snapshot.size} admins`);
+                        
+                        adminList.innerHTML = '';
+                        
+                        if (snapshot.empty) {
+                            adminList.innerHTML = '<p class="text-gray-500">No admins found</p>';
+                            return;
+                        }
+                        
+                        snapshot.forEach((doc) => {
+                            const admin = doc.data();
+                            const adminDiv = document.createElement('div');
+                            adminDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg border';
+                            adminDiv.innerHTML = `
+                                <div>
+                                    <p class="font-medium">${admin.firstName} ${admin.lastName}</p>
+                                    <p class="text-sm text-gray-600">${admin.email}</p>
+                                    <p class="text-xs text-gray-500">Granted: ${new Date(admin.grantedAt).toLocaleDateString()}</p>
+                                </div>
+                                ${doc.id !== window.firebaseAuth.currentUser.uid && !admin.isInitialAdmin ? 
+                                    `<button onclick="revokeAdminPrivileges('${doc.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                                        <i class="fas fa-user-times"></i> Revoke
+                                    </button>` :
+                                    '<span class="text-sm text-green-600">' + (admin.isInitialAdmin ? 'System Admin' : 'Current User') + '</span>'
+                                }
+                            `;
+                            adminList.appendChild(adminDiv);
+                        });
+                    }, (error) => {
+                        console.error('Error in admin list listener:', error);
+                        adminList.innerHTML = `<p class="text-red-500"><i class="fas fa-exclamation-triangle mr-2"></i>Error loading admins: ${error.message}</p>`;
                     });
+                    
                 } else {
                     console.warn('adminList element still not found, retrying...');
                 }
             }, 100);
             
         } catch (error) {
-            console.error('Error loading admin list:', error);
+            console.error('Error setting up admin list listener:', error);
         }
     }
     
@@ -2938,80 +3075,121 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
 
     // Performance Chart Functions
     let performanceChart = null;
+    let performanceChartListener = null;
 
     async function updatePerformanceChart(selectedClass = 'all') {
         try {
             const ctx = document.getElementById('performanceChart');
             if (!ctx) return;
 
-            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
-            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
-
-            if (classesSnapshot.empty) {
-                updateChartSummary(0, 0, 0, 'No classes');
-                return;
+            // Clean up existing listener
+            if (performanceChartListener) {
+                performanceChartListener();
+                performanceChartListener = null;
             }
 
-            let chartData = [];
-            let totalLearners = 0;
-            let totalPoints = 0;
-            let highestPoints = 0;
-            let mostActiveClass = { name: 'None', learnerCount: 0 };
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            
+            // Set up real-time listener for classes
+            performanceChartListener = window.firebaseFirestore.onSnapshot(classesRef, async (classesSnapshot) => {
+                if (classesSnapshot.empty) {
+                    updateChartSummary(0, 0, 0, 'No classes');
+                    createOrUpdateChart([]);
+                    return;
+                }
 
-            // Process each class
-            for (const classDoc of classesSnapshot.docs) {
-                const className = classDoc.id;
-                const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
-                const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+                let chartData = [];
+                let totalLearners = 0;
+                let totalPoints = 0;
+                let highestPoints = 0;
+                let mostActiveClass = { name: 'None', learnerCount: 0 };
 
-                let classTotalPoints = 0;
-                let classLearnerCount = 0;
+                // Process each class with real-time learners data
+                const classPromises = classesSnapshot.docs.map(async (classDoc) => {
+                    const className = classDoc.id;
+                    const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+                    
+                    return new Promise((resolve) => {
+                        const learnerListener = window.firebaseFirestore.onSnapshot(learnersRef, (learnersSnapshot) => {
+                            let classTotalPoints = 0;
+                            let classLearnerCount = 0;
 
-                learnersSnapshot.forEach(doc => {
-                    const learner = doc.data();
-                    classTotalPoints += learner.points || 0;
-                    classLearnerCount++;
+                            learnersSnapshot.forEach(doc => {
+                                const learner = doc.data();
+                                classTotalPoints += learner.points || 0;
+                                classLearnerCount++;
+                            });
+
+                            const avgPoints = classLearnerCount > 0 ? Math.round(classTotalPoints / classLearnerCount) : 0;
+                            
+                            resolve({
+                                className: className,
+                                learnerCount: classLearnerCount,
+                                totalPoints: classTotalPoints,
+                                avgPoints: avgPoints
+                            });
+                        }, (error) => {
+                            console.error(`Error loading learners for ${className}:`, error);
+                            resolve({
+                                className: className,
+                                learnerCount: 0,
+                                totalPoints: 0,
+                                avgPoints: 0
+                            });
+                        });
+                    });
                 });
 
-                totalLearners += classLearnerCount;
-                totalPoints += classTotalPoints;
-                highestPoints = Math.max(highestPoints, classTotalPoints);
+                // Wait for all class data
+                const allClassData = await Promise.all(classPromises);
 
-                if (classLearnerCount > mostActiveClass.learnerCount) {
-                    mostActiveClass = { name: className, learnerCount: classLearnerCount };
+                // Filter and process data
+                const filteredData = selectedClass !== 'all' 
+                    ? allClassData.filter(item => item.className === selectedClass)
+                    : allClassData;
+
+                chartData = filteredData.filter(item => item.learnerCount > 0);
+
+                // Calculate totals
+                chartData.forEach(item => {
+                    totalLearners += item.learnerCount;
+                    totalPoints += item.totalPoints;
+                    highestPoints = Math.max(highestPoints, item.totalPoints);
+                    
+                    if (item.learnerCount > mostActiveClass.learnerCount) {
+                        mostActiveClass = { name: item.className, learnerCount: item.learnerCount };
+                    }
+                });
+
+                // Update summary
+                const avgPointsOverall = totalLearners > 0 ? Math.round(totalPoints / totalLearners) : 0;
+                updateChartSummary(
+                    classesSnapshot.size,
+                    avgPointsOverall,
+                    highestPoints,
+                    mostActiveClass.name
+                );
+
+                // Create or update chart
+                createOrUpdateChart(chartData);
+            }, (error) => {
+                console.error('Error in performance chart listener:', error);
+                const chartContainer = document.getElementById('performanceChart');
+                if (chartContainer) {
+                    const isOffline = !navigator.onLine;
+                    const ctx = chartContainer.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, chartContainer.width, chartContainer.height);
+                        ctx.font = '14px Arial';
+                        ctx.fillStyle = isOffline ? '#ef4444' : '#666';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(isOffline ? 'Offline - Check connection' : 'Error loading chart', chartContainer.width / 2, chartContainer.height / 2);
+                    }
                 }
-
-                // Only include data if class has learners
-                if (classLearnerCount > 0) {
-                    const avgPoints = classTotalPoints / classLearnerCount;
-                    chartData.push({
-                        className: className,
-                        learnerCount: classLearnerCount,
-                        totalPoints: classTotalPoints,
-                        avgPoints: Math.round(avgPoints)
-                    });
-                }
-            }
-
-            // Filter data if specific class selected
-            if (selectedClass !== 'all') {
-                chartData = chartData.filter(item => item.className === selectedClass);
-            }
-
-            // Update summary
-            const avgPointsOverall = totalLearners > 0 ? Math.round(totalPoints / totalLearners) : 0;
-            updateChartSummary(
-                classesSnapshot.size,
-                avgPointsOverall,
-                highestPoints,
-                mostActiveClass.name
-            );
-
-            // Create or update chart
-            createOrUpdateChart(chartData);
+            });
 
         } catch (error) {
-            console.error('Error updating performance chart:', error);
+            console.error('Error setting up performance chart listener:', error);
             const chartContainer = document.getElementById('performanceChart');
             if (chartContainer) {
                 const isOffline = !navigator.onLine;
@@ -3109,65 +3287,134 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         if (chartMostActiveEl) chartMostActiveEl.textContent = mostActiveClass;
     }
 
-    // Populate class selector
+    // Populate class selector with real-time updates
+    let classSelectorListener = null;
+    
     async function populateClassSelector() {
         const classSelector = document.getElementById('classSelector');
         if (!classSelector) return;
 
         try {
+            // Clean up existing listener
+            if (classSelectorListener) {
+                classSelectorListener();
+                classSelectorListener = null;
+            }
+
             const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
-            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
+            
+            // Set up real-time listener for classes
+            classSelectorListener = window.firebaseFirestore.onSnapshot(classesRef, (classesSnapshot) => {
+                // Clear existing options except 'all'
+                classSelector.innerHTML = '<option value="all">All Classes</option>';
 
-            // Clear existing options except 'all'
-            classSelector.innerHTML = '<option value="all">All Classes</option>';
+                if (classesSnapshot.empty) {
+                    return;
+                }
 
-            classesSnapshot.forEach(doc => {
-                const className = doc.id;
-                const option = document.createElement('option');
-                option.value = className;
-                option.textContent = className;
-                classSelector.appendChild(option);
+                classesSnapshot.forEach(doc => {
+                    const className = doc.id;
+                    const option = document.createElement('option');
+                    option.value = className;
+                    option.textContent = className;
+                    classSelector.appendChild(option);
+                });
+
+                // Trigger chart update with current selection
+                const currentSelection = classSelector.value;
+                updatePerformanceChart(currentSelection);
+            }, (error) => {
+                console.error('Error in class selector listener:', error);
             });
 
-            // Add event listener
+            // Add event listener for manual changes
             classSelector.addEventListener('change', (e) => {
                 updatePerformanceChart(e.target.value);
             });
+            
         } catch (error) {
-            console.error('Error populating class selector:', error);
+            console.error('Error setting up class selector listener:', error);
         }
     }
 
     // Update dashboard stats
+    // Dashboard stats with real-time updates
+    let dashboardStatsListener = null;
+    
     async function updateDashboardStats() {
         try {
-            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
-            const classesSnapshot = await window.firebaseFirestore.getDocs(classesRef);
-
-            let totalStudents = 0;
-            let totalPoints = 0;
-
-            for (const classDoc of classesSnapshot.docs) {
-                const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', classDoc.id, 'learners');
-                const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
-
-                learnersSnapshot.forEach(doc => {
-                    const learner = doc.data();
-                    totalStudents++;
-                    totalPoints += learner.points || 0;
-                });
+            // Clean up existing listener
+            if (dashboardStatsListener) {
+                dashboardStatsListener();
+                dashboardStatsListener = null;
             }
 
-            const totalClassesEl = document.getElementById('totalClasses');
-            const totalStudentsEl = document.getElementById('totalStudents');
-            const totalPointsEl = document.getElementById('totalPoints');
+            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+            
+            // Set up real-time listener for classes and learners
+            dashboardStatsListener = window.firebaseFirestore.onSnapshot(classesRef, (classesSnapshot) => {
+                if (classesSnapshot.empty) {
+                    const totalClassesEl = document.getElementById('totalClasses');
+                    const totalStudentsEl = document.getElementById('totalStudents');
+                    const totalPointsEl = document.getElementById('totalPoints');
 
-            if (totalClassesEl) totalClassesEl.textContent = classesSnapshot.size;
-            if (totalStudentsEl) totalStudentsEl.textContent = totalStudents;
-            if (totalPointsEl) totalPointsEl.textContent = totalPoints;
+                    if (totalClassesEl) totalClassesEl.textContent = '0';
+                    if (totalStudentsEl) totalStudentsEl.textContent = '0';
+                    if (totalPointsEl) totalPointsEl.textContent = '0';
+                    return;
+                }
+
+                let totalStudents = 0;
+                let totalPoints = 0;
+                let classesProcessed = 0;
+
+                // Set up listeners for each class's learners
+                const classListeners = [];
+                
+                classesSnapshot.docs.forEach((classDoc) => {
+                    const className = classDoc.id;
+                    const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+                    
+                    const learnerListener = window.firebaseFirestore.onSnapshot(learnersRef, (learnersSnapshot) => {
+                        // Calculate stats for this class
+                        let classStudents = 0;
+                        let classPoints = 0;
+                        
+                        learnersSnapshot.forEach(doc => {
+                            const learner = doc.data();
+                            classStudents++;
+                            classPoints += learner.points || 0;
+                        });
+                        
+                        // Update totals
+                        totalStudents += classStudents;
+                        totalPoints += classPoints;
+                        
+                        // Update display
+                        const totalClassesEl = document.getElementById('totalClasses');
+                        const totalStudentsEl = document.getElementById('totalStudents');
+                        const totalPointsEl = document.getElementById('totalPoints');
+
+                        if (totalClassesEl) totalClassesEl.textContent = classesSnapshot.size;
+                        if (totalStudentsEl) totalStudentsEl.textContent = totalStudents;
+                        if (totalPointsEl) totalPointsEl.textContent = totalPoints;
+                        
+                    }, (error) => {
+                        console.error(`Error in stats listener for ${className}:`, error);
+                    });
+                    
+                    classListeners.push(learnerListener);
+                });
+                
+                // Store listeners for cleanup
+                window.dashboardStatsListeners = classListeners;
+                
+            }, (error) => {
+                console.error('Error in dashboard stats listener:', error);
+            });
 
         } catch (error) {
-            console.error('Error updating dashboard stats:', error);
+            console.error('Error setting up dashboard stats listener:', error);
         }
     }
 
@@ -3183,6 +3430,44 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         updateDashboardStats();
     };
 
+    // Cleanup function for all real-time listeners
+    function cleanupDashboardListeners() {
+        if (performanceChartListener) {
+            performanceChartListener();
+            performanceChartListener = null;
+        }
+        
+        if (classSelectorListener) {
+            classSelectorListener();
+            classSelectorListener = null;
+        }
+        
+        if (dashboardStatsListener) {
+            dashboardStatsListener();
+            dashboardStatsListener = null;
+        }
+        
+        if (window.dashboardStatsListeners) {
+            window.dashboardStatsListeners.forEach(listener => listener());
+            window.dashboardStatsListeners = [];
+        }
+        
+        if (userClassCheckboxesListener) {
+            userClassCheckboxesListener();
+            userClassCheckboxesListener = null;
+        }
+        
+        if (window.adminListListener) {
+            window.adminListListener();
+            window.adminListListener = null;
+        }
+        
+        if (window.userClassAllocationsListener) {
+            window.userClassAllocationsListener();
+            window.userClassAllocationsListener = null;
+        }
+    }
+
     // Initialize dashboard components
     const checkChartInterval = setInterval(() => {
         if (document.getElementById('performanceChart')) {
@@ -3193,6 +3478,21 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             loadTopLearners(); // Initialize top learners display
         }
     }, 500);
+
+    // Add cleanup when page is unloaded
+    window.addEventListener('beforeunload', cleanupDashboardListeners);
+    
+    // Also cleanup when switching between dashboard sections
+    document.addEventListener('DOMContentLoaded', function() {
+        // Store original loadContent function for cleanup
+        const originalLoadContent = window.loadContent;
+        if (originalLoadContent) {
+            window.loadContent = function(section) {
+                cleanupDashboardListeners();
+                return originalLoadContent(section);
+            };
+        }
+    });
 
     // Network status indicator
     function updateNetworkStatus(online) {

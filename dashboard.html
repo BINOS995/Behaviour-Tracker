@@ -15,6 +15,9 @@
     <meta name="apple-mobile-web-app-title" content="Behaviour Tracker">
     <link rel="apple-touch-icon" href="images/logo1.png">
     
+    <!-- Cache version for PWA updates -->
+    <meta name="version" content="3.0.0">
+    
     <!-- Prevent caching to ensure auth checks work on back button -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -283,6 +286,146 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             pointer-events: auto;
             user-select: auto;
             transition: filter 0.3s;
+        }
+        
+        /* Modern Student Card Styles */
+        .student-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+        
+        .student-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-color: #cbd5e0;
+        }
+        
+        .student-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .rank-badge {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #92400e;
+            font-weight: bold;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+        }
+        
+        .points-display {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 1.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+            transition: width 0.3s ease;
+            height: 0.375rem;
+            border-radius: 9999px;
+        }
+        
+        .progress-container {
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            height: 0.375rem;
+            overflow: hidden;
+        }
+        
+        .quick-action-btn {
+            transition: all 0.2s ease;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+        }
+        
+        .quick-action-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .student-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .student-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 0.5rem;
+            }
+        }
+        
+        @media (min-width: 1200px) {
+            .student-grid {
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            }
+        }
+        
+        /* Animation keyframes */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        /* Loading skeleton animation */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+        
+        /* Modal animations */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.3s, transform 0.3s;
         }
     </style>
 </head>
@@ -724,36 +867,40 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     adminClassPasswords = {};
                     
                     // Show "No Classes Found" message
-                    const classesList = document.getElementById('classesList');
-                    if (classesList) {
-                        classesList.innerHTML = `
-                            <div class="text-center py-8">
-                                <i class="fas fa-users-slash text-4xl text-gray-400 mb-4"></i>
-                                <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
-                                <p class="text-gray-600 mb-4">There are no classes in the system yet.</p>
-                                <p class="text-sm text-gray-500">New classes will appear here automatically</p>
-                            </div>
-                        `;
-                    }
+                    setTimeout(() => {
+                        const classesList = document.getElementById('classesList');
+                        if (classesList) {
+                            classesList.innerHTML = `
+                                <div class="text-center py-8">
+                                    <i class="fas fa-users-slash text-4xl text-gray-400 mb-4"></i>
+                                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
+                                    <p class="text-gray-600 mb-4">There are no classes in the system yet.</p>
+                                    <p class="text-sm text-gray-500">New classes will appear here automatically</p>
+                                </div>
+                            `;
+                        }
+                    }, 100);
                 } else {
-                    // Process all classes in real-time
-                    adminClassPasswords = {};
-                    
-                    snapshot.forEach(doc => {
-                        const classData = doc.data();
-                        const className = String(doc.id || '').trim();
-                        
-                        // All users see all classes
-                        adminClassPasswords[className] = {
-                            password: classData.password
-                        };
-                        console.log(`✓ Real-time update: "${className}"`);
-                    });
-                }
+                // Process all classes in real-time
+                adminClassPasswords = {};
                 
-                // Update UI with new data
+                snapshot.forEach(doc => {
+                    const classData = doc.data();
+                    const className = String(doc.id || '').trim();
+                    
+                    // All users see all classes
+                    adminClassPasswords[className] = {
+                        password: classData.password
+                    };
+                    console.log(`✓ Real-time update: "${className}"`);
+                });
+            }
+            
+            // Update UI with new data, ensuring DOM is ready
+            setTimeout(() => {
                 updateClassesList();
                 updateTabContentWithClasses();
+            }, 100);
                 
             }, (error) => {
                 console.error('Error in classes real-time listener:', error);
@@ -800,10 +947,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     userSelect.innerHTML = '<option value="">Loading users...</option>';
                     
                     // Set up real-time listener
-                    usersListener = window.firebaseFirestore.onSnapshot(usersRef, (snapshot) => {
-                        console.log(`Real-time users update: ${snapshot.size} users`);
-                        
-                        userSelect.innerHTML = '<option value="">Select a user...</option>';
+            usersListener = window.firebaseFirestore.onSnapshot(usersRef, (snapshot) => {
+                console.log(`Real-time users update: ${snapshot.size} users`);
+                
+                const userSelect = document.getElementById('userEmailSelect');
+                if (!userSelect) {
+                    console.warn('userEmailSelect element not found, skipping user update');
+                    return;
+                }
+                
+                userSelect.innerHTML = '<option value="">Select a user...</option>';
                         
                         if (snapshot.empty) {
                             userSelect.innerHTML = '<option value="">No users found</option>';
@@ -1279,7 +1432,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         console.log('updateClassesList called, adminClassPasswords:', adminClassPasswords);
         const classesList = document.getElementById('classesList');
         if (!classesList) {
-            console.error('classesList element not found!');
+            console.warn('classesList element not found, retrying in 500ms...');
+            setTimeout(() => updateClassesList(), 500);
             return;
         }
 
@@ -1542,10 +1696,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     async function loadLearners(className, scrollToLearnerId = null) {
         try {
             const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
-            const learnersTable = document.getElementById(`${className}-learners-table`);
+            const studentsGrid = document.getElementById(`${className}-students-grid`);
             
-            if (!learnersTable) {
-                console.error(`Learners table for ${className} not found`);
+            if (!studentsGrid) {
+                console.warn(`Students grid for ${className} not found, retrying in 500ms...`);
+                setTimeout(() => loadLearners(className, scrollToLearnerId), 500);
                 return;
             }
             
@@ -1556,26 +1711,41 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             }
             
             // Show loading state
-            learnersTable.innerHTML = `
-                <tr>
-                    <td colspan="4" class="px-6 py-8 text-base text-gray-500 text-center">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading students...
-                    </td>
-                </tr>
-            `;
+            if (studentsGrid) {
+                studentsGrid.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                        <p class="text-gray-500">Loading students...</p>
+                    </div>
+                `;
+            }
             
             // Set up real-time listener
             learnersListeners[className] = window.firebaseFirestore.onSnapshot(learnersRef, (snapshot) => {
                 console.log(`Real-time update for ${className}: ${snapshot.size} learners`);
                 
+                const studentsGrid = document.getElementById(`${className}-students-grid`);
+                if (!studentsGrid) {
+                    console.warn(`Students grid for ${className} not found during real-time update, retrying...`);
+                    setTimeout(() => {
+                        const retryGrid = document.getElementById(`${className}-students-grid`);
+                        if (retryGrid) {
+                            loadLearners(className);
+                        }
+                    }, 500);
+                    return;
+                }
+                
                 // Clear existing content
-                learnersTable.innerHTML = '';
+                studentsGrid.innerHTML = '';
                 
                 if (snapshot.empty) {
-                    learnersTable.innerHTML = `
-                        <tr>
-                            <td colspan="4" class="px-6 py-8 text-base text-gray-500 text-center">No students added yet</td>
-                        </tr>
+                    studentsGrid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-400">
+                            <i class="fas fa-user-graduate text-4xl mb-3"></i>
+                            <p class="text-lg font-medium">No students added yet</p>
+                            <p class="text-sm">Add your first student to get started</p>
+                        </div>
                     `;
                     
                     // Update class count
@@ -1597,73 +1767,77 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 
                 learners.sort((a, b) => b.points - a.points);
                 
-                // Add learners to table
-                learners.forEach(learner => {
-                    const row = document.createElement('tr');
-                    row.className = learner.points > 100 ? 'bg-green-50' : '';
+                // Create student cards
+                learners.forEach((learner, index) => {
+                    const card = document.createElement('div');
+                    card.className = `student-card bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-100`;
+                    card.setAttribute('data-learner-id', learner.id);
                     
-                    // Add data-id attribute for scrolling
-                    row.setAttribute('data-learner-id', learner.id);
+                    // Get initials for avatar
+                    const initials = learner.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
                     
-                    // Format the last adjustment information
-                    let lastAdjustmentInfo = 'No adjustments yet';
+                    // Determine rank badge
+                    let rankBadge = '';
+                    if (index === 0) rankBadge = '<span class="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">🥇</span>';
+                    else if (index === 1) rankBadge = '<span class="absolute -top-2 -right-2 bg-gray-300 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">🥈</span>';
+                    else if (index === 2) rankBadge = '<span class="absolute -top-2 -right-2 bg-orange-300 text-orange-900 text-xs font-bold px-2 py-1 rounded-full">🥉</span>';
+                    
+                    // Progress bar calculation
+                    const maxPoints = Math.max(...learners.map(l => l.points)) || 100;
+                    const progressPercent = Math.min((learner.points / maxPoints) * 100, 100);
+                    
+                    // Last adjustment info
+                    let lastAdjustmentInfo = 'No recent activity';
                     if (learner.lastAdjustment) {
                         const adjustment = learner.lastAdjustment;
                         const date = new Date(adjustment.date);
                         const formattedDate = date.toLocaleDateString();
-                        const formattedTime = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                         const pointsText = adjustment.points > 0 ? `+${adjustment.points}` : adjustment.points;
-                        
-                        lastAdjustmentInfo = `
-                            <div class="text-xs">
-                                <div class="font-medium">${pointsText} points: ${adjustment.reason}</div>
-                                <div class="text-gray-700">By: ${adjustment.adjustedBy}</div>
-                                <div class="text-gray-700">${formattedDate} ${formattedTime}</div>
-                                <div class="flex space-x-2">
-                                    <button onclick="viewAdjustmentHistory('${className}', '${learner.id}', '${learner.name}')" 
-                                        class="text-blue-500 hover:text-blue-700 text-xs mt-1">
-                                        View History
-                                    </button>
-                                    <button onclick="generateLearnerPDF('${className}', '${learner.id}', '${learner.name}')" 
-                                        class="text-purple-500 hover:text-purple-700 text-xs mt-1">
-                                        <i class="fas fa-file-pdf mr-1"></i>PDF Report
-                                    </button>
-                                </div>
-                            </div>
-                        `;
+                        lastAdjustmentInfo = `${pointsText} pts: ${adjustment.reason}`;
                     }
                     
-                    row.innerHTML = `
-                        <td class="px-6 py-4 text-base font-medium text-gray-900">${learner.name}</td>
-                        <td class="px-6 py-4 text-lg font-bold ${learner.points > 100 ? 'text-green-700' : 'text-gray-800'}">${learner.points} points</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${lastAdjustmentInfo}</td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="flex items-center space-x-2">
-                                    <button onclick="adjustPoints('${className}', '${learner.id}', 5)" 
-                                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-all duration-200 hover:shadow-md">
-                                        <i class="fas fa-plus mr-1"></i>+5
-                                    </button>
-                                    <button onclick="adjustPoints('${className}', '${learner.id}', -5)" 
-                                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-all duration-200 hover:shadow-md">
-                                        <i class="fas fa-minus mr-1"></i>-5
-                                    </button>
+                    card.innerHTML = `
+                        <div class="p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="relative">
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                                        ${initials}
+                                    </div>
+                                    ${rankBadge}
                                 </div>
-                                <div class="flex items-center space-x-2">
-                                    <button onclick="customAdjustPoints('${className}', '${learner.id}')" 
-                                        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold shadow-sm transition-all duration-200 hover:shadow-md">
-                                        <i class="fas fa-edit mr-1"></i>Edit
-                                    </button>
-                                    <button onclick="deleteLearner('${className}', '${learner.id}')" 
-                                        class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm font-semibold shadow-sm transition-all duration-200 hover:shadow-md">
-                                        <i class="fas fa-trash mr-1"></i>Delete
-                                    </button>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold ${learner.points > 100 ? 'text-green-600' : 'text-gray-800'}">${learner.points}</div>
+                                    <div class="text-xs text-gray-500">points</div>
                                 </div>
                             </div>
-                        </td>
+                            
+                            <h4 class="font-semibold text-gray-800 mb-1 truncate">${learner.name}</h4>
+                            <p class="text-xs text-gray-600 mb-3 truncate">${lastAdjustmentInfo}</p>
+                            
+                            <div class="mb-3">
+                                <div class="bg-gray-200 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="adjustPoints('${className}', '${learner.id}', 5)" 
+                                    class="bg-green-100 hover:bg-green-200 text-green-700 p-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button onclick="adjustPoints('${className}', '${learner.id}', -5)" 
+                                    class="bg-red-100 hover:bg-red-200 text-red-700 p-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button onclick="showStudentActions('${className}', '${learner.id}', '${learner.name}')" 
+                                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                            </div>
+                        </div>
                     `;
                     
-                    learnersTable.appendChild(row);
+                    studentsGrid.appendChild(card);
                 });
                 
                 // Update class stats
@@ -1675,47 +1849,40 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 // Scroll to the specified learner if needed
                 if (scrollToLearnerId) {
                     setTimeout(() => {
-                        const targetRow = learnersTable.querySelector(`tr[data-learner-id="${scrollToLearnerId}"]`);
-                        if (targetRow) {
-                            const tableContainer = document.getElementById(`${className}-table-container`);
-                            if (tableContainer) {
-                                targetRow.classList.add('bg-yellow-100');
-                                tableContainer.scrollTop = targetRow.offsetTop - tableContainer.offsetTop;
-                                
-                                // Remove highlight after a short delay
-                                setTimeout(() => {
-                                    targetRow.classList.remove('bg-yellow-100');
-                                    if (targetRow.classList.contains('bg-green-50')) {
-                                        targetRow.classList.add('bg-green-50');
-                                    }
-                                }, 1500);
-                            }
+                        const targetCard = studentsGrid.querySelector(`[data-learner-id="${scrollToLearnerId}"]`);
+                        if (targetCard) {
+                            targetCard.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            
+                            // Remove highlight after a short delay
+                            setTimeout(() => {
+                                targetCard.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+                            }, 1500);
                         }
                     }, 100);
                 }
                 
             }, (error) => {
                 console.error(`Error in learners listener for ${className}:`, error);
-                learnersTable.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-4 py-3 text-sm text-red-500 text-center">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            Error loading learners: ${error.message}
-                        </td>
-                    </tr>
+                studentsGrid.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-12 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-3"></i>
+                        <p class="text-lg font-medium">Error loading students</p>
+                        <p class="text-sm">${error.message}</p>
+                    </div>
                 `;
             });
             
         } catch (error) {
             console.error('Error setting up learners listener:', error);
-            const learnersTable = document.getElementById(`${className}-learners-table`);
-            if (learnersTable) {
-                learnersTable.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-4 py-3 text-sm text-red-500 text-center">
-                            Error: ${error.message}
-                        </td>
-                    </tr>
+            const studentsGrid = document.getElementById(`${className}-students-grid`);
+            if (studentsGrid) {
+                studentsGrid.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-12 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-4xl mb-3"></i>
+                        <p class="text-lg font-medium">Error loading students</p>
+                        <p class="text-sm">${error.message}</p>
+                    </div>
                 `;
             }
         }
@@ -1724,52 +1891,134 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     // Adjust points for a learner
     async function adjustPoints(className, learnerId, pointsChange) {
         try {
-            // Prompt for reason
-            const reason = prompt(`Please enter a reason for ${pointsChange > 0 ? 'adding' : 'deducting'} ${Math.abs(pointsChange)} points:`);
-            if (reason === null) return; // User cancelled the prompt
+            // Create custom modal for reason input
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">${pointsChange > 0 ? 'Add' : 'Deduct'} Points</h3>
+                        <p class="text-gray-600 mb-4">Please enter a reason for ${pointsChange > 0 ? 'adding' : 'deducting'} ${Math.abs(pointsChange)} points:</p>
+                        <textarea id="adjust-reason-input" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Enter reason..."></textarea>
+                        <div class="flex gap-3 mt-4">
+                            <button id="confirm-adjust" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Confirm</button>
+                            <button id="cancel-adjust" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            `;
             
-            const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
-            const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            document.body.appendChild(modal);
             
-            const learnerData = learnerDoc.data();
-            if (!learnerData) {
-                throw new Error('Learner data not available');
-            }
-            const currentPoints = learnerData.points;
-            const newPoints = Math.max(0, currentPoints + pointsChange); // Ensure points don't go below 0
-            
-            // Get current user info
-            const currentUser = window.firebaseAuth.currentUser;
-            const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
-            const currentDate = new Date();
-            
-            // Create adjustment record
-            const adjustmentRecord = {
-                points: pointsChange,
-                reason: reason.trim() || (pointsChange > 0 ? 'Points added' : 'Points deducted'),
-                adjustedBy: userName,
-                date: currentDate.toISOString()
-            };
-            
-            // Get existing adjustments or create new array
-            const adjustments = learnerData.adjustments || [];
-            adjustments.push(adjustmentRecord);
-            
-            // Update the document
-            await window.firebaseFirestore.updateDoc(learnerRef, {
-                points: newPoints,
-                adjustments: adjustments,
-                lastAdjustment: adjustmentRecord
+            // Handle modal actions
+            document.getElementById('confirm-adjust').addEventListener('click', async () => {
+                const reason = document.getElementById('adjust-reason-input').value.trim();
+                if (!reason) {
+                    alert('Please enter a reason for the adjustment');
+                    return;
+                }
+                
+                try {
+                    const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+                    const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+                    
+                    const learnerData = learnerDoc.data();
+                    if (!learnerData) {
+                        throw new Error('Learner data not available');
+                    }
+                    const currentPoints = learnerData.points;
+                    const newPoints = Math.max(0, currentPoints + pointsChange);
+                    
+                    // Get current user info
+                    const currentUser = window.firebaseAuth.currentUser;
+                    const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+                    const currentDate = new Date();
+                    
+                    // Create adjustment record
+                    const adjustmentRecord = {
+                        points: pointsChange,
+                        reason: reason,
+                        adjustedBy: userName,
+                        date: currentDate.toISOString()
+                    };
+                    
+                    // Get existing adjustments or create new array
+                    const adjustments = learnerData.adjustments || [];
+                    adjustments.push(adjustmentRecord);
+                    
+                    // Update the document
+                    await window.firebaseFirestore.updateDoc(learnerRef, {
+                        points: newPoints,
+                        adjustments: adjustments,
+                        lastAdjustment: adjustmentRecord
+                    });
+                    
+                    // Remove modal and reload learners
+                    modal.remove();
+                    loadLearners(className, learnerId);
+                } catch (error) {
+                    console.error('Error adjusting points:', error);
+                    alert('Error adjusting points. Please try again.');
+                }
             });
             
-            // Reload learners list and scroll to the updated learner
-            loadLearners(className, learnerId);
+            document.getElementById('cancel-adjust').addEventListener('click', () => {
+                modal.remove();
+            });
+            
         } catch (error) {
             console.error('Error adjusting points:', error);
             alert('Error adjusting points. Please try again.');
         }
     }
     
+    // Show student actions modal
+    function showStudentActions(className, learnerId, learnerName) {
+        const actionsModal = document.createElement('div');
+        actionsModal.innerHTML = `
+            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-800">${learnerName}</h3>
+                            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <button onclick="generateLearnerPDF('${className}', '${learnerId}', '${learnerName}'); this.closest('.fixed').remove()" 
+                                    class="w-full text-left px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                <i class="fas fa-file-pdf mr-2"></i> Generate PDF Report
+                            </button>
+                            
+                            <button onclick="viewAdjustmentHistory('${className}', '${learnerId}', '${learnerName}'); this.closest('.fixed').remove()" 
+                                    class="w-full text-left px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+                                <i class="fas fa-history mr-2"></i> View History
+                            </button>
+                            
+                            <button onclick="customAdjustPoints('${className}', '${learnerId}'); this.closest('.fixed').remove()" 
+                                    class="w-full text-left px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                <i class="fas fa-plus-minus mr-2"></i> Custom Points
+                            </button>
+                            
+                            <button onclick="editLearner('${className}', '${learnerId}', '${learnerName}'); this.closest('.fixed').remove()" 
+                                    class="w-full text-left px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors">
+                                <i class="fas fa-edit mr-2"></i> Edit Student
+                            </button>
+                            
+                            <button onclick="deleteLearner('${className}', '${learnerId}', '${learnerName}'); this.closest('.fixed').remove()" 
+                                    class="w-full text-left px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                                <i class="fas fa-trash mr-2"></i> Delete Student
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(actionsModal);
+    }
+
     // Generate PDF report for a learner
     async function generateLearnerPDF(className, learnerId, learnerName) {
         try {
@@ -2053,6 +2302,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         }
     }
     
+    // Alias for viewLearnerHistory for backward compatibility
+    function viewLearnerHistory(className, learnerId, learnerName) {
+        return viewAdjustmentHistory(className, learnerId, learnerName);
+    }
+    
     // Custom point adjustment with any value
     async function customAdjustPoints(className, learnerId) {
         try {
@@ -2063,36 +2317,109 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 const learnerData = learnerDoc.data();
                 const currentPoints = learnerData.points;
                 
-                // Prompt for points change
-                const pointsChangeStr = prompt(`Current points: ${currentPoints}\nEnter points to add (positive) or deduct (negative):`);
-                if (pointsChangeStr === null) return; // User cancelled
+                // Create custom points modal
+                const modal = document.createElement('div');
+                modal.id = 'custom-points-modal';
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-bold text-gray-800">Custom Points Adjustment</h3>
+                                <button onclick="document.getElementById('custom-points-modal').remove()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Current Points: <span class="font-bold text-blue-600">${currentPoints}</span>
+                                        </label>
+                                        <input type="number" 
+                                               id="custom-points-input" 
+                                               placeholder="Enter points (positive or negative)" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                               required>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Reason for adjustment
+                                        </label>
+                                        <input type="text" 
+                                               id="custom-reason-input" 
+                                               placeholder="Enter reason (e.g., excellent work, late submission)" 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                               required>
+                                    </div>
+                                    
+                                    <div class="flex gap-3 pt-4">
+                                        <button onclick="document.getElementById('custom-points-modal').remove()" 
+                                                class="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                            Cancel
+                                        </button>
+                                        <button onclick="submitCustomPoints('${className}', '${learnerId}', ${currentPoints})" 
+                                                class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                            Apply Points
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
                 
-                const pointsChange = parseInt(pointsChangeStr);
-                if (isNaN(pointsChange)) {
-                    alert('Please enter a valid number');
-                    return;
-                }
-                
-                // Prompt for reason
-                const reason = prompt(`Please enter a reason for ${pointsChange > 0 ? 'adding' : 'deducting'} ${Math.abs(pointsChange)} points:`);
-                if (reason === null) return; // User cancelled the prompt
-                
-                const newPoints = Math.max(0, currentPoints + pointsChange); // Ensure points don't go below 0
-                
-                // Get current user info
-                const currentUser = window.firebaseAuth.currentUser;
-                const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
-                const currentDate = new Date();
-                
-                // Create adjustment record
-                const adjustmentRecord = {
-                    points: pointsChange,
-                    reason: reason.trim() || (pointsChange > 0 ? 'Points added' : 'Points deducted'),
-                    adjustedBy: userName,
-                    date: currentDate.toISOString()
-                };
-                
-                // Get existing adjustments or create new array
+                // Focus on the points input
+                document.getElementById('custom-points-input').focus();
+            }
+        } catch (error) {
+            console.error('Error adjusting points:', error);
+            alert('Error adjusting points. Please try again.');
+        }
+    }
+    
+    // Submit custom points adjustment
+    async function submitCustomPoints(className, learnerId, currentPoints) {
+        try {
+            const pointsInput = document.getElementById('custom-points-input');
+            const reasonInput = document.getElementById('custom-reason-input');
+            
+            const pointsChange = parseInt(pointsInput.value);
+            const reason = reasonInput.value.trim();
+            
+            if (isNaN(pointsChange)) {
+                alert('Please enter a valid number');
+                return;
+            }
+            
+            if (!reason) {
+                alert('Please enter a reason for the adjustment');
+                return;
+            }
+            
+            const newPoints = Math.max(0, currentPoints + pointsChange);
+            
+            // Get current user info
+            const currentUser = window.firebaseAuth.currentUser;
+            const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+            const currentDate = new Date();
+            
+            // Create adjustment record
+            const adjustmentRecord = {
+                points: pointsChange,
+                reason: reason,
+                adjustedBy: userName,
+                date: currentDate.toISOString()
+            };
+            
+            // Get learner reference
+            const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+            const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            
+            if (learnerDoc.exists()) {
+                const learnerData = learnerDoc.data();
                 const adjustments = learnerData.adjustments || [];
                 adjustments.push(adjustmentRecord);
                 
@@ -2103,14 +2430,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     lastAdjustment: adjustmentRecord
                 });
                 
-                // Reload learners list and scroll to the updated learner
+                // Close modal and reload learners
+                const modal = document.getElementById('custom-points-modal');
+                if (modal) {
+                    modal.remove();
+                }
                 loadLearners(className, learnerId);
-                
-
             }
         } catch (error) {
-            console.error('Error adjusting points:', error);
-            alert('Error adjusting points. Please try again.');
+            console.error('Error submitting custom points:', error);
+            alert('Error submitting custom points. Please try again.');
         }
     }
     
@@ -2260,35 +2589,23 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 <div class="class-content-blur" id="${className}-content">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                         <div class="lg:col-span-2">
-                            <div class="bg-gray-50 rounded-xl p-3 md:p-4 mb-4 md:mb-6">
-                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Behavior Tracker</h3>
-                                <div class="mb-4">
-                                    <div class="flex flex-wrap gap-3 mb-4">
-                                        <input type="text" id="${className}-new-learner" placeholder="Student name" class="flex-grow p-3 border rounded-lg text-base shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <button onclick="addLearner('${className}')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-base font-semibold flex items-center shadow-sm transition-all duration-200 hover:shadow-md">
-                                        <i class="fas fa-plus mr-2"></i>Add Student
-                                    </button>
-
+                            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6">
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                                    <h3 class="text-xl font-bold text-gray-800 mb-4 sm:mb-0">Student Behavior Tracker</h3>
+                                    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                                        <input type="text" id="${className}-new-learner" placeholder="Student name" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                                        <button onclick="addLearner('${className}')" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200">
+                                            <i class="fas fa-plus mr-2"></i>Add Student
+                                        </button>
                                     </div>
-                                    <div class="border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-                                        <div class="max-h-[600px] overflow-y-auto" id="${className}-table-container">
-                                            <table class="min-w-full divide-y divide-gray-200">
-                                                <thead class="bg-gray-100 sticky top-0">
-                                                    <tr>
-                                                        <th class="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Student Name</th>
-                                                        <th class="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Points</th>
-                                                        <th class="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Last Adjustment</th>
-                                                        <th class="px-6 py-4 text-left text-sm font-medium text-gray-700 uppercase tracking-wider">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="${className}-learners-table" class="bg-white divide-y divide-gray-200">
-                                                    <!-- Learners will be loaded here -->
-                                                    <tr>
-                                                        <td colspan="4" class="px-6 py-8 text-base text-gray-700 text-center">No students added yet</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="${className}-students-grid">
+                                    <!-- Student cards will be loaded here -->
+                                    <div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-400">
+                                        <i class="fas fa-user-graduate text-4xl mb-3"></i>
+                                        <p class="text-lg font-medium">No students added yet</p>
+                                        <p class="text-sm">Add your first student to get started</p>
                                     </div>
                                 </div>
                             </div>

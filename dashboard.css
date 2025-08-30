@@ -412,6 +412,23 @@ table {
     }
 }
 
+/* Class content blur effect for password protection */
+.class-content-blur {
+    filter: blur(12px);
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.7;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+.class-content-unblur {
+    filter: none;
+    pointer-events: auto;
+    user-select: auto;
+    opacity: 1;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
 /* Scrollbar styles for webkit browsers */
 ::-webkit-scrollbar {
     width: 8px;
@@ -437,6 +454,26 @@ table {
 .search-bar:focus {
     outline: 2px solid #667eea;
     outline-offset: 2px;
+}
+
+/* Ensure dark text color for inputs in password modal */
+#classPasswordInput {
+    color: #1f2937;
+}
+
+#classPasswordInput::placeholder {
+    color: #6b7280;
+}
+
+/* Ensure dark text for all inputs in white background modals */
+.bg-white input[type="password"],
+.bg-white input[type="text"],
+.bg-white input[type="email"] {
+    color: #1f2937;
+}
+
+.bg-white input::placeholder {
+    color: #6b7280;
 }
 
 /* Loading states */

@@ -29,6 +29,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Network error handling and CORS fix -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                 script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                 connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                 img-src 'self' data: https:;
+                 style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
+                 font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">"
     <script>
     window.addEventListener('error', function(e) {
         console.error('JavaScript error detected:', e.message, '\nLine:', e.lineno, '\nColumn:', e.colno, '\nFile:', e.filename);
@@ -40,6 +48,14 @@
         if (typeof window.jspdf === 'undefined') {
             console.warn('jsPDF not found in window object. Creating empty object.');
             window.jspdf = { jsPDF: function() { return {}; } };
+        }
+    });
+    
+    // Global error handler for Firebase and network issues
+    window.addEventListener('unhandledrejection', function(event) {
+        console.error('Unhandled promise rejection:', event.reason);
+        if (event.reason && event.reason.code === 'permission-denied') {
+            console.warn('Firebase permission denied - check security rules');
         }
     });
     </script>
@@ -128,9 +144,282 @@
         });
     </script>
     
-
-
+    <!-- Firebase Connection Test and Error Handling -->
     <script>
+    // Retry mechanism with exponential backoff
+    async function retryWithBackoff(operation, maxRetries = 3, delay = 1000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await operation();
+            } catch (error) {
+                if (attempt === maxRetries) {
+                    throw error;
+                }
+                const backoffDelay = delay * Math.pow(2, attempt - 1);
+                console.warn(`Attempt ${attempt} failed, retrying in ${backoffDelay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+            }
+        }
+    }
+    
+    // Test Firebase connection and handle common errors
+    async function testFirebaseConnection() {
+        try {
+            console.log('🔍 Testing Firebase connection...');
+            
+            // Test if Firebase services are available
+            if (!window.firebaseApp || !window.firebaseAuth || !window.firebaseDB) {
+                console.error('❌ Firebase services not properly initialized');
+                return false;
+            }
+            
+            // Test Firestore connectivity
+            const testConnection = await safeFirestoreOperation(async () => {
+                const testRef = window.firebaseFirestore.collection(window.firebaseDB, 'test-connection');
+                await window.firebaseFirestore.getDocs(testRef);
+                return true;
+            }, false);
+            
+            if (testConnection) {
+                console.log('✅ Firebase connection successful');
+                return true;
+            } else {
+                console.warn('⚠️ Firebase connection failed, using offline mode');
+                return false;
+            }
+            
+        } catch (error) {
+            console.error('❌ Firebase connection test failed:', error);
+            return false;
+        }
+    }
+    
+    // Initialize with connection check
+    document.addEventListener('DOMContentLoaded', async function() {
+        const isConnected = await testFirebaseConnection();
+        if (!isConnected) {
+            console.warn('Running in offline mode - some features may be limited');
+            // Show offline indicator
+            const offlineIndicator = document.createElement('div');
+            offlineIndicator.innerHTML = `
+                <div id="offline-indicator" style="position: fixed; top: 10px; right: 10px; background: #f59e0b; color: white; padding: 8px 16px; border-radius: 4px; z-index: 10000; font-size: 12px;">
+                    <i class="fas fa-wifi-slash"></i> Offline Mode
+                </div>
+            `;
+            document.body.appendChild(offlineIndicator);
+        }
+    });
+    
+    // Console error monitoring for debugging
+    (function() {
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            
+            // Check for network errors
+            const errorText = args.join(' ');
+            if (errorText.includes('net::ERR_ABORTED') || 
+                errorText.includes('ERR_CONNECTION_ABORTED') || 
+                errorText.includes('CORS') || 
+                errorText.includes('NetworkError')) {
+                
+                console.log('🔍 Detected network error. Check:');
+                console.log('1. Internet connection');
+                console.log('2. Firebase project configuration');
+                console.log('3. CORS settings in Firebase');
+                console.log('4. Domain whitelist in Firebase console');
+                
+                // Show error in UI if not already shown
+                if (!document.getElementById('network-error-banner')) {
+                    const banner = document.createElement('div');
+                    banner.id = 'network-error-banner';
+                    banner.innerHTML = `
+                        <div style="position: fixed; top: 0; left: 0; right: 0; background: #ef4444; color: white; padding: 12px; text-align: center; z-index: 10000; font-size: 14px;">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Network Error: Check console for details. Firebase may be unreachable.
+                            <button onclick="this.parentElement.parentElement.remove()" style="margin-left: 10px; background: white; color: #ef4444; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">×</button>
+                        </div>
+                    `;
+                    document.body.appendChild(banner);
+                }
+            }
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            
+            // Log warnings for debugging
+            const warnText = args.join(' ');
+            if (warnText.includes('Firebase') || warnText.includes('network')) {
+                console.log('⚠️ Warning details:', args);
+            }
+        };
+    })();
+    // Diagnostic function for users to troubleshoot
+    async function runDiagnostics() {
+        console.log('🔍 Running comprehensive diagnostics...');
+        
+        const diagnosticResults = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            onlineStatus: navigator.onLine,
+            firebaseAvailable: !!window.firebaseApp,
+            authAvailable: !!window.firebaseAuth,
+            dbAvailable: !!window.firebaseDB,
+            errors: []
+        };
+        
+        console.log('=== DIAGNOSTIC RESULTS ===');
+        console.log('Browser:', diagnosticResults.userAgent);
+        console.log('Online status:', diagnosticResults.onlineStatus);
+        console.log('Firebase available:', diagnosticResults.firebaseAvailable);
+        
+        // Test network connectivity
+        try {
+            const connectionTest = await testFirebaseConnection();
+            diagnosticResults.firebaseConnection = connectionTest;
+            console.log('Firebase connection test:', connectionTest ? '✅ PASS' : '❌ FAIL');
+        } catch (error) {
+            diagnosticResults.errors.push({ type: 'connection', error: error.message });
+            console.error('Connection test failed:', error.message);
+        }
+        
+        // Test Firestore structure
+        try {
+            await checkFirestoreStructure();
+            diagnosticResults.firestoreStructure = '✅ PASS';
+        } catch (error) {
+            diagnosticResults.errors.push({ type: 'firestore', error: error.message });
+            diagnosticResults.firestoreStructure = '❌ FAIL';
+        }
+        
+        // Check for common issues
+        const commonIssues = [];
+        
+        if (!navigator.onLine) {
+            commonIssues.push('🔴 No internet connection detected');
+        }
+        
+        if (!window.firebaseApp) {
+            commonIssues.push('🔴 Firebase not initialized - check configuration');
+        }
+        
+        if (diagnosticResults.errors.length > 0) {
+            commonIssues.push(`🔴 ${diagnosticResults.errors.length} errors detected`);
+        }
+        
+        // Display results
+        const diagnosticReport = `
+📊 DIAGNOSTIC REPORT
+
+🔍 System Status:
+• Browser: ${navigator.userAgent.substring(0, 50)}...
+• Online: ${navigator.onLine ? '✅ Yes' : '❌ No'}
+• Firebase: ${window.firebaseApp ? '✅ Initialized' : '❌ Not initialized'}
+• Auth: ${window.firebaseAuth ? '✅ Available' : '❌ Not available'}
+• Database: ${window.firebaseDB ? '✅ Available' : '❌ Not available'}
+
+🚨 Common Issues Found:
+${commonIssues.length > 0 ? commonIssues.join('\n') : '✅ No common issues detected'}
+
+🔧 Troubleshooting Steps:
+1. Check internet connection
+2. Verify Firebase configuration
+3. Check browser console for errors
+4. Ensure Firebase project settings are correct
+5. Check if domain is whitelisted in Firebase
+
+💡 Next Steps:
+${commonIssues.length > 0 ? 'Address the issues above' : 'System appears healthy'}
+        `;
+        
+        alert(diagnosticReport);
+        console.log('Complete diagnostic results:', diagnosticResults);
+        
+        // Save to console for detailed inspection
+        console.log('🎯 Copy this diagnostic data for support:');
+        console.log(JSON.stringify(diagnosticResults, null, 2));
+    }
+    
+    // Add event listener for diagnostic button
+    document.addEventListener('DOMContentLoaded', function() {
+        const diagnosticBtn = document.getElementById('diagnosticBtn');
+        if (diagnosticBtn) {
+            diagnosticBtn.addEventListener('click', runDiagnostics);
+        }
+    });
+    </script>
+    
+    
+    <script>
+
+    // Robust error handling utility with network error handling
+    async function safeFirestoreOperation(operation, fallbackValue = null, maxRetries = 3) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await operation();
+            } catch (error) {
+                console.error(`Firestore operation failed (attempt ${attempt}/${maxRetries}):`, error);
+                
+                // Handle specific Firebase and network errors
+                if (error.code === 'permission-denied') {
+                    console.warn('Firebase permission denied - check security rules');
+                    return fallbackValue;
+                } else if (error.code === 'unavailable' || error.code === 'network-request-failed') {
+                    console.warn(`Firebase unavailable - network issue (attempt ${attempt})`);
+                    if (attempt < maxRetries) {
+                        const delay = 1000 * Math.pow(2, attempt - 1);
+                        console.log(`Retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                } else if (error.code === 'not-found') {
+                    console.warn('Document not found');
+                    return fallbackValue;
+                } else if (error.message && (error.message.includes('net::ERR_ABORTED') || error.message.includes('ERR_CONNECTION_ABORTED'))) {
+                    console.warn(`Network error detected (net::ERR_ABORTED) - attempt ${attempt}`);
+                    console.log('This is likely a CORS or network connectivity issue');
+                    if (attempt < maxRetries) {
+                        const delay = 2000 * Math.pow(2, attempt - 1);
+                        console.log(`Retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                }
+                
+                // Generic error handling
+                if (attempt === maxRetries) {
+                    console.error('Max retries reached, returning fallback');
+                    console.error('Error details:', {
+                        code: error.code,
+                        message: error.message,
+                        name: error.name,
+                        stack: error.stack
+                    });
+                    return fallbackValue;
+                }
+            }
+        }
+    }
+
+    // Safe DOM element getter with fallback
+    function getElementSafe(selector, fallbackText = '') {
+        const element = document.querySelector(selector);
+        if (!element) {
+            console.warn(`Element not found: ${selector}`);
+            return { 
+                innerHTML: fallbackText, 
+                style: {}, 
+                addEventListener: () => {},
+                value: '',
+                textContent: fallbackText,
+                classList: { add: () => {}, remove: () => {}, toggle: () => {} }
+            };
+        }
+        return element;
+    }
 
     // Comprehensive Firestore structure check
     async function checkFirestoreStructure() {
@@ -141,9 +430,11 @@
             const currentUser = window.firebaseAuth.currentUser;
             console.log('Current authenticated user:', currentUser?.email || 'No user logged in');
             
-            // Check users collection
-            const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
-            const usersSnapshot = await window.firebaseFirestore.getDocs(usersRef);
+            // Check users collection with safe operation
+            const usersSnapshot = await safeFirestoreOperation(async () => {
+                const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
+                return await window.firebaseFirestore.getDocs(usersRef);
+            }, { empty: true, size: 0, forEach: () => {} });
             
             console.log('=== USERS COLLECTION ANALYSIS ===');
             console.log('Total documents in users collection:', usersSnapshot.size);
@@ -470,6 +761,14 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             </div>
             
 
+            
+            <button id="diagnosticBtn" class="flex items-center justify-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group" data-content="Diagnostics">
+                <i class="fas fa-stethoscope text-lg mr-2"></i>
+                <span class="text-sm font-medium">Diagnostics</span>
+                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    Run connection diagnostics
+                </div>
+            </button>
             
             <button class="flex items-center justify-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group" data-content="Logout">
                 <i class="fas fa-sign-out-alt text-lg mr-2"></i>

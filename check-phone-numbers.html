@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Phone Numbers</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <h1>Check Existing Phone Numbers</h1>
+    <p>This tool shows all guardian phone numbers currently in the database to help troubleshoot matching issues.</p>
+    
+    <div id="results" style="margin: 20px; padding: 10px; border: 1px solid #ccc;">
+        <p>Loading...</p>
+    </div>
+
+    <script>
+        // Firebase configuration - using the same as parent-app.html
+        const firebaseConfig = {
+            apiKey: "AIzaSyA4BJ7-4R6s5zR7wX8sX9sK8s8s8s8s8s8",
+            authDomain: "behaviour-tracker-12345.firebaseapp.com",
+            projectId: "behaviour-tracker-12345",
+            storageBucket: "behaviour-tracker-12345.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:123456789abcdef"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function checkPhoneNumbers() {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                const classesSnapshot = await db.collection('classes').get();
+                let html = '<h3>Existing Phone Numbers:</h3>';
+                
+                if (classesSnapshot.empty) {
+                    html += '<p><strong>No classes found in database!</strong></p>';
+                    html += '<p>You need to add a class and student first.</p>';
+                    resultsDiv.innerHTML = html;
+                    return;
+                }
+                
+                let foundAny = false;
+                
+                for (const classDoc of classesSnapshot.docs) {
+                    const className = classDoc.id;
+                    const learnersSnapshot = await db.collection('classes').doc(className).collection('learners').get();
+                    
+                    if (!learnersSnapshot.empty) {
+                        html += `<h4>Class: ${className}</h4>`;
+                        html += '<ul>';
+                        
+                        learnersSnapshot.forEach(learnerDoc => {
+                            const data = learnerDoc.data();
+                            html += `<li>`;
+                            html += `Student: <strong>${data.name || 'No name'}</strong><br>`;
+                            html += `Guardian Phone: "<strong>${data.guardianPhone || 'Not set'}</strong>"<br>`;
+                            html += `Student Phone: "<strong>${data.phone || 'Not set'}</strong>"<br>`;
+                            html += `Raw format: guardianPhone="${data.guardianPhone}" phone="${data.phone}"`;
+                            html += `</li>`;
+                            
+                            if (data.guardianPhone || data.phone) {
+                                foundAny = true;
+                            }
+                        });
+                        
+                        html += '</ul>';
+                    }
+                }
+                
+                if (!foundAny) {
+                    html += '<p><strong>No phone numbers found in any learner!</strong></p>';
+                    html += '<p>Add a student with guardian phone number using the test tool.</p>';
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+                console.error('Error checking phone numbers:', error);
+            }
+        }
+
+        // Run on page load
+        checkPhoneNumbers();
+    </script>
+</body>
+</html>

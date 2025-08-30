@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Test Student</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <h1>Add Test Student for Testing</h1>
+    <p>Use this to add a test student with your phone number as guardian phone.</p>
+    
+    <div style="margin: 20px;">
+        <label>Class Name:</label>
+        <input type="text" id="className" value="TestClass" placeholder="Enter class name">
+        <br><br>
+        <label>Student Name:</label>
+        <input type="text" id="studentName" value="Test Student" placeholder="Enter student name">
+        <br><br>
+        <label>Guardian Phone (E.164 format):</label>
+        <input type="text" id="guardianPhone" placeholder="+1234567890">
+        <br><br>
+        <button onclick="addTestStudent()">Add Test Student</button>
+    </div>
+
+    <div id="result" style="margin: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA4BJ7-4R6s5zR7wX8sX9sK8s8s8s8s8s8",
+            authDomain: "behaviour-tracker-12345.firebaseapp.com",
+            projectId: "behaviour-tracker-12345",
+            storageBucket: "behaviour-tracker-12345.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:123456789abcdef"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function addTestStudent() {
+            const className = document.getElementById('className').value.trim();
+            const studentName = document.getElementById('studentName').value.trim();
+            let guardianPhone = document.getElementById('guardianPhone').value.trim();
+            // Normalize phone number - remove all non-digits except +
+            if (guardianPhone) {
+                guardianPhone = guardianPhone.replace(/[^0-9+]/g, '');
+                // Ensure it starts with + if it doesn't already
+                if (!guardianPhone.startsWith('+') && guardianPhone.length > 0) {
+                    guardianPhone = '+' + guardianPhone;
+                }
+            }
+
+            if (!className || !studentName || !guardianPhone) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                // Create class if it doesn't exist
+                await db.collection('classes').doc(className).set({
+                    password: 'test123',
+                    createdAt: new Date()
+                });
+
+                // Add student to the class
+                const studentRef = await db.collection('classes').doc(className).collection('learners').add({
+                    name: studentName,
+                    guardianPhone: guardianPhone,
+                    points: 0,
+                    createdAt: new Date()
+                });
+
+                document.getElementById('result').innerHTML = `
+                    <h3>Success!</h3>
+                    <p>Test student added successfully:</p>
+                    <ul>
+                        <li>Class: ${className}</li>
+                        <li>Student: ${studentName}</li>
+                        <li>Guardian Phone: ${guardianPhone}</li>
+                        <li>Student ID: ${studentRef.id}</li>
+                    </ul>
+                    <p>Now you can register as a parent using the same guardian phone number: <strong>${guardianPhone}</strong></p>
+                `;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <h3>Error</h3>
+                    <p>${error.message}</p>
+                `;
+                console.error('Error adding test student:', error);
+            }
+        }
+    </script>
+</body>
+</html>

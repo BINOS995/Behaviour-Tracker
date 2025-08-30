@@ -24,6 +24,7 @@
     <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -897,10 +898,10 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             }
             
             // Update UI with new data, ensuring DOM is ready
-            setTimeout(() => {
+            requestAnimationFrame(() => {
                 updateClassesList();
                 updateTabContentWithClasses();
-            }, 100);
+            });
                 
             }, (error) => {
                 console.error('Error in classes real-time listener:', error);
@@ -937,7 +938,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 usersListener = null;
             }
             
-            // Wait for DOM to be ready
+            // Wait for DOM to be ready with retry limit
+            let retryCount = 0;
+            const maxRetries = 50; // 5 seconds max
             const checkUserSelect = setInterval(() => {
                 const userSelect = document.getElementById('userEmailSelect');
                 if (userSelect) {
@@ -997,17 +1000,29 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     });
                     
                 } else {
-                    console.warn('userEmailSelect element still not found, retrying...');
+                    retryCount++;
+                    if (retryCount >= maxRetries) {
+                        clearInterval(checkUserSelect);
+                        console.warn('userEmailSelect element not found after max retries');
+                    }
                 }
             }, 100);
             
         } catch (error) {
             console.error('Error setting up users listener:', error);
+            let retryCount = 0;
+            const maxRetries = 50;
             const checkUserSelect = setInterval(() => {
                 const userSelect = document.getElementById('userEmailSelect');
                 if (userSelect) {
                     clearInterval(checkUserSelect);
                     userSelect.innerHTML = '<option value="">Error loading users</option>';
+                } else {
+                    retryCount++;
+                    if (retryCount >= maxRetries) {
+                        clearInterval(checkUserSelect);
+                        console.warn('userEmailSelect element not found after max retries in error handler');
+                    }
                 }
             }, 100);
         }
@@ -1432,8 +1447,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         console.log('updateClassesList called, adminClassPasswords:', adminClassPasswords);
         const classesList = document.getElementById('classesList');
         if (!classesList) {
-            console.warn('classesList element not found, retrying in 500ms...');
-            setTimeout(() => updateClassesList(), 500);
+            console.warn('classesList element not found - skipping update');
             return;
         }
 
@@ -1638,7 +1652,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     // Learners collection functions
     async function addLearner(className) {
         const learnerNameInput = document.getElementById(`${className}-new-learner`);
+        const guardianPhoneInput = document.getElementById(`${className}-guardian-phone`);
         const learnerName = learnerNameInput.value.trim();
+        const guardianPhone = guardianPhoneInput.value.trim();
         
         if (!learnerName) {
             alert('Please enter a learner name');
@@ -1657,6 +1673,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId),
                 {
                     name: learnerName,
+                    guardianPhone: guardianPhone || null,
                     points: 100,
                     createdAt: currentDate.toISOString(),
                     adjustments: [
@@ -1676,8 +1693,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 }
             );
             
-            // Clear input field
+            // Clear input fields
             learnerNameInput.value = '';
+            guardianPhoneInput.value = '';
             
             // Reload learners list and scroll to the newly added learner
             loadLearners(className, learnerId);
@@ -1695,6 +1713,25 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     
     async function loadLearners(className, scrollToLearnerId = null) {
         try {
+            // Check authentication first
+            if (!window.firebaseAuth.currentUser) {
+                console.warn('No authenticated user found');
+                const studentsGrid = document.getElementById(`${className}-students-grid`);
+                if (studentsGrid) {
+                    studentsGrid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-12 text-red-500">
+                            <i class="fas fa-user-lock text-4xl mb-3"></i>
+                            <p class="text-lg font-medium">Authentication Required</p>
+                            <p class="text-sm">Please log in to view students</p>
+                            <button onclick="window.location.reload()" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                Refresh Page
+                            </button>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
             const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
             const studentsGrid = document.getElementById(`${className}-students-grid`);
             
@@ -1726,13 +1763,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 
                 const studentsGrid = document.getElementById(`${className}-students-grid`);
                 if (!studentsGrid) {
-                    console.warn(`Students grid for ${className} not found during real-time update, retrying...`);
-                    setTimeout(() => {
-                        const retryGrid = document.getElementById(`${className}-students-grid`);
-                        if (retryGrid) {
-                            loadLearners(className);
-                        }
-                    }, 500);
+                    console.warn(`Students grid for ${className} not found during real-time update - skipping`);
                     return;
                 }
                 
@@ -1864,24 +1895,62 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 
             }, (error) => {
                 console.error(`Error in learners listener for ${className}:`, error);
+                console.error('Error code:', error.code);
+                console.error('Error details:', {
+                    message: error.message,
+                    code: error.code,
+                    className: className,
+                    user: window.firebaseAuth.currentUser?.email || 'No user'
+                });
+                
+                let detailedMessage = error.message;
+                if (error.code === 'permission-denied') {
+                    detailedMessage = 'Access denied. Please check your permissions or contact your administrator.';
+                } else if (error.code === 'unavailable') {
+                    detailedMessage = 'Service temporarily unavailable. Please try again.';
+                }
+                
                 studentsGrid.innerHTML = `
                     <div class="col-span-full flex flex-col items-center justify-center py-12 text-red-500">
                         <i class="fas fa-exclamation-triangle text-4xl mb-3"></i>
                         <p class="text-lg font-medium">Error loading students</p>
-                        <p class="text-sm">${error.message}</p>
+                        <p class="text-sm">${detailedMessage}</p>
+                        <button onclick="loadLearners('${className}')" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                            Retry
+                        </button>
                     </div>
                 `;
             });
             
         } catch (error) {
             console.error('Error setting up learners listener:', error);
+            console.error('Error details:', {
+                message: error.message,
+                code: error.code,
+                className: className,
+                user: window.firebaseAuth.currentUser?.email || 'No user'
+            });
+            
             const studentsGrid = document.getElementById(`${className}-students-grid`);
             if (studentsGrid) {
+                let detailedMessage = error.message;
+                if (error.code === 'permission-denied') {
+                    detailedMessage = 'Access denied. Please ensure you are logged in and have permission to view this class.';
+                } else if (error.code === 'unavailable') {
+                    detailedMessage = 'Service temporarily unavailable. Please try again.';
+                } else if (!window.firebaseAuth.currentUser) {
+                    detailedMessage = 'Please log in to view students.';
+                }
+                
                 studentsGrid.innerHTML = `
                     <div class="col-span-full flex flex-col items-center justify-center py-12 text-red-500">
                         <i class="fas fa-exclamation-triangle text-4xl mb-3"></i>
                         <p class="text-lg font-medium">Error loading students</p>
-                        <p class="text-sm">${error.message}</p>
+                        <p class="text-sm">${detailedMessage}</p>
+                        ${!window.firebaseAuth.currentUser ? 
+                            '<button onclick="window.location.reload()" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Refresh Page</button>' : 
+                            '<button onclick="loadLearners(\'' + className + '\')" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Retry</button>'
+                        }
                     </div>
                 `;
             }
@@ -2594,6 +2663,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                     <h3 class="text-xl font-bold text-gray-800 mb-4 sm:mb-0">Student Behavior Tracker</h3>
                                     <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <input type="text" id="${className}-new-learner" placeholder="Student name" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                                        <input type="tel" id="${className}-guardian-phone" placeholder="Guardian phone" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
                                         <button onclick="addLearner('${className}')" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200">
                                             <i class="fas fa-plus mr-2"></i>Add Student
                                         </button>
@@ -2749,30 +2819,43 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 updateDashboardStats();
             } else if (content === 'Admin') {
                 // Ensure classes are loaded when admin panel is opened
-                setTimeout(() => {
-                    console.log('Admin panel loaded, setting up...');
-                    loadClasses();
-                    // Attach event listener for Add Class button
-                    const addClassBtn = document.getElementById('addClassBtn');
-                    if (addClassBtn) {
-                        // Remove any existing listener to prevent duplicates
-                        addClassBtn.removeEventListener('click', addNewClass);
-                        addClassBtn.addEventListener('click', addNewClass);
-                        console.log('Add Class button event listener attached');
-                    } else {
-                        console.error('Add Class button not found');
-                    }
-                    
-                    // Load admin list when admin panel is opened
-                    loadAdminList();
-                    console.log('Admin list loaded');
-                    
-                    // Load user data for admin panel
-                    if (isAdmin) {
-                        loadUsers();
-                        loadUserClassAllocations();
-                    }
-                }, 100);
+                // Use requestAnimationFrame to ensure DOM is ready
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        console.log('Admin panel loaded, setting up...');
+                        loadClasses();
+                        
+                        // Attach event listener for Add Class button
+                        const addClassBtn = document.getElementById('addClassBtn');
+                        if (addClassBtn) {
+                            addClassBtn.addEventListener('click', addNewClass);
+                            console.log('Add Class button event listener attached');
+                        } else {
+                            console.error('Add Class button not found');
+                        }
+                        
+                        // Load admin list when admin panel is opened
+                        loadAdminList();
+                        console.log('Admin list loaded');
+                        
+                        // Load user data for admin panel
+                        if (isAdmin) {
+                            // Ensure admin elements exist before loading data
+                            const waitForElements = () => {
+                                const adminList = document.getElementById('adminList');
+                                const classesList = document.getElementById('classesList');
+                                
+                                if (adminList && classesList) {
+                                    loadUsers();
+                                    loadUserClassAllocations();
+                                } else {
+                                    requestAnimationFrame(waitForElements);
+                                }
+                            };
+                            requestAnimationFrame(waitForElements);
+                        }
+                    }, 50); // Reduced delay for faster loading
+                });
             }
         }
     }
@@ -3231,7 +3314,9 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 adminListListener = null;
             }
             
-            // Wait for DOM to be ready
+            // Wait for DOM to be ready with retry limit
+            let retryCount = 0;
+            const maxRetries = 50; // 5 seconds max
             const checkAdminList = setInterval(() => {
                 const adminList = document.getElementById('adminList');
                 if (adminList) {
@@ -3276,7 +3361,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     });
                     
                 } else {
-                    console.warn('adminList element still not found, retrying...');
+                    retryCount++;
+                    if (retryCount >= maxRetries) {
+                        clearInterval(checkAdminList);
+                        console.warn('adminList element not found after max retries');
+                    }
                 }
             }, 100);
             

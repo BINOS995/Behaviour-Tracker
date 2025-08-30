@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Classes collection - allowing public read access for parent app
+    match /classes/{classId} {
+      allow read: if true; // Allow unauthenticated read access
+      allow write: if request.auth != null && 
+        (request.auth.uid == resource.data.teacherId || 
+         (request.method == 'create' && request.auth.uid == request.resource.data.teacherId));
+    }
+    
+    // Learners subcollection within classes - allowing public read access for parent app
+    match /classes/{classId}/learners/{learnerId} {
+      allow read: if true; // Allow unauthenticated read access
+      allow write: if request.auth != null;
+    }
+    
+    // Admin users collection
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Admins collection
+    match /admins/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Best learners global collection
+    match /bestLearners/{learnerId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Users collection - users can access their own profile
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Parent profiles - allowing public access for password-based authentication
+    match /parents/{parentId} {
+      allow read, write: if true; // Allow unauthenticated access for our custom password auth system
+    }
+  }
+}

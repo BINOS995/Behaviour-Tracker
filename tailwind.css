@@ -1,3 +1,313 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom Login Page Styles */
+@layer base {
+  body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+  }
+}
+
+@layer components {
+  .container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    width: 100%;
+    max-width: 400px;
+    margin: 20px;
+  }
+
+  .form-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .input-group {
+    position: relative;
+    margin-bottom: 25px;
+  }
+
+  .input-group i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    font-size: 16px;
+  }
+
+  .input-group input {
+    width: 100%;
+    padding: 15px 15px 15px 45px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+  }
+
+  .input-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .input-group label {
+    position: absolute;
+    left: 45px;
+    top: 15px;
+    color: #999;
+    font-size: 16px;
+    pointer-events: none;
+    transition: all 0.3s ease;
+  }
+
+  .input-group input:focus + label,
+  .input-group input:not(:placeholder-shown) + label {
+    top: -10px;
+    left: 15px;
+    font-size: 12px;
+    color: #667eea;
+    background: white;
+    padding: 0 5px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  }
+
+  .btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .messageDiv {
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 14px;
+    display: none;
+  }
+
+  .messageDiv.error {
+    background: #fee;
+    color: #c33;
+    border: 1px solid #fcc;
+  }
+
+  .messageDiv.success {
+    background: #efe;
+    color: #3c3;
+    border: 1px solid #cfc;
+  }
+
+  .links {
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .links p {
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  .links button {
+    background: none;
+    border: none;
+    color: #667eea;
+    font-size: 16px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .links button:hover {
+    color: #764ba2;
+  }
+
+  .recover {
+    text-align: right;
+    margin-bottom: 20px;
+  }
+
+  .recover a {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 14px;
+  }
+
+  .recover a:hover {
+    text-decoration: underline;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 15px;
+    left: auto !important;
+    cursor: pointer;
+    color: #999;
+  }
+
+  .password-toggle:hover {
+    color: #667eea;
+  }
+
+  .password-strength {
+    margin-bottom: 20px;
+  }
+
+  .strength-bar {
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .strength-fill {
+    height: 100%;
+    width: 0%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+  }
+
+  .strength-fill.weak {
+    background: #ff4757;
+    width: 33%;
+  }
+
+  .strength-fill.medium {
+    background: #ffa502;
+    width: 66%;
+  }
+
+  .strength-fill.strong {
+    background: #2ed573;
+    width: 100%;
+  }
+
+  #strengthText {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+  }
+}
+
+@layer utilities {
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    body {
+      padding: 10px;
+    }
+    
+    .container {
+      padding: 30px 20px;
+      margin: 10px;
+    }
+    
+    .form-title {
+      font-size: 24px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .container {
+      padding: 25px 15px;
+      border-radius: 15px;
+    }
+    
+    .form-title {
+      font-size: 22px;
+    }
+    
+    .input-group input {
+      font-size: 14px;
+      padding: 12px 12px 12px 40px;
+    }
+    
+    .btn {
+      font-size: 14px;
+      padding: 12px;
+    }
+  }
+
+  @media (max-width: 390px) {
+    .container {
+      margin: 5px;
+      padding: 20px 15px;
+    }
+    
+    .form-title {
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+  }
+}
+
+@layer components {
+  .header-section {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0 1.5rem 0;
+  }
+  
+  .logo-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    max-width: 24rem;
+    width: 100%;
+    margin: 0 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .logo-card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .header-text {
+    text-align: center;
+  }
+  
+  .header-text h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+  
+  .header-text p {
+    font-size: 0.875rem;
+    color: #4b5563;
+  }
+}

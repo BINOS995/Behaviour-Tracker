@@ -23,6 +23,14 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   
+  <!-- Content Security Policy for font loading -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+               script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+               connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+               img-src 'self' data: https:;
+               style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
+               font-src 'self' 'data:' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">
+  
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
@@ -540,7 +548,8 @@
     // Register service worker for PWA functionality
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/service-worker.js')
+        // Add cache-busting parameter to force fresh service worker
+        navigator.serviceWorker.register('/service-worker.js?v=5.0.0')
           .then(function(registration) {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
             

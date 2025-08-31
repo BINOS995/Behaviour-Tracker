@@ -12,6 +12,14 @@
     <!-- Local Parent Styles -->
     <link rel="stylesheet" href="parent-styles.css">
     
+    <!-- Content Security Policy for font loading -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                 script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                 connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                 img-src 'self' data: https:;
+                 style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
+                 font-src 'self' 'data:' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">
+    
     <!-- Firebase -->
     <script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
@@ -564,7 +572,8 @@
         };
 
         window.loadParentDashboard = async function(user) {
-            // Show loading state
+            // Hide login header and auth buttons
+            document.getElementById('mainHeader').style.display = 'none';
             document.getElementById('authContainer').classList.add('hidden');
             document.getElementById('dashboardContainer').classList.remove('hidden');
             
@@ -771,6 +780,8 @@
         window.logout = function() {
             document.getElementById('dashboardContainer').classList.add('hidden');
             document.getElementById('authContainer').classList.remove('hidden');
+            // Show login header again
+            document.getElementById('mainHeader').style.display = 'block';
             // Clear input fields
             document.getElementById('phoneNumber').value = '';
             document.getElementById('loginPassword').value = '';
@@ -802,9 +813,14 @@
         // Show/hide header based on auth state
         function updateHeaderVisibility() {
             const savedPhone = localStorage.getItem('parentPhone');
-            if (savedPhone) {
+            const authContainer = document.getElementById('authContainer');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+            
+            if (savedPhone && !dashboardContainer.classList.contains('hidden')) {
+                // User is logged in and dashboard is visible
                 document.getElementById('mainHeader').style.display = 'none';
-            } else {
+            } else if (!savedPhone && !authContainer.classList.contains('hidden')) {
+                // User is not logged in and auth container is visible
                 document.getElementById('mainHeader').style.display = 'block';
             }
         }

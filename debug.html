@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Behaviour Tracker</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .debug-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .success { background: rgba(76, 175, 80, 0.3); }
+        .error { background: rgba(244, 67, 54, 0.3); }
+        .info { background: rgba(33, 150, 243, 0.3); }
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛠️ Behaviour Tracker Debug Tools</h1>
+    
+    <div class="debug-card">
+        <h3>🔍 Service Worker Status</h3>
+        <div id="swStatus">Checking...</div>
+        <button onclick="checkServiceWorker()">Check SW Status</button>
+        <button onclick="unregisterServiceWorker()">Unregister SW</button>
+        <button onclick="registerServiceWorker()">Register SW</button>
+    </div>
+
+    <div class="debug-card">
+        <h3>🗑️ Cache Management</h3>
+        <button onclick="clearAllCaches()">Clear All Caches</button>
+        <button onclick="listCaches()">List All Caches</button>
+        <button onclick="clearStorage()">Clear Local Storage</button>
+        <div id="cacheStatus"></div>
+    </div>
+
+    <div class="debug-card">
+        <h3>📱 App Info</h3>
+        <div id="appInfo"></div>
+        <button onclick="showAppInfo()">Refresh App Info</button>
+    </div>
+
+    <div class="debug-card">
+        <h3>🔄 Force Refresh</h3>
+        <button onclick="hardRefresh()">Hard Refresh (Ctrl+F5)</button>
+        <button onclick="clearAndReload()">Clear Cache & Reload</button>
+    </div>
+
+    <div class="debug-card">
+        <h3>🐛 Console Errors</h3>
+        <div id="consoleErrors">
+            <p>Check browser console (F12) for detailed error logs</p>
+        </div>
+    </div>
+
+    <div class="debug-card">
+        <h3>🔗 Quick Links</h3>
+        <button onclick="window.location.href='/'">Home</button>
+        <button onclick="window.location.href='/dashboard.html'">Dashboard</button>
+        <button onclick="window.location.href='/parent-app.html'">Parent App</button>
+    </div>
+
+    <script>
+        // Service Worker Functions
+        async function checkServiceWorker() {
+            const status = document.getElementById('swStatus');
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                if (registrations.length > 0) {
+                    status.innerHTML = '<div class="status success">✅ Service Worker Active</div>';
+                    registrations.forEach(reg => {
+                        status.innerHTML += `<pre>Scope: ${reg.scope}\nState: ${reg.installing ? 'installing' : reg.waiting ? 'waiting' : reg.active ? 'active' : 'unknown'}</pre>`;
+                    });
+                } else {
+                    status.innerHTML = '<div class="status error">❌ No Service Worker Found</div>';
+                }
+            } else {
+                status.innerHTML = '<div class="status error">❌ Service Workers Not Supported</div>';
+            }
+        }
+
+        async function unregisterServiceWorker() {
+            const status = document.getElementById('swStatus');
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(registrations.map(reg => reg.unregister()));
+                status.innerHTML = '<div class="status success">✅ Service Worker Unregistered</div>';
+                setTimeout(checkServiceWorker, 1000);
+            }
+        }
+
+        async function registerServiceWorker() {
+            const status = document.getElementById('swStatus');
+            if ('serviceWorker' in navigator) {
+                try {
+                    await navigator.serviceWorker.register('/service-worker.js?v=5.0.0');
+                    status.innerHTML = '<div class="status success">✅ Service Worker Registered</div>';
+                    setTimeout(checkServiceWorker, 1000);
+                } catch (error) {
+                    status.innerHTML = `<div class="status error">❌ Registration Failed: ${error.message}</div>`;
+                }
+            }
+        }
+
+        // Cache Functions
+        async function clearAllCaches() {
+            const status = document.getElementById('cacheStatus');
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                status.innerHTML = '<div class="status success">✅ All Caches Cleared</div>';
+                listCaches();
+            } else {
+                status.innerHTML = '<div class="status error">❌ Cache API Not Available</div>';
+            }
+        }
+
+        async function listCaches() {
+            const status = document.getElementById('cacheStatus');
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                if (cacheNames.length > 0) {
+                    status.innerHTML = '<div class="status info">📦 Available Caches:</div>';
+                    cacheNames.forEach(name => {
+                        status.innerHTML += `<pre>${name}</pre>`;
+                    });
+                } else {
+                    status.innerHTML = '<div class="status info">📦 No Caches Found</div>';
+                }
+            }
+        }
+
+        function clearStorage() {
+            localStorage.clear();
+            sessionStorage.clear();
+            document.getElementById('cacheStatus').innerHTML = '<div class="status success">✅ Local Storage Cleared</div>';
+        }
+
+        // App Info
+        function showAppInfo() {
+            const info = document.getElementById('appInfo');
+            info.innerHTML = `
+                <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+                <p><strong>Online:</strong> ${navigator.onLine ? '✅ Online' : '❌ Offline'}</p>
+                <p><strong>Service Worker:</strong> ${'serviceWorker' in navigator ? '✅ Supported' : '❌ Not Supported'}</p>
+                <p><strong>Cache Storage:</strong> ${'caches' in window ? '✅ Available' : '❌ Not Available'}</p>
+                <p><strong>Current Time:</strong> ${new Date().toLocaleString()}</p>
+                <p><strong>App Version:</strong> v5.0.0</p>
+            `;
+        }
+
+        // Refresh Functions
+        function hardRefresh() {
+            window.location.reload(true);
+        }
+
+        function clearAndReload() {
+            clearAllCaches();
+            clearStorage();
+            setTimeout(() => window.location.reload(true), 1000);
+        }
+
+        // Enhanced console logging
+        window.addEventListener('error', function(e) {
+            console.error('Global Error:', e.error);
+            document.getElementById('consoleErrors').innerHTML += 
+                `<div class="status error">❌ Error: ${e.message}</div>`;
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled Promise Rejection:', e.reason);
+            document.getElementById('consoleErrors').innerHTML += 
+                `<div class="status error">❌ Promise Rejection: ${e.reason}</div>`;
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            checkServiceWorker();
+            listCaches();
+            showAppInfo();
+        });
+    </script>
+</body>
+</html>

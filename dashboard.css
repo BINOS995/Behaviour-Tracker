@@ -579,7 +579,7 @@ table {
 @media (max-width: 768px) {
     .mobile-menu-toggle {
         display: block;
-        position: absolute;
+        position: fixed;
         top: 15px;
         right: 15px;
         z-index: 1001;

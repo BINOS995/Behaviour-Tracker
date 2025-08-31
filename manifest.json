@@ -1,7 +1,7 @@
 {
-  "name": "Student Behaviour Tracker v3.0",
+  "name": "Student Behaviour Tracker v4.0",
   "short_name": "BehaviourTracker",
-  "description": "Track, manage, and improve student behavior in real-time",
+  "description": "Track, manage, and improve student behavior in real-time with parent dashboard integration",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -25,5 +25,31 @@
   "lang": "en",
   "scope": "/",
   "prefer_related_applications": false,
-  "related_applications": []
+  "related_applications": [],
+  "screenshots": [
+    {
+      "src": "images/logo1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "images/logo1.png", 
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard.html",
+      "icon": "images/logo1.png"
+    },
+    {
+      "name": "Parent Dashboard", 
+      "url": "/parent-app.html",
+      "icon": "images/logo1.png"
+    }
+  ]
 }

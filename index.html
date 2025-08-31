@@ -63,6 +63,25 @@
         <p>Track, manage, and improve student behavior</p>
       </div>
     </div>
+  </div>
+
+  <!-- Parent App Link -->
+  <div style="text-align: center; margin: 1rem 0;">
+    <a href="parent-app.html" style="
+      display: inline-block;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      text-decoration: none;
+      border-radius: 25px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)'" 
+       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.3)'">
+      <i class="fas fa-users" style="margin-right: 8px;"></i>
+      Parent Dashboard
+    </a>
   </div> 
 
   <!-- Register Section -->
@@ -156,6 +175,27 @@
   </div>
 
   <style>
+    #logo-circle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 2px solid #4CAF50;
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin: 0 auto;
+    }
+    
+    #logo-circle img {
+      width: 70%;
+      height: 70%;
+      object-fit: contain;
+      transition: transform 0.3s ease;
+    }
+    
     @keyframes logoPulse {
       0%, 100% {
         transform: scale(1);
@@ -209,8 +249,12 @@
         }
         
         .loader-logo {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #4CAF50;
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            padding: 4px;
             margin-bottom: 16px;
             opacity: 0;
             animation: fadeInUp 0.6s ease forwards; /* Logo fades in first */

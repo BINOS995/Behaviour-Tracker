@@ -1,6 +1,6 @@
-const CACHE_NAME = 'behaviour-tracker-v3';
-const STATIC_CACHE_NAME = 'behaviour-tracker-static-v3';
-const DYNAMIC_CACHE_NAME = 'behaviour-tracker-dynamic-v3';
+const CACHE_NAME = 'behaviour-tracker-v4';
+const STATIC_CACHE_NAME = 'behaviour-tracker-static-v4';
+const DYNAMIC_CACHE_NAME = 'behaviour-tracker-dynamic-v4';
 
 // Assets to cache immediately
 const STATIC_ASSETS = [
@@ -8,8 +8,12 @@ const STATIC_ASSETS = [
   '/index.html',
   '/style.css',
   '/dashboard.css',
+  '/parent-styles.css',
   '/script.js',
   '/dashboard.html',
+  '/parent-app.html',
+  '/add-test-student.html',
+  '/check-phone-numbers.html',
   '/homepage.js',
   '/firebaseauth.js',
   '/images/logo1.png',
@@ -49,8 +53,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== STATIC_CACHE_NAME && 
-              cacheName !== DYNAMIC_CACHE_NAME &&
-              cacheName !== STATIC_CACHE_NAME) {
+              cacheName !== DYNAMIC_CACHE_NAME) {
             console.log('[SW] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }

@@ -25,6 +25,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="dashboard.css?v=3.0.1">
+    <style>
+        /* Ensure all input fields have black text */
+        input, input[type="text"], input[type="tel"], input[type="email"], input[type="password"], input[type="number"] {
+            color: black !important;
+        }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -41,6 +47,22 @@
     window.addEventListener('error', function(e) {
         console.error('JavaScript error detected:', e.message, '\nLine:', e.lineno, '\nColumn:', e.colno, '\nFile:', e.filename);
         alert('JavaScript error: ' + e.message + ' at line ' + e.lineno);
+    });
+    
+    // Ensure all input fields have black text
+    window.addEventListener('DOMContentLoaded', function() {
+        // Apply black text to all input fields
+        function forceBlackTextOnInputs() {
+            const allInputs = document.querySelectorAll('input');
+            allInputs.forEach(input => {
+                input.style.color = 'black';
+                input.setAttribute('style', 'color: black !important;');
+            });
+        }
+        
+        // Run immediately and then periodically
+        forceBlackTextOnInputs();
+        setInterval(forceBlackTextOnInputs, 1000); // Check every second
     });
     
     // Ensure jsPDF is properly initialized
@@ -257,99 +279,7 @@
             }
         };
     })();
-    // Diagnostic function for users to troubleshoot
-    async function runDiagnostics() {
-        console.log('🔍 Running comprehensive diagnostics...');
-        
-        const diagnosticResults = {
-            timestamp: new Date().toISOString(),
-            userAgent: navigator.userAgent,
-            onlineStatus: navigator.onLine,
-            firebaseAvailable: !!window.firebaseApp,
-            authAvailable: !!window.firebaseAuth,
-            dbAvailable: !!window.firebaseDB,
-            errors: []
-        };
-        
-        console.log('=== DIAGNOSTIC RESULTS ===');
-        console.log('Browser:', diagnosticResults.userAgent);
-        console.log('Online status:', diagnosticResults.onlineStatus);
-        console.log('Firebase available:', diagnosticResults.firebaseAvailable);
-        
-        // Test network connectivity
-        try {
-            const connectionTest = await testFirebaseConnection();
-            diagnosticResults.firebaseConnection = connectionTest;
-            console.log('Firebase connection test:', connectionTest ? '✅ PASS' : '❌ FAIL');
-        } catch (error) {
-            diagnosticResults.errors.push({ type: 'connection', error: error.message });
-            console.error('Connection test failed:', error.message);
-        }
-        
-        // Test Firestore structure
-        try {
-            await checkFirestoreStructure();
-            diagnosticResults.firestoreStructure = '✅ PASS';
-        } catch (error) {
-            diagnosticResults.errors.push({ type: 'firestore', error: error.message });
-            diagnosticResults.firestoreStructure = '❌ FAIL';
-        }
-        
-        // Check for common issues
-        const commonIssues = [];
-        
-        if (!navigator.onLine) {
-            commonIssues.push('🔴 No internet connection detected');
-        }
-        
-        if (!window.firebaseApp) {
-            commonIssues.push('🔴 Firebase not initialized - check configuration');
-        }
-        
-        if (diagnosticResults.errors.length > 0) {
-            commonIssues.push(`🔴 ${diagnosticResults.errors.length} errors detected`);
-        }
-        
-        // Display results
-        const diagnosticReport = `
-📊 DIAGNOSTIC REPORT
 
-🔍 System Status:
-• Browser: ${navigator.userAgent.substring(0, 50)}...
-• Online: ${navigator.onLine ? '✅ Yes' : '❌ No'}
-• Firebase: ${window.firebaseApp ? '✅ Initialized' : '❌ Not initialized'}
-• Auth: ${window.firebaseAuth ? '✅ Available' : '❌ Not available'}
-• Database: ${window.firebaseDB ? '✅ Available' : '❌ Not available'}
-
-🚨 Common Issues Found:
-${commonIssues.length > 0 ? commonIssues.join('\n') : '✅ No common issues detected'}
-
-🔧 Troubleshooting Steps:
-1. Check internet connection
-2. Verify Firebase configuration
-3. Check browser console for errors
-4. Ensure Firebase project settings are correct
-5. Check if domain is whitelisted in Firebase
-
-💡 Next Steps:
-${commonIssues.length > 0 ? 'Address the issues above' : 'System appears healthy'}
-        `;
-        
-        alert(diagnosticReport);
-        console.log('Complete diagnostic results:', diagnosticResults);
-        
-        // Save to console for detailed inspection
-        console.log('🎯 Copy this diagnostic data for support:');
-        console.log(JSON.stringify(diagnosticResults, null, 2));
-    }
-    
-    // Add event listener for diagnostic button
-    document.addEventListener('DOMContentLoaded', function() {
-        const diagnosticBtn = document.getElementById('diagnosticBtn');
-        if (diagnosticBtn) {
-            diagnosticBtn.addEventListener('click', runDiagnostics);
-        }
-    });
     </script>
     
     
@@ -421,147 +351,7 @@ ${commonIssues.length > 0 ? 'Address the issues above' : 'System appears healthy
         return element;
     }
 
-    // Comprehensive Firestore structure check
-    async function checkFirestoreStructure() {
-        try {
-            console.log('=== COMPREHENSIVE FIRESTORE CHECK ===');
-            
-            // Check current authentication state
-            const currentUser = window.firebaseAuth.currentUser;
-            console.log('Current authenticated user:', currentUser?.email || 'No user logged in');
-            
-            // Check users collection with safe operation
-            const usersSnapshot = await safeFirestoreOperation(async () => {
-                const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
-                return await window.firebaseFirestore.getDocs(usersRef);
-            }, { empty: true, size: 0, forEach: () => {} });
-            
-            console.log('=== USERS COLLECTION ANALYSIS ===');
-            console.log('Total documents in users collection:', usersSnapshot.size);
-            
-            if (usersSnapshot.empty) {
-                console.log('❌ USERS COLLECTION IS EMPTY!');
-                alert('❌ No users found in Firestore! The users collection is completely empty.');
-                return;
-            }
-            
-            const allUsers = [];
-            let validUsers = 0;
-            let invalidUsers = 0;
-            
-            usersSnapshot.forEach(doc => {
-                const userData = doc.data();
-                const docId = doc.id;
-                
-                const userInfo = {
-                    documentId: docId,
-                    documentData: userData,
-                    hasEmail: !!userData.email,
-                    hasFirstName: !!userData.firstName,
-                    hasLastName: !!userData.lastName,
-                    dataKeys: Object.keys(userData || {}),
-                    dataValues: Object.values(userData || {}),
-                    isValid: !!(userData.email && userData.firstName && userData.lastName)
-                };
-                
-                allUsers.push(userInfo);
-                
-                if (userInfo.isValid) {
-                    validUsers++;
-                } else {
-                    invalidUsers++;
-                }
-                
-                console.log(`Document ID: "${docId}"`);
-                console.log(`  Email: ${userData.email || 'MISSING'}`);
-                console.log(`  First Name: ${userData.firstName || 'MISSING'}`);
-                console.log(`  Last Name: ${userData.lastName || 'MISSING'}`);
-                console.log(`  Data Keys: [${Object.keys(userData || {}).join(', ')}]`);
-                console.log(`  Status: ${userInfo.isValid ? '✅ VALID' : '❌ INVALID'}`);
-                console.log('---');
-            });
-            
-            // Create detailed report
-            const report = {
-                totalDocuments: usersSnapshot.size,
-                validUsers: validUsers,
-                invalidUsers: invalidUsers,
-                allUsers: allUsers
-            };
-            
-            console.log('=== FIRESTORE SUMMARY ===');
-            console.log('Total documents:', report.totalDocuments);
-            console.log('Valid users:', report.validUsers);
-            console.log('Invalid users:', report.invalidUsers);
-            console.log('Complete data:', JSON.stringify(report, null, 2));
-            
-            // Display alert with findings
-            let alertMessage = `📊 FIRESTORE ANALYSIS RESULTS:
 
-📈 Collection Stats:
-• Total documents: ${report.totalDocuments}
-• Valid users: ${report.validUsers}
-• Invalid users: ${report.invalidUsers}
-
-🔍 Document IDs found:
-`;
-            
-            allUsers.forEach(user => {
-                alertMessage += `• "${user.documentId}" (${user.isValid ? '✅ Valid' : '❌ Invalid'})
-`;
-            });
-            
-            if (invalidUsers > 0) {
-                alertMessage += `
-⚠️ INVALID USERS FOUND:
-These documents are missing required fields (email, firstName, lastName).
-Check the console for detailed information about each invalid user.
-`;
-            }
-            
-            alertMessage += `
-💡 Next Steps:
-1. Check the browser console for complete details
-2. Verify user creation process
-3. Check if new users are being created with correct field names
-4. Ensure document IDs match expected format (email addresses)
-
-🔗 Firebase Console Link:
-https://console.firebase.google.com/project/your-project-id/firestore/data/~2Fusers
-
-Replace 'your-project-id' with your actual Firebase project ID.`;
-            
-            alert(alertMessage);
-            
-            // Also check if we can access the authentication data
-            try {
-                console.log('=== AUTHENTICATION CHECK ===');
-                if (currentUser) {
-                    console.log('Current user email:', currentUser.email);
-                    console.log('Current user UID:', currentUser.uid);
-                    
-                    // Check if current user exists in the users collection
-                    const currentUserDoc = allUsers.find(u => u.documentId === currentUser.email);
-                    if (currentUserDoc) {
-                        console.log('✅ Current user found in users collection');
-                    } else {
-                        console.log('❌ Current user NOT found in users collection');
-                        console.log('Available document IDs:', allUsers.map(u => u.documentId));
-                    }
-                } else {
-                    console.log('❌ No user currently logged in');
-                }
-            } catch (authError) {
-                console.error('Error checking authentication:', authError);
-            }
-            
-            console.log('=== FIRESTORE CHECK COMPLETE ===');
-            
-        } catch (error) {
-            console.error('Error checking Firestore structure:', error);
-            alert(`❌ Error checking Firestore: ${error.message}\n\nCheck the browser console for details.`);
-        }
-    }
     </script>
     
 
@@ -762,13 +552,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             
 
             
-            <button id="diagnosticBtn" class="flex items-center justify-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group" data-content="Diagnostics">
-                <i class="fas fa-stethoscope text-lg mr-2"></i>
-                <span class="text-sm font-medium">Diagnostics</span>
-                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                    Run connection diagnostics
-                </div>
-            </button>
+
             
             <button class="flex items-center justify-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group" data-content="Logout">
                 <i class="fas fa-sign-out-alt text-lg mr-2"></i>
@@ -796,7 +580,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     <div class="bg-white p-8 rounded-xl max-w-md w-full mx-4">
         <h3 class="text-xl font-bold mb-4">Enter Class Password</h3>
         <div class="relative">
-            <input type="password" id="classPasswordInput" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 pr-10" placeholder="Enter password">
+            <input type="password" id="classPasswordInput" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 pr-10 text-black" placeholder="Enter password">
             <button type="button" class="absolute right-2 top-2 text-gray-500 hover:text-gray-700" onclick="toggleClassPasswordVisibility()">
                 <i class="fas fa-eye" id="passwordToggleIcon"></i>
             </button>
@@ -1028,7 +812,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">Grant Admin Privileges</h3>
                     <div class="flex gap-2">
-                        <input type="email" id="adminEmailInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg" placeholder="Enter user email">
+                        <input type="email" id="adminEmailInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-black" placeholder="Enter user email">
                         <button onclick="grantAdminPrivileges()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
                             <i class="fas fa-user-plus mr-1"></i>Grant Admin
                         </button>
@@ -1058,11 +842,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Class Name</label>
-                            <input type="text" id="newClassName" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base" placeholder="Enter class name">
+                            <input type="text" id="newClassName" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base text-black" placeholder="Enter class name">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Password</label>
-                            <input type="password" id="newClassPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base" placeholder="Enter password">
+                            <input type="password" id="newClassPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base text-black" placeholder="Enter password">
                         </div>
                     </div>
 
@@ -1115,12 +899,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                         <button onclick="loadUsers()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
                             <i class="fas fa-sync-alt mr-2"></i>Refresh Users
                         </button>
-                        <button onclick="diagnosticLoadUsers()" class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600">
-                            <i class="fas fa-search mr-2"></i>Diagnose Users
-                        </button>
-                        <button onclick="checkFirestoreStructure()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
-                            <i class="fas fa-database mr-2"></i>Check Firestore
-                        </button>
+
                     </div>
                 </div>
             </div>
@@ -1320,261 +1099,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         }
     }
     
-    // Diagnostic function for troubleshooting user data
-    async function diagnosticLoadUsers() {
-        try {
-            console.log('=== DIAGNOSTIC: Checking User Data ===');
-            const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
-            const snapshot = await window.firebaseFirestore.getDocs(usersRef);
-            const userSelect = document.getElementById('userEmailSelect');
-            
-            if (!userSelect) {
-                console.error('userEmailSelect element not found');
-                return;
-            }
-            
-            console.log(`Total documents in 'users' collection: ${snapshot.size}`);
-            
-            // Create diagnostic report
-            let diagnosticReport = `=== USER DATA DIAGNOSTIC ===\n\n`;
-            diagnosticReport += `Total documents found: ${snapshot.size}\n\n`;
-            
-            if (snapshot.empty) {
-                diagnosticReport += "❌ No users found in 'users' collection!\n";
-                diagnosticReport += "Possible causes:\n";
-                diagnosticReport += "1. No users have been created yet\n";
-                diagnosticReport += "2. Users are in a different collection\n";
-                diagnosticReport += "3. Security rules are blocking access\n";
-                diagnosticReport += "4. Check Firebase Console: https://console.firebase.google.com/\n";
-                console.log(diagnosticReport);
-                userSelect.innerHTML = '<option value="">❌ No users found</option>';
-                alert(diagnosticReport);
-                return;
-            }
-            
-            userSelect.innerHTML = '<option value="">Select a user...</option>';
-            let validUsers = 0;
-            let invalidUsers = 0;
-            let userDetails = [];
-            
-            console.log('=== RAW FIRESTORE DATA ===');
-            snapshot.forEach((doc, index) => {
-                const userData = doc.data();
-                const docId = doc.id;
-                
-                console.log(`Document ${index + 1}:`, {
-                    id: docId,
-                    data: userData,
-                    hasEmail: !!userData.email,
-                    hasFirstName: !!userData.firstName,
-                    hasLastName: !!userData.lastName
-                });
-                
-                userDetails.push({
-                    id: docId,
-                    email: userData.email || docId,
-                    firstName: userData.firstName || '',
-                    lastName: userData.lastName || '',
-                    rawData: userData
-                });
-                
-                const email = userData.email || docId;
-                const firstName = userData.firstName || '';
-                const lastName = userData.lastName || '';
-                
-                if (email && firstName && lastName) {
-                    const option = document.createElement('option');
-                    option.value = email;
-                    option.textContent = `${firstName} ${lastName} (${email})`;
-                    userSelect.appendChild(option);
-                    validUsers++;
-                } else {
-                    invalidUsers++;
-                }
-            });
-            
-            diagnosticReport += `=== DETAILED USER ANALYSIS ===\n`;
-            userDetails.forEach((user, index) => {
-                diagnosticReport += `\n${index + 1}. Document ID: "${user.id}"\n`;
-                diagnosticReport += `   Email: "${user.email}"\n`;
-                diagnosticReport += `   First Name: "${user.firstName || "❌ MISSING"}"\n`;
-                diagnosticReport += `   Last Name: "${user.lastName || "❌ MISSING"}"\n`;
-                diagnosticReport += `   Status: ${(user.firstName && user.lastName) ? "✅ Valid" : "❌ Incomplete"}\n`;
-                diagnosticReport += `   Raw data keys: ${Object.keys(user.rawData).join(', ')}\n`;
-            });
-            
-            diagnosticReport += `\n=== SUMMARY ===\n`;
-            diagnosticReport += `Valid users: ${validUsers}\n`;
-            diagnosticReport += `Invalid users (missing data): ${invalidUsers}\n`;
-            diagnosticReport += `Total documents: ${snapshot.size}\n`;
-            diagnosticReport += `All document IDs: ${userDetails.map(u => `"${u.id}"`).join(', ')}\n`;
-            
-            console.log(diagnosticReport);
-            alert(diagnosticReport);
-            
-            if (validUsers === 0) {
-                userSelect.innerHTML = '<option value="">❌ No valid users found</option>';
-                console.warn("All users have incomplete data - check Firestore documents");
-                
-                // Additional debug: suggest checking Firebase Console
-                console.log("💡 TIP: Check your Firebase Console at https://console.firebase.google.com/");
-                console.log("💡 Navigate to: Firestore Database > Data > users collection");
-            }
-            
-        } catch (error) {
-            console.error('Diagnostic error:', error);
-            alert(`Error loading users: ${error.message}`);
-            
-            // Additional error debugging
-            console.log("🔍 Error details:", {
-                error: error.message,
-                stack: error.stack,
-                code: error.code
-            });
-        }
-    }
+
     
-    // Comprehensive Firestore structure check
-    async function checkFirestoreStructure() {
-        try {
-            console.log('=== COMPREHENSIVE FIRESTORE CHECK ===');
-            
-            // Check current authentication state
-            const currentUser = window.firebaseAuth.currentUser;
-            console.log('Current authenticated user:', currentUser?.email || 'No user logged in');
-            
-            // Check users collection
-            const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
-            const usersSnapshot = await window.firebaseFirestore.getDocs(usersRef);
-            
-            console.log('=== USERS COLLECTION ANALYSIS ===');
-            console.log('Total documents in users collection:', usersSnapshot.size);
-            
-            if (usersSnapshot.empty) {
-                console.log('❌ USERS COLLECTION IS EMPTY!');
-                alert('❌ No users found in Firestore! The users collection is completely empty.');
-                return;
-            }
-            
-            const allUsers = [];
-            let validUsers = 0;
-            let invalidUsers = 0;
-            
-            usersSnapshot.forEach(doc => {
-                const userData = doc.data();
-                const docId = doc.id;
-                
-                const userInfo = {
-                    documentId: docId,
-                    documentData: userData,
-                    hasEmail: !!userData.email,
-                    hasFirstName: !!userData.firstName,
-                    hasLastName: !!userData.lastName,
-                    dataKeys: Object.keys(userData || {}),
-                    dataValues: Object.values(userData || {}),
-                    isValid: !!(userData.email && userData.firstName && userData.lastName)
-                };
-                
-                allUsers.push(userInfo);
-                
-                if (userInfo.isValid) {
-                    validUsers++;
-                } else {
-                    invalidUsers++;
-                }
-                
-                console.log(`Document ID: "${docId}"`);
-                console.log(`  Email: ${userData.email || 'MISSING'}`);
-                console.log(`  First Name: ${userData.firstName || 'MISSING'}`);
-                console.log(`  Last Name: ${userData.lastName || 'MISSING'}`);
-                console.log(`  Data Keys: [${Object.keys(userData || {}).join(', ')}]`);
-                console.log(`  Status: ${userInfo.isValid ? '✅ VALID' : '❌ INVALID'}`);
-                console.log('---');
-            });
-            
-            // Create detailed report
-            const report = {
-                totalDocuments: usersSnapshot.size,
-                validUsers: validUsers,
-                invalidUsers: invalidUsers,
-                allUsers: allUsers
-            };
-            
-            console.log('=== FIRESTORE SUMMARY ===');
-            console.log('Total documents:', report.totalDocuments);
-            console.log('Valid users:', report.validUsers);
-            console.log('Invalid users:', report.invalidUsers);
-            console.log('Complete data:', JSON.stringify(report, null, 2));
-            
-            // Display alert with findings
-            let alertMessage = `📊 FIRESTORE ANALYSIS RESULTS:
 
-📈 Collection Stats:
-• Total documents: ${report.totalDocuments}
-• Valid users: ${report.validUsers}
-• Invalid users: ${report.invalidUsers}
 
-🔍 Document IDs found:
-`;
-            
-            allUsers.forEach(user => {
-                alertMessage += `• "${user.documentId}" (${user.isValid ? '✅ Valid' : '❌ Invalid'})\n`;
-            });
-            
-            if (invalidUsers > 0) {
-                alertMessage += `
-⚠️ INVALID USERS FOUND:
-These documents are missing required fields (email, firstName, lastName).
-Check the console for detailed information about each invalid user.
-`;
-            }
-            
-            alertMessage += `
-💡 Next Steps:
-1. Check the browser console for complete details
-2. Verify user creation process
-3. Check if new users are being created with correct field names
-4. Ensure document IDs match expected format (email addresses)
 
-🔗 Firebase Console Link:
-https://console.firebase.google.com/project/your-project-id/firestore/data/~2Fusers
-
-Replace 'your-project-id' with your actual Firebase project ID.`;
-            
-            alert(alertMessage);
-            
-            // Also check if we can access the authentication data
-            try {
-                console.log('=== AUTHENTICATION CHECK ===');
-                if (currentUser) {
-                    console.log('Current user email:', currentUser.email);
-                    console.log('Current user UID:', currentUser.uid);
-                    
-                    // Check if current user exists in the users collection
-                    const currentUserDoc = allUsers.find(u => u.documentId === currentUser.email);
-                    if (currentUserDoc) {
-                        console.log('✅ Current user found in users collection');
-                    } else {
-                        console.log('❌ Current user NOT found in users collection');
-                        console.log('Available document IDs:', allUsers.map(u => u.documentId));
-                    }
-                } else {
-                    console.log('❌ No user currently logged in');
-                }
-            } catch (authError) {
-                console.error('Error checking authentication:', authError);
-            }
-            
-            console.log('=== FIRESTORE CHECK COMPLETE ===');
-            
-        } catch (error) {
-            console.error('Error checking Firestore structure:', error);
-            alert(`❌ Error checking Firestore: ${error.message}\n\nCheck the browser console for details.`);
-        }
-    }
-
-    // Replace the refresh button to use diagnostic function
-    // Update the refresh button in the HTML to use diagnosticLoadUsers instead
     // Real-time listener for user class checkboxes
     let userClassCheckboxesListener = null;
     
@@ -1627,7 +1156,7 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     const div = document.createElement('div');
                     div.className = 'flex items-center';
                     div.innerHTML = `
-                        <input type="checkbox" id="class-${className}" value="${className}" ${isChecked ? 'checked' : ''} class="mr-2">
+                        <input type="checkbox" id="class-${className}" value="${className}" ${isChecked ? 'checked' : ''} class="mr-2 text-black">
                         <label for="class-${className}" class="text-sm text-gray-700">${className}</label>
                     `;
                     classCheckboxes.appendChild(div);
@@ -2378,6 +1907,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             </div>
         `;
         document.body.appendChild(actionsModal);
+        
+        // Ensure any input fields in the modal have black text
+        setTimeout(() => {
+            const inputs = document.querySelectorAll('.fixed input');
+            inputs.forEach(input => {
+                input.classList.add('text-black', '!text-black');
+                input.style.color = 'black';
+                input.setAttribute('style', 'color: black !important;');
+            });
+        }, 100);
     }
 
     // Generate PDF report for a learner
@@ -2387,8 +1926,11 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             alert('Generating PDF for ' + learnerName + '. This may take a moment.');
             
             // Fetch the learner data from Firebase
+            console.log('Getting learner document...');
             const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+            console.log('Learner reference created:', learnerRef);
             const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            console.log('Learner document retrieved:', learnerDoc.exists() ? 'exists' : 'does not exist');
             
             if (!learnerDoc.exists()) {
                 throw new Error('Learner data not found');
@@ -2565,27 +2107,91 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
     
     // View full adjustment history for a learner
     async function viewAdjustmentHistory(className, learnerId, learnerName) {
+        console.log('viewAdjustmentHistory called with:', { className, learnerId, learnerName });
         try {
-            const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
-            const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            console.log('Firebase objects:', { 
+                firebaseDB: window.firebaseDB, 
+                firebaseFirestore: window.firebaseFirestore,
+                className: className,
+                learnerId: learnerId
+            });
             
+            // Check if modal already exists and remove it
+            const existingModal = document.getElementById('adjustmentHistoryModal');
+            if (existingModal) {
+                console.log('Removing existing modal');
+                document.body.removeChild(existingModal);
+            }
+            
+            const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+            console.log('Learner reference created:', learnerRef);
+            const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            console.log('Learner document retrieved:', learnerDoc);
+            
+            // Create a simple modal first to ensure it works
+            const simpleModal = document.createElement('div');
+            simpleModal.id = 'adjustmentHistoryModal';
+            simpleModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            simpleModal.innerHTML = `
+                <div class="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 p-4">
+                    <h3 class="text-lg font-semibold mb-4 text-black">Adjustment History for ${learnerName}</h3>
+                    <p class="text-black">Loading adjustment history...</p>
+                    <div class="mt-4 flex justify-end">
+                        <button id="closeHistoryModal" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            console.log('Simple modal created');
+            document.body.appendChild(simpleModal);
+            console.log('Simple modal appended to body');
+            
+            // Add event listener to close button
+            document.getElementById('closeHistoryModal').addEventListener('click', () => {
+                console.log('Close button clicked');
+                document.body.removeChild(simpleModal);
+            });
+            
+            // Close modal when clicking outside
+            simpleModal.addEventListener('click', (e) => {
+                if (e.target === simpleModal) {
+                    document.body.removeChild(simpleModal);
+                }
+            });
+            
+            // Ensure text is black
+            const allElements = simpleModal.querySelectorAll('*');
+            allElements.forEach(el => {
+                if (!el.classList.contains('text-green-600') && !el.classList.contains('text-red-600') && !el.classList.contains('text-white')) {
+                    el.classList.add('text-black');
+                    el.style.color = 'black';
+                }
+            });
+            
+            // Now update the modal with actual data if the document exists
             if (learnerDoc.exists()) {
                 const learnerData = learnerDoc.data();
                 const adjustments = learnerData.adjustments || [];
-                
-                // Create modal content
-                let modalContent = `
-                    <div class="p-4">
-                        <h3 class="text-lg font-semibold mb-4">Adjustment History for ${learnerName}</h3>
-                `;
+                const modalContent = simpleModal.querySelector('.bg-white');
                 
                 if (adjustments.length === 0) {
-                    modalContent += `<p class="text-gray-700">No adjustment history available.</p>`;
+                    modalContent.innerHTML = `
+                        <h3 class="text-lg font-semibold mb-4 text-black">Adjustment History for ${learnerName}</h3>
+                        <p class="text-black">No adjustment history available.</p>
+                        <div class="mt-4 flex justify-end">
+                            <button id="closeHistoryModal" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
+                                Close
+                            </button>
+                        </div>
+                    `;
                 } else {
                     // Sort adjustments by date (newest first)
                     adjustments.sort((a, b) => new Date(b.date) - new Date(a.date));
                     
-                    modalContent += `
+                    let tableHTML = `
+                        <h3 class="text-lg font-semibold mb-4 text-black">Adjustment History for ${learnerName}</h3>
                         <div class="max-h-96 overflow-y-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-100">
@@ -2606,60 +2212,49 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                         const pointsText = adjustment.points > 0 ? `+${adjustment.points}` : adjustment.points;
                         const pointsClass = adjustment.points > 0 ? 'text-green-600' : 'text-red-600';
                         
-                        modalContent += `
+                        tableHTML += `
                             <tr>
-                                <td class="px-4 py-2 text-sm">${formattedDate} ${formattedTime}</td>
+                                <td class="px-4 py-2 text-sm text-black">${formattedDate} ${formattedTime}</td>
                                 <td class="px-4 py-2 text-sm font-medium ${pointsClass}">${pointsText}</td>
-                                <td class="px-4 py-2 text-sm">${adjustment.reason}</td>
-                                <td class="px-4 py-2 text-sm">${adjustment.adjustedBy}</td>
+                                <td class="px-4 py-2 text-sm text-black">${adjustment.reason}</td>
+                                <td class="px-4 py-2 text-sm text-black">${adjustment.adjustedBy}</td>
                             </tr>
                         `;
                     });
                     
-                    modalContent += `
+                    tableHTML += `
                                 </tbody>
                             </table>
                         </div>
-                    `;
-                }
-                
-                modalContent += `
                         <div class="mt-4 flex justify-end">
                             <button id="closeHistoryModal" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">
                                 Close
                             </button>
                         </div>
-                    </div>
-                `;
+                    `;
+                    
+                    modalContent.innerHTML = tableHTML;
+                }
                 
-                // Create modal container
-                const modalContainer = document.createElement('div');
-                modalContainer.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                modalContainer.id = 'adjustmentHistoryModal';
-                modalContainer.innerHTML = `
-                    <div class="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4">
-                        ${modalContent}
-                    </div>
-                `;
-                
-                // Add modal to body
-                document.body.appendChild(modalContainer);
-                
-                // Add event listener to close button
+                // Re-add event listener to close button since we replaced the content
                 document.getElementById('closeHistoryModal').addEventListener('click', () => {
-                    document.body.removeChild(modalContainer);
+                    console.log('Close button clicked (after content update)');
+                    document.body.removeChild(simpleModal);
                 });
                 
-                // Close modal when clicking outside
-                modalContainer.addEventListener('click', (e) => {
-                    if (e.target === modalContainer) {
-                        document.body.removeChild(modalContainer);
+                // Ensure all text is black (except for specific colored elements)
+                const allElements = simpleModal.querySelectorAll('*');
+                allElements.forEach(el => {
+                    if (!el.classList.contains('text-green-600') && !el.classList.contains('text-red-600') && !el.classList.contains('text-white')) {
+                        el.classList.add('text-black');
+                        el.style.color = 'black';
                     }
                 });
             }
         } catch (error) {
             console.error('Error viewing adjustment history:', error);
-            alert('Error viewing adjustment history. Please try again.');
+            console.log('Error details:', error.message, error.stack);
+            alert('Error viewing adjustment history: ' + error.message + '. Please try again.');
         }
     }
     
@@ -2734,6 +2329,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                 
                 // Focus on the points input
                 document.getElementById('custom-points-input').focus();
+                
+                // Ensure input fields have black text
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('#custom-points-modal input');
+                    inputs.forEach(input => {
+                        input.classList.add('text-black', '!text-black');
+                        input.style.color = 'black';
+                        input.setAttribute('style', 'color: black !important;');
+                    });
+                }, 100);
             }
         } catch (error) {
             console.error('Error adjusting points:', error);
@@ -2954,8 +2559,8 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                                     <h3 class="text-xl font-bold text-gray-800 mb-4 sm:mb-0">Student Behavior Tracker</h3>
                                     <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                                        <input type="text" id="${className}-new-learner" placeholder="Student name" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
-                                        <input type="tel" id="${className}-guardian-phone" placeholder="Guardian phone" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                                        <input type="text" id="${className}-new-learner" placeholder="Student name" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-black">
+                                        <input type="tel" id="${className}-guardian-phone" placeholder="Guardian phone" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-black">
                                         <button onclick="addLearner('${className}')" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200">
                                             <i class="fas fa-plus mr-2"></i>Add Student
                                         </button>
@@ -2999,12 +2604,12 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                                 <div class="space-y-2 md:space-y-3">
                                     <div>
                                         <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                                        <input type="text" id="${className}-best-learner-name" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base" 
+                                        <input type="text" id="${className}-best-learner-name" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base text-black" 
                                             placeholder="Enter student name" value="${bestLearnerName}">
                                     </div>
                                     <div>
                                         <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Points</label>
-                                        <input type="number" id="${className}-best-learner-points" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base" 
+                                        <input type="number" id="${className}-best-learner-points" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base text-black" 
                                             placeholder="Enter points" value="${bestLearnerPoints}">
                                     </div>
                                     <button onclick="saveBestLearner('${className}')" class="w-full bg-green-500 text-white py-1.5 md:py-2 rounded-lg hover:bg-green-600 mt-2 text-sm md:text-base">
@@ -3064,53 +2669,102 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
 
     // Show password modal
     function showPasswordModal(className) {
-        currentClass = className;
-        document.getElementById('passwordModal').classList.remove('hidden');
-        document.getElementById('passwordModal').classList.add('flex');
-        document.getElementById('classPasswordInput').value = '';
-        document.getElementById('passwordError').classList.add('hidden');
-        document.getElementById('classPasswordInput').focus();
+        try {
+            currentClass = className;
+            const passwordModal = document.getElementById('passwordModal');
+            const passwordInput = document.getElementById('classPasswordInput');
+            const passwordError = document.getElementById('passwordError');
+            
+            if (passwordModal) {
+                passwordModal.classList.remove('hidden');
+                passwordModal.classList.add('flex');
+            }
+            
+            if (passwordInput) {
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+            
+            if (passwordError) {
+                passwordError.classList.add('hidden');
+            }
+            
+            // Ensure password input has black text
+            setTimeout(() => {
+                if (passwordInput) {
+                    passwordInput.classList.add('text-black', '!text-black');
+                    passwordInput.style.color = 'black';
+                    passwordInput.setAttribute('style', 'color: black !important;');
+                }
+            }, 100);
+        } catch (error) {
+            console.error('Error in showPasswordModal:', error);
+        }
     }
 
     // Hide password modal
     function hidePasswordModal() {
-        document.getElementById('passwordModal').classList.add('hidden');
-        document.getElementById('passwordModal').classList.remove('flex');
+        try {
+            const passwordModal = document.getElementById('passwordModal');
+            if (passwordModal) {
+                passwordModal.classList.add('hidden');
+                passwordModal.classList.remove('flex');
+            }
+        } catch (error) {
+            console.error('Error in hidePasswordModal:', error);
+        }
     }
 
     // Toggle class password visibility
     function toggleClassPasswordVisibility() {
-        const passwordInput = document.getElementById('classPasswordInput');
-        const eyeIcon = document.getElementById('classPasswordToggle');
-        
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            eyeIcon.classList.remove('fa-eye');
-            eyeIcon.classList.add('fa-eye-slash');
-        } else {
-            passwordInput.type = 'password';
-            eyeIcon.classList.remove('fa-eye-slash');
-            eyeIcon.classList.add('fa-eye');
+        try {
+            const passwordInput = document.getElementById('classPasswordInput');
+            const eyeIcon = document.getElementById('passwordToggleIcon'); // Fixed ID to match HTML
+            
+            // Check if elements exist before accessing their properties
+            if (!passwordInput || !eyeIcon) {
+                console.error('Password input or eye icon element not found');
+                return;
+            }
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        } catch (error) {
+            console.error('Error in toggleClassPasswordVisibility:', error);
         }
     }
 
     // Check password
     function checkPassword() {
-        const enteredPassword = document.getElementById('classPasswordInput').value;
-        const correctPassword = adminClassPasswords[currentClass]?.password;
-        
-        if (enteredPassword === correctPassword) {
-            hidePasswordModal();
-            const contentDiv = document.getElementById(`${currentClass}-content`);
-            if (contentDiv) {
-                contentDiv.classList.remove('class-content-blur');
-                contentDiv.classList.add('class-content-unblur');
-                
-                // Load learners for this class after password verification
-                loadLearners(currentClass);
+        try {
+            const enteredPassword = document.getElementById('classPasswordInput')?.value || '';
+            const correctPassword = adminClassPasswords[currentClass]?.password;
+            
+            if (enteredPassword === correctPassword) {
+                hidePasswordModal();
+                const contentDiv = document.getElementById(`${currentClass}-content`);
+                if (contentDiv) {
+                    contentDiv.classList.remove('class-content-blur');
+                    contentDiv.classList.add('class-content-unblur');
+                    
+                    // Load learners for this class after password verification
+                    loadLearners(currentClass);
+                }
+            } else {
+                const passwordError = document.getElementById('passwordError');
+                if (passwordError) {
+                    passwordError.classList.remove('hidden');
+                }
             }
-        } else {
-            document.getElementById('passwordError').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error in checkPassword:', error);
         }
     }
 
@@ -3755,7 +3409,14 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         const classPasswordInput = document.getElementById('classPasswordInput');
         if (classPasswordInput) {
             classPasswordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') checkPassword();
+                try {
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); // Prevent default form submission
+                        checkPassword();
+                    }
+                } catch (error) {
+                    console.error('Error in classPasswordInput keypress handler:', error);
+                }
             });
         }
         
@@ -4469,14 +4130,16 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Student Name</label>
                         <input type="text" id="editLearnerNameInput" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black !text-black"
+                               style="color: black !important;"
                                placeholder="Enter student name" />
                     </div>
                     
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Guardian Phone Number</label>
                         <input type="tel" id="editGuardianNumberInput" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black !text-black"
+                               style="color: black !important;"
                                placeholder="Enter guardian phone number" />
                     </div>
                     
@@ -4496,6 +4159,18 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
         }
         
         // Set current values
+        // Ensure text color is applied
+        setTimeout(() => {
+            const nameInput = document.getElementById('editLearnerNameInput');
+            const guardianInput = document.getElementById('editGuardianNumberInput');
+            
+            if (nameInput) nameInput.style.color = 'black';
+            if (guardianInput) guardianInput.style.color = 'black';
+            
+            // Also add the style attribute directly
+            if (nameInput) nameInput.setAttribute('style', 'color: black !important;');
+            if (guardianInput) guardianInput.setAttribute('style', 'color: black !important;');
+        }, 100);
         const nameInput = document.getElementById('editLearnerNameInput');
         const guardianInput = document.getElementById('editGuardianNumberInput');
         
@@ -4578,10 +4253,28 @@ Replace 'your-project-id' with your actual Firebase project ID.`;
             }
             
             showEditLearnerModal(className, learnerId, learnerName, guardianNumber);
+            
+            // Force text color to be black after modal is shown
+            setTimeout(() => {
+                const inputs = document.querySelectorAll('#editLearnerModal input');
+                inputs.forEach(input => {
+                    input.style.color = 'black';
+                    input.setAttribute('style', 'color: black !important;');
+                });
+            }, 200);
         } catch (error) {
             console.error('Error fetching learner data:', error);
             // Fallback to basic modal without guardian number
             showEditLearnerModal(className, learnerId, learnerName);
+            
+            // Force text color to be black after modal is shown
+            setTimeout(() => {
+                const inputs = document.querySelectorAll('#editLearnerModal input');
+                inputs.forEach(input => {
+                    input.style.color = 'black';
+                    input.setAttribute('style', 'color: black !important;');
+                });
+            }, 200);
         }
     }
     

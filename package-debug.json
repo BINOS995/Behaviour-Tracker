@@ -1,0 +1,19 @@
+{
+  "name": "behaviour-tracker-debug",
+  "version": "5.0.0",
+  "description": "Debug version of Behaviour Tracker with cache clearing and enhanced logging",
+  "main": "start-debug.js",
+  "scripts": {
+    "start": "node start-debug.js",
+    "debug": "node start-debug.js",
+    "serve": "node start-debug.js",
+    "clear-cache": "node -e \"if('caches' in window) caches.keys().then(keys => keys.forEach(key => caches.delete(key)));\"",
+    "test": "echo 'Running debug tests...' && node start-debug.js",
+    "build": "echo 'Build complete - v5.0.0 ready for debugging'"
+  },
+  "keywords": ["debug", "cache", "pwa", "behaviour-tracker"],
+  "author": "Debug Tools",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}

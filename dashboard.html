@@ -42,7 +42,7 @@
                  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
                  img-src 'self' data: https:;
                  style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
-                 font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">"
+                 font-src 'self' 'data:' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">"
     <script>
     window.addEventListener('error', function(e) {
         console.error('JavaScript error detected:', e.message, '\nLine:', e.lineno, '\nColumn:', e.colno, '\nFile:', e.filename);
@@ -513,7 +513,7 @@
     </div>
 
     <!-- Sidebar (hidden on mobile by default) -->
-    <aside id="sidebar" class="w-full md:w-64 bg-white shadow-lg md:block hidden transition-all duration-300 ease-in-out">
+    <aside id="sidebar" class="sidebar w-full md:w-64 bg-white shadow-lg md:block transition-all duration-300 ease-in-out">
         <div class="p-4 md:p-6 hidden md:block text-center">
             <img src="images/logo1.png" alt="Behaviour Tracker" class="w-16 h-16 mx-auto mb-2 rounded-lg">
             <h1 class="text-xl md:text-2xl font-bold text-gray-800">Behaviour Tracker</h1>
@@ -566,6 +566,54 @@
 
     <!-- Mobile Menu Overlay -->
     <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+    
+    <style>
+        /* Ensure classes dropdown works on mobile */
+        #classesDropdownMenu {
+            position: relative;
+            z-index: 1000;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        @media (max-width: 767px) {
+            #classesDropdownMenu {
+                position: relative;
+                width: 100%;
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+            
+            #classesDropdownMenu button {
+                width: 100%;
+                text-align: left;
+                padding: 0.5rem 1rem;
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            #classesDropdownMenu button:last-child {
+                border-bottom: none;
+            }
+        }
+        
+        .mobile-menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            display: none;
+        }
+        
+        .mobile-menu-overlay.active {
+            display: block;
+        }
+    </style>
 
     <!-- Main Content -->
     <main class="flex-1 p-4 md:p-6 lg:p-8">
@@ -606,19 +654,20 @@
         
         if (mobileMenuBtn && sidebar && overlay) {
             function openMobileMenu() {
-                sidebar.classList.remove('hidden');
+                sidebar.classList.add('active');
                 overlay.classList.add('active');
                 document.body.style.overflow = 'hidden'; // Prevent body scroll
             }
             
             function closeMobileMenu() {
-                sidebar.classList.add('hidden');
+                sidebar.classList.remove('active');
                 overlay.classList.remove('active');
                 document.body.style.overflow = ''; // Restore body scroll
             }
             
-            mobileMenuBtn.addEventListener('click', function() {
-                if (sidebar.classList.contains('hidden')) {
+            mobileMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (!sidebar.classList.contains('active')) {
                     openMobileMenu();
                 } else {
                     closeMobileMenu();
@@ -632,17 +681,19 @@
             document.addEventListener('click', function(event) {
                 const isClickInsideSidebar = sidebar.contains(event.target);
                 const isClickOnHamburger = mobileMenuBtn.contains(event.target);
+                const isClickOnClassesDropdown = event.target.closest('#classesDropdownBtn') || event.target.closest('#classesDropdownMenu');
                 
-                if (!isClickInsideSidebar && !isClickOnHamburger && !sidebar.classList.contains('hidden')) {
+                if (!isClickInsideSidebar && !isClickOnHamburger && !isClickOnClassesDropdown && sidebar.classList.contains('active')) {
                     closeMobileMenu();
                 }
             });
             
             // Close sidebar when clicking on a menu item (mobile only)
-            const menuItems = sidebar.querySelectorAll('button[data-content]');
+            // Only close for main menu items, not classes dropdown items
+            const menuItems = sidebar.querySelectorAll('nav > button[data-content]');
             menuItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    if (window.innerWidth < 768) { // md breakpoint
+                item.addEventListener('click', function(e) {
+                    if (window.innerWidth < 768 && !item.closest('#classesDropdownMenu')) {
                         closeMobileMenu();
                     }
                 });
@@ -718,9 +769,6 @@
                     <div class="flex gap-2">
                         <button onclick="exportAllClassesData()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center">
                             <i class="fas fa-download mr-2"></i> Export All Classes
-                        </button>
-                        <button onclick="location.reload()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center">
-                            <i class="fas fa-sync-alt mr-2"></i> Refresh Page
                         </button>
                     </div>
                 </div>
@@ -1789,7 +1837,7 @@
                     <div class="p-6">
                         <h3 class="text-xl font-bold text-gray-800 mb-4">${pointsChange > 0 ? 'Add' : 'Deduct'} Points</h3>
                         <p class="text-gray-600 mb-4">Please enter a reason for ${pointsChange > 0 ? 'adding' : 'deducting'} ${Math.abs(pointsChange)} points:</p>
-                        <textarea id="adjust-reason-input" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Enter reason..."></textarea>
+                        <textarea id="adjust-reason-input" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white" rows="3" placeholder="Enter reason..."></textarea>
                         <div class="flex gap-3 mt-4">
                             <button id="confirm-adjust" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Confirm</button>
                             <button id="cancel-adjust" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
@@ -2295,7 +2343,7 @@
                                         <input type="number" 
                                                id="custom-points-input" 
                                                placeholder="Enter points (positive or negative)" 
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                                                required>
                                     </div>
                                     
@@ -2306,7 +2354,7 @@
                                         <input type="text" 
                                                id="custom-reason-input" 
                                                placeholder="Enter reason (e.g., excellent work, late submission)" 
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                                                required>
                                     </div>
                                     
@@ -2559,8 +2607,8 @@
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                                     <h3 class="text-xl font-bold text-gray-800 mb-4 sm:mb-0">Student Behavior Tracker</h3>
                                     <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                                        <input type="text" id="${className}-new-learner" placeholder="Student name" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-black">
-                                        <input type="tel" id="${className}-guardian-phone" placeholder="Guardian phone" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-black">
+                                        <input type="text" id="${className}-new-learner" placeholder="Student name" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 bg-white">
+                                        <input type="tel" id="${className}-guardian-phone" placeholder="Guardian phone" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 bg-white">
                                         <button onclick="addLearner('${className}')" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200">
                                             <i class="fas fa-plus mr-2"></i>Add Student
                                         </button>
@@ -2590,11 +2638,11 @@
                                 <div class="space-y-2">
                                     <div class="flex justify-between">
                                         <span class="text-xs md:text-sm text-gray-700">Total Students:</span>
-                                        <span class="font-semibold text-sm md:text-base" id="${className}-count">0</span>
+                                        <span class="font-semibold text-sm md:text-base text-gray-900" id="${className}-count">0</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-xs md:text-sm text-gray-700">Average Points:</span>
-                                        <span class="font-semibold text-sm md:text-base" id="${className}-avg">0</span>
+                                        <span class="font-semibold text-sm md:text-base text-gray-900" id="${className}-avg">0</span>
                                     </div>
                                 </div>
                             </div>
@@ -2604,12 +2652,12 @@
                                 <div class="space-y-2 md:space-y-3">
                                     <div>
                                         <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                                        <input type="text" id="${className}-best-learner-name" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base text-black" 
+                                        <input type="text" id="${className}-best-learner-name" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base text-gray-900 bg-white" 
                                             placeholder="Enter student name" value="${bestLearnerName}">
                                     </div>
                                     <div>
                                         <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Points</label>
-                                        <input type="number" id="${className}-best-learner-points" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base text-black" 
+                                        <input type="number" id="${className}-best-learner-points" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base text-gray-900 bg-white" 
                                             placeholder="Enter points" value="${bestLearnerPoints}">
                                     </div>
                                     <button onclick="saveBestLearner('${className}')" class="w-full bg-green-500 text-white py-1.5 md:py-2 rounded-lg hover:bg-green-600 mt-2 text-sm md:text-base">
@@ -2636,14 +2684,23 @@
 
         classesDropdownMenu.innerHTML = '';
         
-        Object.keys(adminClassPasswords).forEach(className => {
-            const classButton = document.createElement('button');
-            classButton.className = 'class-btn flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg';
-            classButton.setAttribute('data-content', className);
-            classButton.innerHTML = `<i class="fas fa-book text-lg mr-2"></i><span class="text-sm font-medium">${className}</span>`;
-            classButton.title = className; // Add tooltip for accessibility
-            classesDropdownMenu.appendChild(classButton);
-        });
+        const classes = Object.keys(adminClassPasswords);
+        
+        if (classes.length === 0) {
+            const noClassesMsg = document.createElement('div');
+            noClassesMsg.className = 'p-3 text-sm text-gray-500 italic';
+            noClassesMsg.innerHTML = '<i class="fas fa-info-circle mr-2"></i>No classes available';
+            classesDropdownMenu.appendChild(noClassesMsg);
+        } else {
+            classes.forEach(className => {
+                const classButton = document.createElement('button');
+                classButton.className = 'class-btn flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg';
+                classButton.setAttribute('data-content', className);
+                classButton.innerHTML = `<i class="fas fa-book text-lg mr-2"></i><span class="text-sm font-medium">${className}</span>`;
+                classButton.title = className; // Add tooltip for accessibility
+                classesDropdownMenu.appendChild(classButton);
+            });
+        }
 
         setupClassButtons();
     }
@@ -2662,6 +2719,16 @@
                     document.getElementById('classesDropdownMenu').classList.toggle('hidden');
                 } else {
                     loadContent(content);
+                    // Close mobile menu when selecting any class or content
+                    if (window.innerWidth < 768) {
+                        const sidebar = document.getElementById('sidebar');
+                        const overlay = document.getElementById('mobileMenuOverlay');
+                        if (sidebar && overlay) {
+                            sidebar.classList.remove('active');
+                            overlay.classList.remove('active');
+                            document.body.style.overflow = '';
+                        }
+                    }
                 }
             });
         });
@@ -4291,7 +4358,7 @@
     // Register service worker for PWA functionality
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/service-worker.js')
+        navigator.serviceWorker.register('/service-worker.js?v=5.0.0')
           .then(function(registration) {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
             

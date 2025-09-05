@@ -42,7 +42,7 @@
                  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
                  img-src 'self' data: https:;
                  style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
-                 font-src 'self' 'data:' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">"
+                 font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com;">"
     <script>
     window.addEventListener('error', function(e) {
         console.error('JavaScript error detected:', e.message, '\nLine:', e.lineno, '\nColumn:', e.colno, '\nFile:', e.filename);
@@ -520,7 +520,7 @@
         </div>
         
         <nav class="px-4 py-2">
-            <button class="flex items-center justify-center w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 relative group" data-content="Dashboard">
+            <button onclick="refreshDashboard()" class="flex items-center justify-center w-full px-4 py-3 mb-2 text-white bg-purple-500 rounded-lg hover:bg-purple-600 relative group" data-content="Dashboard">
                 <i class="fas fa-home text-lg mr-2"></i>
                 <span class="text-sm font-medium">Dashboard</span>
                 <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
@@ -712,12 +712,18 @@
     const tabContent = {
         "Dashboard": `
             <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div class="flex items-center mb-4">
-                    <img src="images/logo1.png" alt="Behaviour Tracker" class="w-12 h-12 mr-3 rounded-lg">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-800 mb-1">Welcome back!</h1>
-                        <p class="text-gray-600">Track student behavior and performance across different classes.</p>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <img src="images/logo1.png" alt="Behaviour Tracker" class="w-12 h-12 mr-3 rounded-lg">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-800 mb-1">Welcome back!</h1>
+                            <p class="text-gray-600">Track student behavior and performance across different classes.</p>
+                        </div>
                     </div>
+                    <button onclick="refreshDashboard()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        <span>Refresh</span>
+                    </button>
                 </div>
             </div>
             
@@ -905,7 +911,19 @@
 
                 <!-- Existing Classes Section -->
                 <div class="bg-gray-50 rounded-lg p-4">
-                    <h3 class="text-lg font-medium text-gray-800 mb-3">Existing Classes</h3>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-medium text-gray-800">Existing Classes</h3>
+                        <div class="flex gap-2">
+                            <button onclick="addTestClass()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center">
+                                <i class="fas fa-plus mr-2"></i>
+                                <span>Add Test Class</span>
+                            </button>
+                            <button onclick="forceReloadClasses()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center">
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+                    </div>
                     <div id="classesList" class="space-y-3">
                         <p class="text-gray-700">Loading classes...</p>
                     </div>
@@ -968,7 +986,29 @@
     
     async function loadClasses() {
         try {
-            console.log('Setting up real-time listener for classes...');
+            console.log('🔍 loadClasses() called - checking Firebase access...');
+            
+            // Check authentication status
+            const user = window.firebaseAuth.currentUser;
+            if (!user) {
+                console.warn('❌ No authenticated user found');
+                const classesList = document.getElementById('classesList');
+                if (classesList) {
+                    classesList.innerHTML = `
+                        <div class="text-red-500 p-4 bg-red-50 rounded-lg">
+                            <strong>Authentication Required</strong><br>
+                            Please log in to view classes.<br><br>
+                            <button onclick="window.location.reload()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                                <i class="fas fa-sync-alt mr-2"></i>Reload Page
+                            </button>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
+            console.log('✅ User authenticated:', user.email);
+            
             const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
             adminClassPasswords = {};
             
@@ -978,12 +1018,14 @@
                 classesListener = null;
             }
             
+            console.log('📡 Attempting to connect to classes collection...');
+            
             // Set up real-time listener
             classesListener = window.firebaseFirestore.onSnapshot(classesRef, (snapshot) => {
-                console.log(`Real-time update: Found ${snapshot.size} classes`);
+                console.log(`✅ Real-time update: Found ${snapshot.size} classes`);
                 
                 if (snapshot.empty) {
-                    console.log('No classes found in Firestore');
+                    console.log('ℹ️ No classes found in Firestore - collection is empty');
                     adminClassPasswords = {};
                     
                     // Show "No Classes Found" message
@@ -995,43 +1037,59 @@
                                     <i class="fas fa-users-slash text-4xl text-gray-400 mb-4"></i>
                                     <h3 class="text-lg font-medium text-gray-900 mb-2">No Classes Found</h3>
                                     <p class="text-gray-600 mb-4">There are no classes in the system yet.</p>
-                                    <p class="text-sm text-gray-500">New classes will appear here automatically</p>
+                                    <p class="text-sm text-gray-500">Create your first class using the form above</p>
                                 </div>
                             `;
                         }
                     }, 100);
                 } else {
-                // Process all classes in real-time
-                adminClassPasswords = {};
-                
-                snapshot.forEach(doc => {
-                    const classData = doc.data();
-                    const className = String(doc.id || '').trim();
+                    // Process all classes in real-time
+                    adminClassPasswords = {};
                     
-                    // All users see all classes
-                    adminClassPasswords[className] = {
-                        password: classData.password
-                    };
-                    console.log(`✓ Real-time update: "${className}"`);
-                });
-            }
-            
-            // Update UI with new data, ensuring DOM is ready
-            requestAnimationFrame(() => {
-                updateClassesList();
-                updateTabContentWithClasses();
-            });
+                    snapshot.forEach(doc => {
+                        const classData = doc.data();
+                        const className = String(doc.id || '').trim();
+                        
+                        // All users see all classes
+                        adminClassPasswords[className] = {
+                            password: classData.password
+                        };
+                        console.log(`✓ Found class: "${className}" with password: ${classData.password ? '✅' : '❌'}`);
+                    });
+                    
+                    console.log(`✅ Total classes loaded: ${Object.keys(adminClassPasswords).length}`);
+                }
                 
+                // Update UI with new data, ensuring DOM is ready
+                requestAnimationFrame(() => {
+                    updateClassesList();
+                    updateTabContentWithClasses();
+                });
+                    
             }, (error) => {
-                console.error('Error in classes real-time listener:', error);
+                console.error('❌ Error in classes real-time listener:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                
                 const classesList = document.getElementById('classesList');
                 if (classesList) {
+                    let errorMessage = error.message;
+                    let errorTitle = 'Database Error';
+                    
+                    if (error.code === 'permission-denied') {
+                        errorTitle = 'Permission Denied';
+                        errorMessage = 'You don\'t have permission to access classes. Please check your authentication or contact an administrator.';
+                    } else if (error.code === 'unavailable') {
+                        errorTitle = 'Connection Error';
+                        errorMessage = 'Unable to connect to the database. Please check your internet connection.';
+                    }
+                    
                     classesList.innerHTML = `
                         <div class="text-red-500 p-4 bg-red-50 rounded-lg">
-                            <strong>Real-time sync error:</strong><br>
-                            ${error.message}<br><br>
+                            <strong>${errorTitle}</strong><br>
+                            ${errorMessage}<br><br>
                             <button onclick="loadClasses()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-                                <i class="fas fa-sync-alt mr-2"></i>Reconnect
+                                <i class="fas fa-sync-alt mr-2"></i>Retry
                             </button>
                         </div>
                     `;
@@ -1039,7 +1097,102 @@
             });
             
         } catch (error) {
-            console.error('Error setting up classes listener:', error);
+            console.error('❌ Error setting up classes listener:', error);
+            console.error('Error details:', error);
+        }
+    }
+    
+    // Function to update tab content with classes
+    function updateTabContentWithClasses() {
+        console.log('🔄 Updating tab content with classes...');
+        
+        // Update any tab content that displays classes
+        const classCount = Object.keys(adminClassPasswords).length;
+        console.log(`📊 Found ${classCount} classes for tab updates`);
+        
+        // Update any dropdowns or selectors that use classes
+        const classSelects = document.querySelectorAll('select[id*="class"], select[name*="class"]');
+        classSelects.forEach(select => {
+            if (select.id !== 'userEmailSelect') { // Skip user select
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Select a class...</option>';
+                
+                Object.keys(adminClassPasswords).forEach(className => {
+                    const option = document.createElement('option');
+                    option.value = className;
+                    option.textContent = className;
+                    if (className === currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
+        });
+    }
+    
+    // Manual refresh function for debugging
+    async function forceReloadClasses() {
+        console.log('🔄 Force reloading classes...');
+        
+        // Force clean up existing listener
+        if (classesListener) {
+            classesListener();
+            classesListener = null;
+            console.log('✅ Cleaned up existing classes listener');
+        }
+        
+        // Clear the adminClassPasswords cache
+        adminClassPasswords = {};
+        
+        // Force update the UI immediately
+        const classesList = document.getElementById('classesList');
+        if (classesList) {
+            classesList.innerHTML = '<p class="text-gray-700"><i class="fas fa-spinner fa-spin mr-2"></i>Refreshing classes...</p>';
+        }
+        
+        // Call loadClasses to set up new listener
+        await loadClasses();
+        
+        // Also call updateClassesList directly to ensure UI updates
+        setTimeout(() => {
+            updateClassesList();
+            updateTabContentWithClasses();
+            console.log('✅ Classes force refreshed');
+        }, 500);
+        
+        alert('Classes reloaded! Check console for details.');
+    }
+    
+    // Test function to add a sample class
+    async function addTestClass() {
+        try {
+            const user = window.firebaseAuth.currentUser;
+            if (!user) {
+                alert('Please log in first!');
+                return;
+            }
+            
+            const testClassName = 'TestClass' + Date.now();
+            const testClassData = {
+                password: 'test123',
+                createdAt: new Date(),
+                createdBy: user.email,
+                teacherId: user.uid  // Required for Firebase security rules
+            };
+            
+            console.log('📝 Creating test class:', testClassName);
+            
+            await window.firebaseFirestore.setDoc(
+                window.firebaseFirestore.doc(window.firebaseDB, 'classes', testClassName),
+                testClassData
+            );
+            
+            console.log('✅ Test class created successfully!');
+            alert('Test class created! Check the console and refresh the classes list.');
+            
+        } catch (error) {
+            console.error('❌ Error creating test class:', error);
+            alert('Error creating test class: ' + error.message);
         }
     }
 
@@ -1226,6 +1379,12 @@
     // Load user class allocations for admin display
     async function loadUserClassAllocations() {
         try {
+            const user = window.firebaseAuth.currentUser;
+            if (!user) {
+                console.warn('Cannot load user class allocations: No authenticated user');
+                return;
+            }
+            
             const userClassesRef = window.firebaseFirestore.collection(window.firebaseDB, 'userClasses');
             
             // Clean up existing listener
@@ -1234,9 +1393,9 @@
                 userClassesListener = null;
             }
             
-            // Set up real-time listener
+            // Set up real-time listener with error handling
             userClassesListener = window.firebaseFirestore.onSnapshot(userClassesRef, (snapshot) => {
-                console.log(`Real-time user class allocations update: ${snapshot.size} allocations`);
+                console.log(`✅ Real-time user class allocations update: ${snapshot.size} allocations`);
                 
                 // This function is mainly for logging/debugging purposes
                 // The actual display happens in loadUserClassCheckboxes when a user is selected
@@ -1247,11 +1406,19 @@
                     loadUserClassCheckboxes();
                 }
             }, (error) => {
-                console.error('Error in user class allocations listener:', error);
+                if (error.code === 'permission-denied') {
+                    console.warn('⚠️ User class allocations collection not accessible - permissions may be restricted');
+                    console.info('💡 This is expected if userClasses collection is not in security rules');
+                } else {
+                    console.error('❌ Error in user class allocations listener:', error);
+                }
             });
             
         } catch (error) {
-            console.error('Error setting up user class allocations listener:', error);
+            console.error('❌ Error setting up user class allocations listener:', error);
+            if (error.code === 'permission-denied') {
+                console.info('💡 To fix: Add userClasses collection to Firebase security rules');
+            }
         }
     }
 
@@ -1381,6 +1548,12 @@
         }
 
         try {
+            const user = window.firebaseAuth.currentUser;
+            if (!user) {
+                alert('Please log in first!');
+                return;
+            }
+
             // Show loading state
             const addBtn = document.getElementById('addClassBtn');
             const originalText = addBtn.innerHTML;
@@ -1390,7 +1563,9 @@
             const classRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className);
             await window.firebaseFirestore.setDoc(classRef, {
                 password: password,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                createdBy: user.email,
+                teacherId: user.uid  // Required for Firebase security rules
             });
 
             // Clear fields
@@ -1406,7 +1581,7 @@
             
         } catch (error) {
             console.error('Error adding class:', error);
-            alert('Error adding class. Please try again.');
+            alert('Error adding class: ' + error.message);
             
             // Restore button state on error
             const addBtn = document.getElementById('addClassBtn');
@@ -3862,9 +4037,22 @@
 
     // Enhanced loadClasses to include chart updates
     window.loadClasses = async function() {
-        populateClassSelector();
-        updatePerformanceChart();
-        updateDashboardStats();
+        try {
+            populateClassSelector();
+            updatePerformanceChart();
+            updateDashboardStats();
+        } catch (error) {
+            console.warn('Error in loadClasses:', error);
+            // Handle permission errors gracefully
+            if (error.code === 'permission-denied') {
+                console.warn('Permission denied - user may not be authenticated');
+                // Try to re-authenticate or show appropriate message
+                const auth = window.firebaseAuth.getAuth();
+                if (!auth.currentUser) {
+                    console.warn('No authenticated user found');
+                }
+            }
+        }
     };
 
     // Enhanced updateTopLearnersOnDashboard to include stats update
@@ -4350,6 +4538,138 @@
     window.showEditLearnerModal = showEditLearnerModal;
     window.closeEditLearnerModal = closeEditLearnerModal;
     window.submitEditLearner = submitEditLearner;
+
+    // Function to load class statistics
+    async function loadClassStats() {
+        try {
+            console.log('Loading class statistics...');
+            
+            // This function updates the dashboard stats section
+            // It's called by refreshDashboard to ensure stats are current
+            if (typeof updateDashboardStats === 'function') {
+                await updateDashboardStats();
+            }
+            
+            // Also update any class-specific stats
+            const classes = Object.keys(adminClassPasswords || {});
+            for (const className of classes) {
+                const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
+                const learnersSnapshot = await window.firebaseFirestore.getDocs(learnersRef);
+                
+                let totalStudents = 0;
+                let totalPoints = 0;
+                
+                learnersSnapshot.forEach(doc => {
+                    const learner = doc.data();
+                    totalStudents++;
+                    totalPoints += learner.points || 0;
+                });
+                
+                const avgPoints = totalStudents > 0 ? Math.round(totalPoints / totalStudents) : 0;
+                
+                // Update class-specific elements if they exist
+                const countEl = document.getElementById(`${className}-count`);
+                const avgEl = document.getElementById(`${className}-avg`);
+                
+                if (countEl) countEl.textContent = totalStudents;
+                if (avgEl) avgEl.textContent = avgPoints;
+            }
+            
+            console.log('Class statistics loaded successfully');
+        } catch (error) {
+            console.error('Error loading class statistics:', error);
+            // Gracefully handle permission errors
+            if (error.code === 'permission-denied') {
+                console.warn('Permission denied for class stats - this is expected for non-admin users');
+            }
+        }
+    }
+
+    // Function to refresh dashboard data
+    async function refreshDashboard() {
+        try {
+            console.log('Refreshing dashboard...');
+            
+            // Show loading state
+            const refreshButtons = document.querySelectorAll('[onclick="refreshDashboard()"]');
+            refreshButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner mr-2">⟳</span> Refreshing...';
+            });
+            
+            // Reload all dashboard data with error handling for each step
+            try {
+                await loadClasses();
+            } catch (error) {
+                console.warn('Error loading classes:', error);
+            }
+            
+            try {
+                await loadClassStats();
+            } catch (error) {
+                console.warn('Error loading class stats:', error);
+            }
+            
+            try {
+                await loadTopLearners();
+            } catch (error) {
+                console.warn('Error loading top learners:', error);
+            }
+            
+            try {
+                updatePerformanceChart();
+            } catch (error) {
+                console.warn('Error updating performance chart:', error);
+            }
+            
+            try {
+                updateWelcomeMessage();
+            } catch (error) {
+                console.warn('Error updating welcome message:', error);
+            }
+            
+            // Reload admin data if user is admin - handle permission errors gracefully
+            if (window.currentUser && window.currentUser.email && 
+                (window.currentUser.email.includes('admin') || window.currentUser.email.includes('teacher'))) {
+                try {
+                    await loadAdminData();
+                } catch (error) {
+                    console.warn('Error loading admin data:', error);
+                }
+            }
+            
+            // Reset button states
+            refreshButtons.forEach(btn => {
+                btn.disabled = false;
+                if (btn.dataset.content === 'Dashboard') {
+                    btn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path></svg> Dashboard`;
+                } else {
+                    btn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refresh Dashboard';
+                }
+            });
+            
+            console.log('Dashboard refreshed successfully');
+            
+        } catch (error) {
+            console.error('Error refreshing dashboard:', error);
+            
+            // Reset button states on error
+            const refreshButtons = document.querySelectorAll('[onclick="refreshDashboard()"]');
+            refreshButtons.forEach(btn => {
+                btn.disabled = false;
+                if (btn.dataset.content === 'Dashboard') {
+                    btn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path></svg> Dashboard`;
+                } else {
+                    btn.innerHTML = '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Refresh Dashboard';
+                }
+            });
+            
+            alert('Error refreshing dashboard. Please try again.');
+        }
+    }
+
+    // Make refreshDashboard globally accessible
+    window.refreshDashboard = refreshDashboard;
 
 </script>
 

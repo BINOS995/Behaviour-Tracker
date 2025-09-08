@@ -73,24 +73,7 @@
     </div>
   </div>
 
-  <!-- Parent App Link -->
-  <div style="text-align: center; margin: 1rem 0;">
-    <a href="parent-app.html" style="
-      display: inline-block;
-      padding: 12px 24px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      text-decoration: none;
-      border-radius: 25px;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)'" 
-       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.3)'">
-      <i class="fas fa-users" style="margin-right: 8px;"></i>
-      Parent Dashboard
-    </a>
-  </div> 
+
 
   <!-- Register Section -->
   <div class="container" id="signup" style="display: none;">
@@ -179,6 +162,48 @@
     <div class="links">
       <p>Don't have an account yet?</p>
       <button id="signUpButton" type="button">Sign Up</button>
+    </div>
+  </div>
+
+  <!-- Parent Dashboard Section - Separated from Teacher Login -->
+  <div style="
+    text-align: center; 
+    margin: 3rem 0 2rem 0; 
+    padding: 2rem;
+    border-top: 2px solid #e5e7eb;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: 15px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 400px;
+  ">
+    <div style="margin-bottom: 1rem;">
+      <i class="fas fa-users" style="font-size: 2rem; color: #667eea; margin-bottom: 0.5rem;"></i>
+      <h3 style="color: #374151; margin: 0 0 0.5rem 0; font-weight: 600;">Parents & Guardians</h3>
+      <p style="color: #6b7280; margin: 0 0 1.5rem 0; font-size: 0.875rem;">
+        Access your child's behavior tracking information
+      </p>
+    </div>
+    <a href="parent-app.html" style="
+      display: inline-block;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      text-decoration: none;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      border: 2px solid transparent;
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(102, 126, 234, 0.4)'; this.style.borderColor='#667eea';" 
+       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.3)'; this.style.borderColor='transparent';">
+      <i class="fas fa-external-link-alt" style="margin-right: 8px;"></i>
+      Go to Parent Dashboard
+    </a>
+    <div style="margin-top: 1rem; font-size: 0.75rem; color: #9ca3af;">
+      <i class="fas fa-info-circle" style="margin-right: 4px;"></i>
+      Separate login for parents and guardians
     </div>
   </div>
 

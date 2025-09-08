@@ -15,6 +15,127 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+/* Ensure select elements and options have black text for visibility */
+select, option {
+    color: black;
+    background-color: white;
+}
+
+/* Ensure class names and grade labels are visible */
+#classSelector option,
+#classSelector {
+    color: black !important;
+    background-color: white !important;
+}
+
+/* Additional styling for class display areas */
+select.form-select,
+select.form-control,
+select.rounded-lg,
+select.border-gray-300 {
+    color: black !important;
+    background-color: white !important;
+}
+
+/* Ensure all select options are visible */
+select option {
+    color: black !important;
+    background-color: white !important;
+}
+
+/* Ensure class name displays in various contexts */
+.text-gray-800,
+.text-gray-700,
+.text-gray-900 {
+    color: #1f2937 !important;
+}
+
+/* Fix for any class labels that might be white */
+span.text-white,
+div.text-white,
+label.text-white {
+    color: black !important;
+}
+
+/* Ensure performance summary numbers are visible */
+#performanceSummary span.font-semibold,
+#performanceSummary .font-semibold,
+#chartTotalClasses,
+#chartAvgPoints,
+#chartHighestPoints,
+#chartMostActive {
+    color: #1f2937 !important;
+}
+
+/* Ensure all text elements in performance summary are visible */
+#performanceSummary span,
+#performanceSummary .text-gray-600,
+#performanceSummary .text-gray-700,
+#performanceSummary .text-gray-800 {
+    color: #1f2937 !important;
+}
+
+/* Ensure class names in admin section are visible */
+#classesList,
+#classesList .text-gray-700,
+#classesList .text-gray-800,
+#classesList .font-medium,
+#classesList .font-semibold {
+    color: #1f2937 !important;
+}
+
+/* Ensure all text in admin panel is visible */
+#classesList div,
+#classesList span,
+#classesList p,
+#classesList h3,
+#classesList .text-lg,
+#classesList .text-sm {
+    color: #1f2937 !important;
+}
+
+/* Specific targeting for class name displays */
+#classesList .bg-white,
+#classesList .bg-gray-50,
+#classesList .bg-white div,
+#classesList .bg-gray-50 div,
+#classesList .bg-white span,
+#classesList .bg-gray-50 span {
+    color: #1f2937 !important;
+}
+
+/* Ensure text in class items is visible */
+.class-item,
+.class-item div,
+.class-item span,
+.class-item p,
+.class-item strong {
+    color: #1f2937 !important;
+}
+
+/* Override any white text in the admin section */
+.bg-gray-50 .text-gray-900,
+.bg-gray-50 .text-gray-800,
+.bg-gray-50 .text-gray-700,
+.bg-gray-50 .text-gray-600 {
+    color: #1f2937 !important;
+}
+
+/* Force black text for class names specifically */
+#classesList .font-medium.text-lg,
+#classesList span.font-medium,
+#classesList .bg-gray-50 .font-medium,
+#classesList .bg-gray-50 span {
+    color: #1f2937 !important;
+}
+
+/* Ensure password display and all text elements are visible */
+#classesList .password-display,
+#classesList .text-gray-500,
+#classesList .text-gray-600 {
+    color: #1f2937 !important;
+}
+
 .container {
     display: flex;
     height: 100vh;
@@ -335,6 +456,26 @@ table {
         margin-left: 0;
         margin-top: 10px;
         text-align: center;
+    }
+    
+    /* Mobile refresh button sizing */
+    .nav-item button[onclick="refreshDashboard()"],
+    .sidebar button[onclick="refreshDashboard()"] {
+        padding: 8px 12px !important;
+        font-size: 14px !important;
+        min-height: 40px !important;
+    }
+    
+    .nav-item button[onclick="refreshDashboard()"] svg,
+    .sidebar button[onclick="refreshDashboard()"] svg {
+        width: 16px !important;
+        height: 16px !important;
+        margin-right: 6px !important;
+    }
+    
+    .nav-item button[onclick="refreshDashboard()"] span,
+    .sidebar button[onclick="refreshDashboard()"] span {
+        font-size: 13px !important;
     }
     
     .main-content {

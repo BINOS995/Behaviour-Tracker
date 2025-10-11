@@ -2007,28 +2007,163 @@
             // Create custom modal for reason input
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
-            modal.innerHTML = `
-                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
-                    <div class="p-6">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">${pointsChange > 0 ? 'Add' : 'Deduct'} Points</h3>
-                        <p class="text-gray-600 mb-4">Please enter a reason for ${pointsChange > 0 ? 'adding' : 'deducting'} ${Math.abs(pointsChange)} points:</p>
-                        <textarea id="adjust-reason-input" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white" rows="3" placeholder="Enter reason..."></textarea>
-                        <div class="flex gap-3 mt-4">
-                            <button id="confirm-adjust" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Confirm</button>
-                            <button id="cancel-adjust" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+            
+            // If it's a deduction (negative points), show offense dropdown first
+            if (pointsChange < 0) {
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">Deduct Points</h3>
+                            <p class="text-gray-600 mb-4">Please select an offense to deduct 5 points:</p>
+                            <select id="offense-dropdown" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white mb-4">
+                                <option value="">-- Select an offense --</option>
+                                <option value="Inappropriate Dress Code">Inappropriate Dress Code</option>
+                                <option value="Eating in Class">Eating in Class</option>
+                                <option value="Talking back or Interrupting teachers">Talking back or Interrupting teachers</option>
+                                <option value="Loitering around">Loitering around</option>
+                                <option value="Littering the environment">Littering the environment</option>
+                                <option value="Incomplete Homework">Incomplete Homework</option>
+                                <option value="Disrespecting Staff">Disrespecting Staff</option>
+                                <option value="Cheating in Exams">Cheating in Exams</option>
+                                <option value="Fighting">Fighting</option>
+                                <option value="Bullying or intimidation">Bullying or intimidation</option>
+                                <option value="Vandalism">Vandalism</option>
+                                <option value="Theft">Theft</option>
+                                <option value="Other">Other (specify below)</option>
+                            </select>
+                            <div id="additional-notes-container" style="display: none;">
+                                <textarea id="adjust-reason-input" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white" rows="3" placeholder="Additional notes (required for 'Other')..."></textarea>
+                            </div>
+                            <div class="flex gap-3 mt-4">
+                                <button id="confirm-adjust" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors" disabled>Confirm</button>
+                                <button id="cancel-adjust" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Add event listener for dropdown change
+                document.getElementById('offense-dropdown').addEventListener('change', function() {
+                    const selectedOffense = this.value;
+                    const confirmBtn = document.getElementById('confirm-adjust');
+                    const notesContainer = document.getElementById('additional-notes-container');
+                    
+                    if (selectedOffense) {
+                        confirmBtn.disabled = false;
+                        if (selectedOffense === 'Other') {
+                            notesContainer.style.display = 'block';
+                        } else {
+                            notesContainer.style.display = 'none';
+                        }
+                    } else {
+                        confirmBtn.disabled = true;
+                        notesContainer.style.display = 'none';
+                    }
+                });
+            } else {
+                // For positive points, show dropdown with positive options
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-4">Add Points</h3>
+                            <p class="text-gray-600 mb-4">Please select a positive action:</p>
+                            <select id="positive-action-dropdown" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white mb-4">
+                                <option value="">-- Select an action --</option>
+                                <option value="Good">Good (+5)</option>
+                                <option value="Very Good">Very Good (+10)</option>
+                                <option value="Great">Great (+15)</option>
+                                <option value="Excellent">Excellent (+20)</option>
+                            </select>
+                            <div id="positive-notes-container" style="display: none;">
+                                <textarea id="adjust-reason-input" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white" rows="3" placeholder="Additional notes (optional)..."></textarea>
+                            </div>
+                            <div class="flex gap-3 mt-4">
+                                <button id="confirm-adjust" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors" disabled>Confirm</button>
+                                <button id="cancel-adjust" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Add event listener for positive dropdown change
+                document.getElementById('positive-action-dropdown').addEventListener('change', function() {
+                    const selectedAction = this.value;
+                    const confirmBtn = document.getElementById('confirm-adjust');
+                    const notesContainer = document.getElementById('positive-notes-container');
+                    
+                    if (selectedAction) {
+                        confirmBtn.disabled = false;
+                        notesContainer.style.display = 'block';
+                    } else {
+                        confirmBtn.disabled = true;
+                        notesContainer.style.display = 'none';
+                    }
+                });
+            }
             
             // Handle modal actions
             document.getElementById('confirm-adjust').addEventListener('click', async () => {
-                const reason = document.getElementById('adjust-reason-input').value.trim();
-                if (!reason) {
-                    alert('Please enter a reason for the adjustment');
-                    return;
+                let finalReason = '';
+                
+                // Handle different input methods based on point change
+                if (pointsChange < 0) {
+                    // For deductions, get the selected offense from dropdown
+                    const offenseDropdown = document.getElementById('offense-dropdown');
+                    const selectedOffense = offenseDropdown.value;
+                    const additionalNotes = document.getElementById('adjust-reason-input').value.trim();
+                    
+                    // Validate selection
+                    if (!selectedOffense) {
+                        alert('Please select an offense from the dropdown');
+                        return;
+                    }
+                    
+                    // For "Other" option, additional notes are required
+                    if (selectedOffense === 'Other' && !additionalNotes) {
+                        alert('Please provide details for "Other" offense');
+                        return;
+                    }
+                    
+                    // Format the reason with the selected offense
+                    finalReason = selectedOffense;
+                    if (additionalNotes) {
+                        finalReason += ' - ' + additionalNotes;
+                    }
+                    
+                    // Set the points change to -5 for automatic deduction
+                    pointsChange = -5;
+                } else {
+                    // For positive points, get the selected action from dropdown
+                    const positiveDropdown = document.getElementById('positive-action-dropdown');
+                    const selectedAction = positiveDropdown.value;
+                    const additionalNotes = document.getElementById('adjust-reason-input').value.trim();
+                    
+                    // Validate selection
+                    if (!selectedAction) {
+                        alert('Please select a positive action from the dropdown');
+                        return;
+                    }
+                    
+                    // Set points based on selected action
+                    const actionPoints = {
+                        'Good': 5,
+                        'Very Good': 10,
+                        'Great': 15,
+                        'Excellent': 20
+                    };
+                    
+                    // Format the reason with the selected action
+                    finalReason = selectedAction;
+                    if (additionalNotes) {
+                        finalReason += ' - ' + additionalNotes;
+                    }
+                    
+                    // Set the points change based on selected action
+                    pointsChange = actionPoints[selectedAction];
                 }
                 
                 try {
@@ -2050,7 +2185,7 @@
                     // Create adjustment record
                     const adjustmentRecord = {
                         points: pointsChange,
-                        reason: reason,
+                        reason: finalReason,
                         adjustedBy: userName,
                         date: currentDate.toISOString()
                     };

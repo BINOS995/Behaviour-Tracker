@@ -500,6 +500,110 @@
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
+
+<!-- Welcome Modal -->
+<div id="welcomeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl max-w-4xl w-full mx-4 overflow-hidden shadow-2xl transform transition-all duration-300 scale-95" id="welcomeModalContent">
+        <div class="flex flex-col lg:flex-row min-h-[500px]">
+            <!-- Left Side - Avatar Section -->
+            <div class="lg:w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-900 flex items-center justify-center p-8 relative overflow-hidden">
+                <!-- Decorative Elements -->
+                <div class="absolute top-0 left-0 w-full h-full opacity-10">
+                    <div class="absolute top-10 left-10 w-20 h-20 bg-yellow-400 rounded-full blur-xl"></div>
+                    <div class="absolute bottom-20 right-20 w-32 h-32 bg-yellow-300 rounded-full blur-2xl"></div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-yellow-500 rounded-full blur-3xl"></div>
+                </div>
+                
+                <!-- Avatar Container -->
+                <div class="relative z-10 text-center">
+                    <div class="relative inline-block">
+                        <!-- Avatar Image -->
+                        <img src="images/admin.png" alt="Admin Avatar" class="w-48 h-48 lg:w-64 lg:h-64 rounded-full border-4 border-yellow-400 shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                        
+                        <!-- Admin Badge -->
+                        <div class="absolute -bottom-2 -right-2 bg-yellow-400 text-purple-900 px-4 py-2 rounded-full font-bold text-sm shadow-lg flex items-center">
+                            <i class="fas fa-star mr-1"></i>
+                            ADMIN
+                        </div>
+                        
+                        <!-- Floating Elements -->
+                        <div class="absolute -top-4 -left-4 w-8 h-8 bg-yellow-400 rounded-full animate-bounce"></div>
+                        <div class="absolute -bottom-4 -right-4 w-6 h-6 bg-yellow-300 rounded-full animate-bounce" style="animation-delay: 0.5s;"></div>
+                    </div>
+                    
+                    <!-- Welcome Text Below Avatar -->
+                    <div class="mt-8">
+                        <div class="text-yellow-300 text-lg font-medium mb-2">👋 Welcome Back!</div>
+                        <div class="text-white text-xl font-bold">Ready to track amazing behaviors?</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Side - Content Section -->
+            <div class="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
+                <!-- Main Title -->
+                <div class="mb-6">
+                    <h1 class="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent mb-4">
+                        Welcome to Behaviour Tracker
+                    </h1>
+                    <div class="w-20 h-1 bg-gradient-to-r from-purple-500 to-yellow-400 rounded-full"></div>
+                </div>
+                
+                <!-- Description -->
+                <div class="mb-8 space-y-4">
+                    <p class="text-gray-700 text-lg leading-relaxed">
+                        Transform your classroom management with our powerful tracking system designed for educators who care about student growth.
+                    </p>
+                    
+                    <!-- Feature Highlights -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                        <div class="flex items-center p-3 bg-purple-50 rounded-lg">
+                            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-chart-line text-purple-600"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-800">Real-time Analytics</span>
+                        </div>
+                        
+                        <div class="flex items-center p-3 bg-yellow-50 rounded-lg">
+                            <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-users text-yellow-600"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-800">Student Management</span>
+                        </div>
+                        
+                        <div class="flex items-center p-3 bg-green-50 rounded-lg">
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-trophy text-green-600"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-800">Achievement Tracking</span>
+                        </div>
+                        
+                        <div class="flex items-center p-3 bg-blue-50 rounded-lg">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <i class="fas fa-mobile-alt text-blue-600"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-800">Mobile Ready</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Get Started Button -->
+                <div class="mt-auto">
+                    <button id="welcomeGetStartedBtn" class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center group">
+                        <span class="text-lg">Get Started</span>
+                        <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                    
+                    <!-- Subtle hint -->
+                    <p class="text-center text-gray-500 text-sm mt-3">
+                        Let's make learning more engaging! 🎯
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="flex flex-col md:flex-row min-h-screen">
     <!-- Mobile Header (visible on small screens) -->
     <div class="md:hidden bg-white shadow-sm p-4 flex items-center justify-between">
@@ -3754,6 +3858,9 @@
                 return;
             }
             
+            // Store user reference for welcome modal
+            window.currentDashboardUser = user;
+            
             // Ensure Firebase is initialized before proceeding
             const checkFirebase = setInterval(() => {
                 if (window.firebaseDB && window.firebaseFirestore) {
@@ -3769,6 +3876,11 @@
                     updateWelcomeMessage();
                     initializeFirstAdmin(); // Initialize first admin if needed
                     setupAdminTabs(); // Setup admin tabs functionality
+                    
+                    // Check and show welcome modal after everything is loaded
+                    setTimeout(() => {
+                        checkAndShowWelcomeModal();
+                    }, 1500); // Give time for everything to settle but not too long
                 }, 100);
                 }
             }, 100);
@@ -4805,6 +4917,115 @@
 
     // Make refreshDashboard globally accessible
     window.refreshDashboard = refreshDashboard;
+
+    // Welcome Modal Functions
+    function showWelcomeModal() {
+        const modal = document.getElementById('welcomeModal');
+        const modalContent = document.getElementById('welcomeModalContent');
+        
+        if (modal && modalContent) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Animate modal appearance
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 50);
+            
+            // Store that modal has been shown
+            localStorage.setItem('welcomeModalShown', 'true');
+        }
+    }
+
+    function hideWelcomeModal() {
+        const modal = document.getElementById('welcomeModal');
+        const modalContent = document.getElementById('welcomeModalContent');
+        
+        if (modal && modalContent) {
+            // Animate modal disappearance
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+    }
+
+    // Check if welcome modal should be shown
+    function checkAndShowWelcomeModal() {
+        const hasBeenShown = localStorage.getItem('welcomeModalShown');
+        const currentUser = window.currentDashboardUser || window.firebaseAuth?.currentUser;
+        
+        console.log('=== WELCOME MODAL DEBUG ===');
+        console.log('hasBeenShown:', hasBeenShown);
+        console.log('currentUser:', currentUser);
+        console.log('window.currentDashboardUser:', window.currentDashboardUser);
+        console.log('window.firebaseAuth:', window.firebaseAuth);
+        console.log('window.firebaseAuth?.currentUser:', window.firebaseAuth?.currentUser);
+        console.log('Modal element exists:', !!document.getElementById('welcomeModal'));
+        
+        // Show modal if it hasn't been shown before and user is logged in
+        if (!hasBeenShown && currentUser) {
+            console.log('✅ CONDITIONS MET: Showing welcome modal...');
+            showWelcomeModal();
+            return true; // Return success
+        } else {
+            console.log('❌ CONDITIONS NOT MET:', { 
+                hasBeenShown: !!hasBeenShown, 
+                hasUser: !!currentUser,
+                reason: hasBeenShown ? 'Modal already shown' : 'No user found'
+            });
+            return false; // Return failure
+        }
+        console.log('=== END WELCOME MODAL DEBUG ===');
+    }
+
+    // Manual trigger function for testing (can be called from console)
+    window.triggerWelcomeModal = function(force = false) {
+        console.log('🎯 Manual trigger for welcome modal (force=' + force + ')');
+        if (force) {
+            localStorage.removeItem('welcomeModalShown');
+            console.log('🗑️ Modal flag cleared due to force trigger');
+        }
+        return checkAndShowWelcomeModal();
+    };
+
+    // Add event listeners for welcome modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const getStartedBtn = document.getElementById('welcomeGetStartedBtn');
+        const modal = document.getElementById('welcomeModal');
+        
+        if (getStartedBtn) {
+            getStartedBtn.addEventListener('click', hideWelcomeModal);
+        }
+        
+        // Close modal when clicking outside
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    hideWelcomeModal();
+                }
+            });
+        }
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('welcomeModal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    hideWelcomeModal();
+                }
+            }
+        });
+    });
+
+    // Make welcome modal functions globally accessible
+    window.showWelcomeModal = showWelcomeModal;
+    window.hideWelcomeModal = hideWelcomeModal;
+    window.checkAndShowWelcomeModal = checkAndShowWelcomeModal;
 
 </script>
 

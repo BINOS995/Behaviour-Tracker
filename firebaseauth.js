@@ -81,7 +81,7 @@
         showMessage('login is successful', 'signInMessage');
         const user=userCredential.user;
         localStorage.setItem('loggedInUserId', user.uid);
-        window.location.href='dashboard.html?v=6';
+        window.location.href='dashboard.html?v=7';
     })
     .catch((error)=>{
         const errorCode=error.code;

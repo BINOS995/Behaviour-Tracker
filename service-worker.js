@@ -1,6 +1,6 @@
-const CACHE_NAME = 'behaviour-tracker-v6';
-const STATIC_CACHE_NAME = 'behaviour-tracker-static-v6';
-const DYNAMIC_CACHE_NAME = 'behaviour-tracker-dynamic-v6';
+const CACHE_NAME = 'behaviour-tracker-v7';
+const STATIC_CACHE_NAME = 'behaviour-tracker-static-v7';
+const DYNAMIC_CACHE_NAME = 'behaviour-tracker-dynamic-v7';
 
 // Assets to cache immediately
 const STATIC_ASSETS = [

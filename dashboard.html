@@ -104,6 +104,7 @@
         // Make Firebase services globally available
         window.firebaseApp = app;
         window.firebaseAuth = auth;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
         window.firebaseDB = db;
         window.firebaseFirestore = {
             collection,
@@ -126,9 +127,37 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 try {
+                    // Ensure a user profile exists in Firestore (used by Admin user lists)
+                    try {
+                        const displayName = String(user.displayName || '').trim();
+                        let firstName = '';
+                        let lastName = '';
+                        if (displayName) {
+                            const parts = displayName.split(/\s+/).filter(Boolean);
+                            firstName = parts[0] || '';
+                            lastName = parts.slice(1).join(' ');
+                        } else if (user.email) {
+                            firstName = String(user.email).split('@')[0] || '';
+                        }
+
+                        await setDoc(
+                            doc(db, 'users', user.uid),
+                            {
+                                uid: user.uid,
+                                email: user.email || '',
+                                firstName,
+                                lastName
+                            },
+                            { merge: true }
+                        );
+                    } catch (profileError) {
+                        console.error('Error ensuring user profile:', profileError);
+                    }
+
                     // Check admin status
                     const adminDoc = await getDoc(doc(db, 'admins', user.uid));
                     window.isAdmin = adminDoc.exists();
+                    window.dispatchEvent(new CustomEvent('admin-status-changed', { detail: { isAdmin: window.isAdmin } }));
                     
                     // Show/hide admin button based on admin status
                     const adminBtn = document.getElementById('adminBtn');
@@ -138,7 +167,9 @@
                     
                     // Load admin list if current user is admin
                     if (window.isAdmin) {
-                        loadAdminList();
+                        if (typeof window.loadAdminList === 'function') {
+                            window.loadAdminList();
+                        }
                         
                         // Set up real-time listener for admin changes
                         if (adminListener) {
@@ -148,7 +179,9 @@
                         adminListener = onSnapshot(collection(db, 'admins'), (snapshot) => {
                             // Reload admin list when changes occur
                             if (window.isAdmin) {
-                                loadAdminList();
+                                if (typeof window.loadAdminList === 'function') {
+                                    window.loadAdminList();
+                                }
                             }
                         });
                     }
@@ -197,8 +230,8 @@
             
             // Test Firestore connectivity
             const testConnection = await safeFirestoreOperation(async () => {
-                const testRef = window.firebaseFirestore.collection(window.firebaseDB, 'test-connection');
-                await window.firebaseFirestore.getDocs(testRef);
+                const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
+                await window.firebaseFirestore.getDocs(classesRef);
                 return true;
             }, false);
             
@@ -749,6 +782,52 @@
     // Global variables
     let currentClass = '';
     let adminClassPasswords = {};
+    let allowedClassesForCurrentUser = null;
+    let userClassesAccessListener = null;
+    
+    async function setupUserClassAccess() {
+        try {
+            const user = window.firebaseAuth?.currentUser;
+            if (!user) return;
+            
+            if (userClassesAccessListener) {
+                userClassesAccessListener();
+                userClassesAccessListener = null;
+            }
+            
+            if (window.isAdmin) {
+                allowedClassesForCurrentUser = null;
+                return;
+            }
+            
+            const email = String(user.email || '').trim();
+            if (!email) {
+                allowedClassesForCurrentUser = [];
+                return;
+            }
+            
+            allowedClassesForCurrentUser = null;
+            const userClassesRef = window.firebaseFirestore.doc(window.firebaseDB, 'userClasses', email);
+            userClassesAccessListener = window.firebaseFirestore.onSnapshot(userClassesRef, (docSnap) => {
+                const classes = docSnap.exists() ? (docSnap.data().classes || []) : [];
+                allowedClassesForCurrentUser = classes
+                    .map((c) => String(c || '').trim())
+                    .filter(Boolean);
+                loadClasses();
+            }, (error) => {
+                console.error('Error loading allocated classes:', error);
+                allowedClassesForCurrentUser = [];
+                loadClasses();
+            });
+        } catch (error) {
+            console.error('Error setting up user class access:', error);
+            allowedClassesForCurrentUser = [];
+        }
+    }
+    
+    window.addEventListener('admin-status-changed', () => {
+        setupUserClassAccess().then(() => loadClasses());
+    });
     
     // Mobile menu toggle
     document.addEventListener('DOMContentLoaded', function() {
@@ -1036,18 +1115,14 @@
                 <!-- User Class Allocation Section -->
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">User Class Allocation</h3>
-                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <i class="fas fa-info-circle text-yellow-400 text-xl"></i>
-                            </div>
-                            <div class="ml-3">
-                                <h4 class="text-sm font-medium text-yellow-800">Feature Coming Soon</h4>
-                                <p class="text-sm text-yellow-700 mt-1">
-                                    Currently, all new users automatically have access to all classes. 
-                                    Advanced user-specific class allocation will be implemented in a future update.
-                                </p>
-                            </div>
+                    
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-semibold text-gray-800">Signed-up Users</h4>
+                            <span id="signedUpUsersCount" class="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">0</span>
+                        </div>
+                        <div id="signedUpUsersList" class="space-y-2">
+                            <div class="text-gray-600 text-sm">Loading users...</div>
                         </div>
                     </div>
                     <div class="mb-4">
@@ -1057,13 +1132,13 @@
                         </select>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Available Classes (Auto-Assigned)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Available Classes</label>
                         <div id="classCheckboxes" class="space-y-2">
-                            <p class="text-gray-700 italic">All users currently have access to all classes by default</p>
+                            <p class="text-gray-700 italic">Select a user to load class access</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="saveUserClassAllocation()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 opacity-50 cursor-not-allowed" disabled>
+                        <button id="saveAllocationBtn" onclick="saveUserClassAllocation()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
                             <i class="fas fa-save mr-2"></i>Save Allocation
                         </button>
                         <button onclick="loadUsers()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
@@ -1116,6 +1191,20 @@
             const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
             adminClassPasswords = {};
             
+            if (!window.isAdmin && allowedClassesForCurrentUser === null) {
+                requestAnimationFrame(() => {
+                    updateSidebarNavigation();
+                    updateClassesList();
+                    updateTabContentWithClasses();
+                    updateDashboardStats();
+                });
+                return;
+            }
+            
+            const allowedSet = !window.isAdmin
+                ? new Set((allowedClassesForCurrentUser || []).map((c) => String(c).trim().toLowerCase()).filter(Boolean))
+                : null;
+            
             // Clean up existing listener
             if (classesListener) {
                 classesListener();
@@ -1154,11 +1243,13 @@
                         const classData = doc.data();
                         const className = String(doc.id || '').trim();
                         
-                        // All users see all classes
-                        adminClassPasswords[className] = {
-                            password: classData.password
-                        };
-                        console.log(`✓ Found class: "${className}" with password: ${classData.password ? '✅' : '❌'}`);
+                        const key = className.toLowerCase();
+                        if (!window.isAdmin && allowedSet && !allowedSet.has(key)) {
+                            return;
+                        }
+                        
+                        adminClassPasswords[className] = { password: classData.password };
+                        console.log(`✓ Loaded class: "${className}"`);
                     });
                     
                     console.log(`✅ Total classes loaded: ${Object.keys(adminClassPasswords).length}`);
@@ -1168,6 +1259,7 @@
                 requestAnimationFrame(() => {
                     updateClassesList();
                     updateTabContentWithClasses();
+                    updateSidebarNavigation();
                 });
                     
             }, (error) => {
@@ -1330,6 +1422,8 @@
                 console.log(`Real-time users update: ${snapshot.size} users`);
                 
                 const userSelect = document.getElementById('userEmailSelect');
+                const signedUpUsersList = document.getElementById('signedUpUsersList');
+                const signedUpUsersCount = document.getElementById('signedUpUsersCount');
                 if (!userSelect) {
                     console.warn('userEmailSelect element not found, skipping user update');
                     return;
@@ -1339,32 +1433,94 @@
                         
                         if (snapshot.empty) {
                             userSelect.innerHTML = '<option value="">No users found</option>';
+                    if (signedUpUsersList) {
+                        signedUpUsersList.innerHTML = '<div class="text-gray-600 text-sm">No users found</div>';
+                    }
+                    if (signedUpUsersCount) {
+                        signedUpUsersCount.textContent = '0';
+                    }
                             return;
                         }
-                        
-                        let userCount = 0;
-                        
-                        snapshot.forEach(doc => {
-                            const userData = doc.data();
-                            const userEmail = doc.id; // Document ID is the email
-                            
-                            // Use the data from the document, but ensure we have the required fields
-                            const email = userData.email || userEmail;
-                            const firstName = userData.firstName || '';
-                            const lastName = userData.lastName || '';
-                            
-                            if (email && firstName && lastName) {
-                                const option = document.createElement('option');
-                                option.value = email;
-                                option.textContent = `${firstName} ${lastName} (${email})`;
-                                userSelect.appendChild(option);
-                                userCount++;
-                            }
-                        });
-                        
-                        if (userCount === 0) {
-                            userSelect.innerHTML = '<option value="">No valid users found</option>';
-                        }
+
+                const users = [];
+                snapshot.forEach((docSnap) => {
+                    const userData = docSnap.data() || {};
+                    const fallbackId = String(docSnap.id || '').trim();
+                    const emailFromField = String(userData.email || '').trim();
+                    const emailFromId = fallbackId.includes('@') ? fallbackId : '';
+                    const email = (emailFromField || emailFromId).trim();
+                    const firstName = String(userData.firstName || '').trim();
+                    const lastName = String(userData.lastName || '').trim();
+
+                    if (!email) return;
+
+                    users.push({
+                        email,
+                        firstName,
+                        lastName
+                    });
+                });
+
+                users.sort((a, b) => {
+                    const nameA = (a.firstName || '').toLowerCase();
+                    const nameB = (b.firstName || '').toLowerCase();
+                    if (nameA !== nameB) return nameA.localeCompare(nameB);
+                    return a.email.toLowerCase().localeCompare(b.email.toLowerCase());
+                });
+
+                if (users.length === 0) {
+                    userSelect.innerHTML = '<option value="">No valid users found</option>';
+                    if (signedUpUsersList) {
+                        signedUpUsersList.innerHTML = '<div class="text-gray-600 text-sm">No valid users found</div>';
+                    }
+                    if (signedUpUsersCount) {
+                        signedUpUsersCount.textContent = '0';
+                    }
+                    return;
+                }
+
+                for (const user of users) {
+                    const option = document.createElement('option');
+                    option.value = user.email;
+                    const fullName = `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`.trim();
+                    option.textContent = fullName ? `${fullName} (${user.email})` : user.email;
+                    userSelect.appendChild(option);
+                }
+
+                if (signedUpUsersCount) {
+                    signedUpUsersCount.textContent = String(users.length);
+                }
+
+                if (signedUpUsersList) {
+                    signedUpUsersList.innerHTML = '';
+                    for (const user of users) {
+                        const row = document.createElement('div');
+                        row.className = 'flex items-center justify-between gap-3 p-2 rounded-lg bg-gray-50';
+
+                        const left = document.createElement('div');
+                        left.className = 'min-w-0';
+
+                        const nameEl = document.createElement('div');
+                        nameEl.className = 'text-sm font-medium text-gray-900 truncate';
+                        nameEl.textContent = user.firstName ? user.firstName : 'Unknown';
+
+                        const emailEl = document.createElement('div');
+                        emailEl.className = 'text-xs text-gray-600 truncate';
+                        emailEl.textContent = user.email;
+
+                        left.appendChild(nameEl);
+                        left.appendChild(emailEl);
+
+                        const badge = document.createElement('div');
+                        badge.className = 'text-xs text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded-full whitespace-nowrap';
+                        badge.textContent = 'User';
+
+                        row.appendChild(left);
+                        row.appendChild(badge);
+
+                        signedUpUsersList.appendChild(row);
+                    }
+                }
                         
                         // Remove existing event listener to prevent duplicates
                         userSelect.removeEventListener('change', loadUserClassCheckboxes);
@@ -1373,6 +1529,12 @@
                     }, (error) => {
                         console.error('Error in users listener:', error);
                         userSelect.innerHTML = '<option value="">Error loading users</option>';
+                        if (signedUpUsersList) {
+                            signedUpUsersList.innerHTML = '<div class="text-red-600 text-sm">Error loading users</div>';
+                        }
+                        if (signedUpUsersCount) {
+                            signedUpUsersCount.textContent = '0';
+                        }
                     });
                     
                 } else {
@@ -1597,7 +1759,9 @@
         console.log('Found classes:', classes);
         
         if (classes.length === 0) {
-            classesList.innerHTML = '<p class="text-gray-500">No classes created yet. Add a class above to get started.</p>';
+            classesList.innerHTML = window.isAdmin
+                ? '<p class="text-gray-500">No classes created yet. Add a class above to get started.</p>'
+                : '<p class="text-gray-500">No classes allocated to your account yet.</p>';
             console.log('No classes to display');
             return;
         }
@@ -1665,6 +1829,13 @@
             addBtn.disabled = true;
 
             const classRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className);
+            const existingClass = await window.firebaseFirestore.getDoc(classRef);
+            if (existingClass.exists()) {
+                alert(`A class named "${className}" already exists. Please choose a different name.`);
+                addBtn.innerHTML = originalText;
+                addBtn.disabled = false;
+                return;
+            }
             await window.firebaseFirestore.setDoc(classRef, {
                 password: password,
                 createdAt: new Date().toISOString(),
@@ -3281,22 +3452,20 @@
                         loadAdminList();
                         console.log('Admin list loaded');
                         
-                        // Load user data for admin panel
-                        if (isAdmin) {
-                            // Ensure admin elements exist before loading data
-                            const waitForElements = () => {
-                                const adminList = document.getElementById('adminList');
-                                const classesList = document.getElementById('classesList');
-                                
-                                if (adminList && classesList) {
-                                    loadUsers();
-                                    loadUserClassAllocations();
-                                } else {
-                                    requestAnimationFrame(waitForElements);
-                                }
-                            };
-                            requestAnimationFrame(waitForElements);
-                        }
+                        // Load user data for admin panel (wait for DOM elements to exist)
+                        const waitForElements = () => {
+                            const adminList = document.getElementById('adminList');
+                            const classesList = document.getElementById('classesList');
+                            const userEmailSelect = document.getElementById('userEmailSelect');
+                            
+                            if (adminList && classesList && userEmailSelect) {
+                                loadUsers();
+                                loadUserClassAllocations();
+                            } else {
+                                requestAnimationFrame(waitForElements);
+                            }
+                        };
+                        requestAnimationFrame(waitForElements);
                     }, 50); // Reduced delay for faster loading
                 });
             }
@@ -3647,15 +3816,21 @@
             // Find user by email
             const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
             const usersSnapshot = await window.firebaseFirestore.getDocs(usersRef);
-            let targetUser = null;
+            const matches = [];
             
             usersSnapshot.forEach((doc) => {
                 const userData = doc.data();
                 if (userData.email === email) {
-                    targetUser = { uid: doc.id, ...userData };
+                    matches.push({ docId: doc.id, ...userData });
                 }
             });
             
+            const targetUser =
+                matches.find((u) => String(u.uid || '').trim() && String(u.uid).trim() === String(u.docId).trim())
+                || matches.find((u) => !String(u.docId || '').includes('@'))
+                || matches[0]
+                || null;
+
             if (!targetUser) {
                 alert('User not found with this email address');
                 return;
@@ -3663,7 +3838,7 @@
             
             // Grant admin privileges
             await window.firebaseFirestore.setDoc(
-                window.firebaseFirestore.doc(window.firebaseDB, 'admins', targetUser.uid),
+                window.firebaseFirestore.doc(window.firebaseDB, 'admins', targetUser.docId),
                 {
                     email: targetUser.email,
                     firstName: targetUser.firstName,
@@ -3850,44 +4025,46 @@
     
     // Event listeners
     document.addEventListener('DOMContentLoaded', () => {
-        // Check if user is authenticated
-        const unsubscribe = window.firebaseAuth.onAuthStateChanged((user) => {
-            if (!user) {
-                // Redirect to login page if not authenticated
-                window.location.href = 'index.html';
-                return;
-            }
+        const waitForAuth = setInterval(() => {
+            if (!window.firebaseAuth || !window.firebaseOnAuthStateChanged) return;
+            clearInterval(waitForAuth);
             
-            // Store user reference for welcome modal
-            window.currentDashboardUser = user;
-            
-            // Ensure Firebase is initialized before proceeding
-            const checkFirebase = setInterval(() => {
-                if (window.firebaseDB && window.firebaseFirestore) {
-                    clearInterval(checkFirebase);
-                    loadClasses();
-                    
-                    // Load dashboard by default
-                loadContent('Dashboard');
-                
-                // Set up event listeners after ensuring elements exist
-                setTimeout(() => {
-                    setupClassButtons();
-                    updateWelcomeMessage();
-                    initializeFirstAdmin(); // Initialize first admin if needed
-                    setupAdminTabs(); // Setup admin tabs functionality
-                    
-                    // Check and show welcome modal after everything is loaded
-                    setTimeout(() => {
-                        checkAndShowWelcomeModal();
-                    }, 1500); // Give time for everything to settle but not too long
-                }, 100);
+            // Check if user is authenticated
+            const unsubscribe = window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
+                if (!user) {
+                    window.location.href = 'index.html';
+                    return;
                 }
-            }, 100);
-            
-            // Clean up the auth listener
-            setTimeout(() => unsubscribe(), 1000);
-        });
+                
+                // Store user reference for welcome modal
+                window.currentDashboardUser = user;
+                
+                // Ensure Firebase is initialized before proceeding
+                const checkFirebase = setInterval(() => {
+                    if (window.firebaseDB && window.firebaseFirestore) {
+                        clearInterval(checkFirebase);
+                        setupUserClassAccess().then(() => loadClasses());
+                        
+                        // Load dashboard by default
+                        loadContent('Dashboard');
+                        
+                        // Set up event listeners after ensuring elements exist
+                        setTimeout(() => {
+                            setupClassButtons();
+                            updateWelcomeMessage();
+                            initializeFirstAdmin();
+                            setupAdminTabs();
+                            
+                            setTimeout(() => {
+                                checkAndShowWelcomeModal();
+                            }, 1500);
+                        }, 100);
+                    }
+                }, 100);
+                
+                setTimeout(() => unsubscribe(), 1000);
+            });
+        }, 50);
         
         const submitPassword = document.getElementById('submitPassword');
         if (submitPassword) submitPassword.addEventListener('click', checkPassword);
@@ -3916,25 +4093,7 @@
             });
         }
 
-        // Listen for real-time updates
-        if (window.firebaseFirestore) {
-            const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
-            window.firebaseFirestore.onSnapshot(classesRef, (snapshot) => {
-                adminClassPasswords = {};
-                snapshot.forEach(doc => {
-                    const classData = doc.data();
-                    adminClassPasswords[doc.id] = {
-                    password: classData.password
-                };
-                });
-                updateClassesList();
-                updateTabContentWithClasses();
-                
-                if (document.querySelector('[data-content="Dashboard"]')) {
-                    updateDashboardStats();
-                }
-            });
-        }
+        // Real-time class updates are handled inside loadClasses()
     });
 
     // Performance Chart Functions
@@ -3962,6 +4121,10 @@
                     return;
                 }
 
+                const allowedSet = !window.isAdmin
+                    ? new Set((allowedClassesForCurrentUser || []).map((c) => String(c).trim().toLowerCase()).filter(Boolean))
+                    : null;
+
                 let chartData = [];
                 let totalLearners = 0;
                 let totalPoints = 0;
@@ -3969,7 +4132,13 @@
                 let mostActiveClass = { name: 'None', learnerCount: 0 };
 
                 // Process each class with real-time learners data
-                const classPromises = classesSnapshot.docs.map(async (classDoc) => {
+                const visibleClassDocs = classesSnapshot.docs.filter((classDoc) => {
+                    if (window.isAdmin) return true;
+                    const name = String(classDoc.id || '').trim().toLowerCase();
+                    return allowedSet ? allowedSet.has(name) : false;
+                });
+
+                const classPromises = visibleClassDocs.map(async (classDoc) => {
                     const className = classDoc.id;
                     const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
                     
@@ -4028,7 +4197,7 @@
                 // Update summary
                 const avgPointsOverall = totalLearners > 0 ? Math.round(totalPoints / totalLearners) : 0;
                 updateChartSummary(
-                    classesSnapshot.size,
+                    window.isAdmin ? classesSnapshot.size : visibleClassDocs.length,
                     avgPointsOverall,
                     highestPoints,
                     mostActiveClass.name
@@ -4176,8 +4345,15 @@
                     return;
                 }
 
+                const allowedSet = !window.isAdmin
+                    ? new Set((allowedClassesForCurrentUser || []).map((c) => String(c).trim().toLowerCase()).filter(Boolean))
+                    : null;
+
                 classesSnapshot.forEach(doc => {
                     const className = doc.id;
+                    if (!window.isAdmin && allowedSet && !allowedSet.has(String(className).toLowerCase())) {
+                        return;
+                    }
                     const option = document.createElement('option');
                     option.value = className;
                     option.textContent = className;
@@ -4228,6 +4404,10 @@
                     return;
                 }
 
+                const allowedSet = !window.isAdmin
+                    ? new Set((allowedClassesForCurrentUser || []).map((c) => String(c).trim().toLowerCase()).filter(Boolean))
+                    : null;
+
                 let totalStudents = 0;
                 let totalPoints = 0;
                 let classesProcessed = 0;
@@ -4237,6 +4417,9 @@
                 
                 classesSnapshot.docs.forEach((classDoc) => {
                     const className = classDoc.id;
+                    if (!window.isAdmin && allowedSet && !allowedSet.has(String(className).toLowerCase())) {
+                        return;
+                    }
                     const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
                     
                     const learnerListener = window.firebaseFirestore.onSnapshot(learnersRef, (learnersSnapshot) => {
@@ -4259,7 +4442,11 @@
                         const totalStudentsEl = document.getElementById('totalStudents');
                         const totalPointsEl = document.getElementById('totalPoints');
 
-                        if (totalClassesEl) totalClassesEl.textContent = classesSnapshot.size;
+                        if (totalClassesEl) {
+                            totalClassesEl.textContent = window.isAdmin
+                                ? String(classesSnapshot.size)
+                                : String(allowedSet ? allowedSet.size : 0);
+                        }
                         if (totalStudentsEl) totalStudentsEl.textContent = totalStudents;
                         if (totalPointsEl) totalPointsEl.textContent = totalPoints;
                         
@@ -4282,23 +4469,16 @@
         }
     }
 
-    // Enhanced loadClasses to include chart updates
+    // Wrap class loading so charts/stats stay in sync without breaking the real loader
+    const loadClassesData = loadClasses;
     window.loadClasses = async function() {
         try {
+            await loadClassesData();
             populateClassSelector();
             updatePerformanceChart();
             updateDashboardStats();
         } catch (error) {
             console.warn('Error in loadClasses:', error);
-            // Handle permission errors gracefully
-            if (error.code === 'permission-denied') {
-                console.warn('Permission denied - user may not be authenticated');
-                // Try to re-authenticate or show appropriate message
-                const auth = window.firebaseAuth.getAuth();
-                if (!auth.currentUser) {
-                    console.warn('No authenticated user found');
-                }
-            }
         }
     };
 

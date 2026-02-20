@@ -42,7 +42,7 @@
                  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
                  img-src 'self' data: https:;
                  style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
-                 font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com;">"
+                 font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com;">
     <script>
     window.addEventListener('error', function(e) {
         console.error('JavaScript error detected:', e.message, '\nLine:', e.lineno, '\nColumn:', e.colno, '\nFile:', e.filename);
@@ -86,7 +86,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBNGdPWISw803XD8xVo0RyCGoGpNX8o_jM",
@@ -99,7 +99,10 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const db = initializeFirestore(app, {
+            experimentalAutoDetectLongPolling: true,
+            useFetchStreams: false
+        });
 
         // Make Firebase services globally available
         window.firebaseApp = app;
@@ -120,8 +123,9 @@
         // Create a collection reference for best learners
         window.bestLearnersCollection = collection(db, 'bestLearners');
 
-        // Initialize admin status
+        // Initialize role flags
         window.isAdmin = false;
+        window.isPrincipal = false;
         let adminListener = null;
         
         onAuthStateChanged(auth, async (user) => {
@@ -150,19 +154,34 @@
                             },
                             { merge: true }
                         );
+
+                        window.currentUserProfile = {
+                            email: user.email || '',
+                            firstName,
+                            lastName
+                        };
                     } catch (profileError) {
                         console.error('Error ensuring user profile:', profileError);
                     }
 
-                    // Check admin status
+                    // Check roles
                     const adminDoc = await getDoc(doc(db, 'admins', user.uid));
                     window.isAdmin = adminDoc.exists();
-                    window.dispatchEvent(new CustomEvent('admin-status-changed', { detail: { isAdmin: window.isAdmin } }));
+
+                    const principalDoc = await getDoc(doc(db, 'principals', user.uid));
+                    window.isPrincipal = principalDoc.exists() || window.isAdmin;
+
+                    window.dispatchEvent(new CustomEvent('admin-status-changed', { detail: { isAdmin: window.isAdmin, isPrincipal: window.isPrincipal } }));
                     
                     // Show/hide admin button based on admin status
                     const adminBtn = document.getElementById('adminBtn');
                     if (adminBtn) {
                         adminBtn.style.display = window.isAdmin ? 'flex' : 'none';
+                    }
+
+                    const principalBtn = document.getElementById('principalBtn');
+                    if (principalBtn) {
+                        principalBtn.style.display = window.isPrincipal ? 'flex' : 'none';
                     }
                     
                     // Load admin list if current user is admin
@@ -188,6 +207,7 @@
                 } catch (error) {
                     console.error('Error checking admin status:', error);
                     window.isAdmin = false;
+                    window.isPrincipal = false;
                 }
             } else {
                 // Clean up listener when user logs out
@@ -195,6 +215,12 @@
                     adminListener();
                     adminListener = null;
                 }
+                window.isAdmin = false;
+                window.isPrincipal = false;
+                const adminBtn = document.getElementById('adminBtn');
+                if (adminBtn) adminBtn.style.display = 'none';
+                const principalBtn = document.getElementById('principalBtn');
+                if (principalBtn) principalBtn.style.display = 'none';
             }
         });
     </script>
@@ -672,6 +698,14 @@
                     Manage users and system settings
                 </div>
             </button>
+
+            <button id="principalBtn" class="flex items-center justify-center w-full px-4 py-3 mb-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600 relative group" style="display:none;" data-content="Principal">
+                <i class="fas fa-chart-line text-lg mr-2"></i>
+                <span class="text-sm font-medium">Principal</span>
+                <div class="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    School-wide analytics
+                </div>
+            </button>
             
             <div class="mb-4">
                 <button id="classesDropdownBtn" class="flex items-center justify-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg relative group">
@@ -754,28 +788,23 @@
 
     <!-- Main Content -->
     <main class="flex-1 p-4 md:p-6 lg:p-8">
+        <div id="globalNoticeBanner" class="hidden max-w-7xl mx-auto mb-4">
+            <div id="globalNoticeInner" class="w-full rounded-xl border p-4 flex gap-3 items-start">
+                <div class="mt-0.5">
+                    <i id="globalNoticeIcon" class="fas fa-info-circle"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div id="globalNoticeTitle" class="font-semibold text-gray-900"></div>
+                    <div id="globalNoticeMessage" class="text-sm text-gray-700 whitespace-pre-wrap"></div>
+                    <div id="globalNoticeMeta" class="text-xs text-gray-500 mt-2"></div>
+                </div>
+                <button id="dismissGlobalNoticeBtn" class="text-gray-500 hover:text-gray-700 px-2" aria-label="Dismiss notice">×</button>
+            </div>
+        </div>
         <div id="content" class="max-w-7xl mx-auto">
             <!-- Content will be dynamically loaded here -->
         </div>
     </main>
-</div>
-
-<!-- Password Modal -->
-<div id="passwordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white p-8 rounded-xl max-w-md w-full mx-4">
-        <h3 class="text-xl font-bold mb-4">Enter Class Password</h3>
-        <div class="relative">
-            <input type="password" id="classPasswordInput" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 pr-10 text-black" placeholder="Enter password">
-            <button type="button" class="absolute right-2 top-2 text-gray-500 hover:text-gray-700" onclick="toggleClassPasswordVisibility()">
-                <i class="fas fa-eye" id="passwordToggleIcon"></i>
-            </button>
-        </div>
-        <div class="flex gap-4">
-            <button id="submitPassword" class="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600">Submit</button>
-            <button id="cancelPassword" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400">Cancel</button>
-        </div>
-        <p id="passwordError" class="text-red-500 mt-2 hidden">Incorrect password. Please try again.</p>
-    </div>
 </div>
 
 <script>
@@ -784,6 +813,190 @@
     let adminClassPasswords = {};
     let allowedClassesForCurrentUser = null;
     let userClassesAccessListener = null;
+    window.currentUserProfile = null;
+    let globalNoticeListener = null;
+    let currentGlobalNoticeUpdatedAt = null;
+
+    function hasSchoolWideAccess() {
+        return !!(window.isAdmin || window.isPrincipal);
+    }
+
+    function getCurrentUserDisplayName() {
+        const profile = window.currentUserProfile || {};
+        const firstName = String(profile.firstName || '').trim();
+        const lastName = String(profile.lastName || '').trim();
+        const email = String(profile.email || window.firebaseAuth?.currentUser?.email || '').trim();
+        const fullName = `${firstName}${lastName ? ' ' + lastName : ''}`.trim();
+        return fullName || firstName || email || 'Unknown User';
+    }
+
+    function updateGlobalNoticeStatusText(notice) {
+        const statusEl = document.getElementById('currentNoticeStatus');
+        if (!statusEl) return;
+        if (!notice || !notice.active || !notice.message) {
+            statusEl.textContent = 'No active notice.';
+            return;
+        }
+        const when = notice.updatedAt ? new Date(notice.updatedAt).toLocaleString() : '';
+        statusEl.textContent = `Active: ${when}`.trim();
+    }
+
+    function renderGlobalNotice(notice) {
+        const banner = document.getElementById('globalNoticeBanner');
+        const inner = document.getElementById('globalNoticeInner');
+        const icon = document.getElementById('globalNoticeIcon');
+        const titleEl = document.getElementById('globalNoticeTitle');
+        const messageEl = document.getElementById('globalNoticeMessage');
+        const metaEl = document.getElementById('globalNoticeMeta');
+
+        if (!banner || !inner || !icon || !titleEl || !messageEl || !metaEl) return;
+
+        if (!notice || !notice.active || !String(notice.message || '').trim()) {
+            banner.classList.add('hidden');
+            currentGlobalNoticeUpdatedAt = null;
+            updateGlobalNoticeStatusText(notice);
+            return;
+        }
+
+        const updatedAt = String(notice.updatedAt || '').trim();
+        currentGlobalNoticeUpdatedAt = updatedAt || null;
+
+        const dismissedAt = String(localStorage.getItem('dismissedGlobalNoticeUpdatedAt') || '').trim();
+        if (dismissedAt && updatedAt && dismissedAt === updatedAt) {
+            banner.classList.add('hidden');
+            updateGlobalNoticeStatusText(notice);
+            return;
+        }
+
+        const severity = String(notice.severity || 'info').toLowerCase();
+        const styleMap = {
+            info: { border: 'border-blue-200', bg: 'bg-blue-50', icon: 'fa-info-circle text-blue-600' },
+            warning: { border: 'border-yellow-200', bg: 'bg-yellow-50', icon: 'fa-triangle-exclamation text-yellow-700' },
+            urgent: { border: 'border-red-200', bg: 'bg-red-50', icon: 'fa-circle-exclamation text-red-600' },
+            success: { border: 'border-green-200', bg: 'bg-green-50', icon: 'fa-circle-check text-green-600' }
+        };
+        const s = styleMap[severity] || styleMap.info;
+
+        inner.className = `w-full rounded-xl border p-4 flex gap-3 items-start ${s.border} ${s.bg}`;
+        icon.className = `fas ${s.icon}`;
+
+        const title = String(notice.title || '').trim();
+        titleEl.textContent = title || 'Important Notice';
+        messageEl.textContent = String(notice.message || '').trim();
+
+        const metaParts = [];
+        if (notice.updatedAt) metaParts.push(new Date(notice.updatedAt).toLocaleString());
+        if (notice.createdBy) metaParts.push(String(notice.createdBy));
+        metaEl.textContent = metaParts.join(' • ');
+
+        banner.classList.remove('hidden');
+        updateGlobalNoticeStatusText(notice);
+    }
+
+    async function setupGlobalNoticeListener() {
+        try {
+            if (!window.firebaseDB || !window.firebaseFirestore) return;
+            if (globalNoticeListener) {
+                globalNoticeListener();
+                globalNoticeListener = null;
+            }
+
+            const noticeRef = window.firebaseFirestore.doc(window.firebaseDB, 'notices', 'current');
+            globalNoticeListener = window.firebaseFirestore.onSnapshot(
+                noticeRef,
+                (docSnap) => {
+                    const notice = docSnap.exists() ? (docSnap.data() || {}) : null;
+                    renderGlobalNotice(notice);
+                },
+                () => {
+                    renderGlobalNotice(null);
+                }
+            );
+        } catch (error) {
+            console.warn('Error setting up notice listener:', error);
+        }
+    }
+
+    async function publishGlobalNotice() {
+        if (!hasSchoolWideAccess()) {
+            alert('Only principals and admins can publish notices.');
+            return;
+        }
+        const title = String(
+            document.getElementById('principalNoticeTitleInput')?.value
+            || document.getElementById('noticeTitleInput')?.value
+            || ''
+        ).trim();
+        const message = String(
+            document.getElementById('principalNoticeMessageInput')?.value
+            || document.getElementById('noticeMessageInput')?.value
+            || ''
+        ).trim();
+        const severity = String(
+            document.getElementById('principalNoticeSeveritySelect')?.value
+            || document.getElementById('noticeSeveritySelect')?.value
+            || 'info'
+        ).trim();
+        if (!message) {
+            alert('Please enter a notice message.');
+            return;
+        }
+        const user = window.firebaseAuth?.currentUser;
+        if (!user) {
+            alert('Please log in first.');
+            return;
+        }
+
+        const now = new Date().toISOString();
+        const noticeRef = window.firebaseFirestore.doc(window.firebaseDB, 'notices', 'current');
+        await window.firebaseFirestore.setDoc(
+            noticeRef,
+            {
+                active: true,
+                title,
+                message,
+                severity,
+                updatedAt: now,
+                createdBy: user.email || user.uid,
+                createdByUid: user.uid
+            },
+            { merge: true }
+        );
+
+        const titleEl = document.getElementById('principalNoticeTitleInput') || document.getElementById('noticeTitleInput');
+        const messageEl = document.getElementById('principalNoticeMessageInput') || document.getElementById('noticeMessageInput');
+        if (titleEl) titleEl.value = '';
+        if (messageEl) messageEl.value = '';
+        alert('Notice published.');
+    }
+
+    async function clearGlobalNotice() {
+        if (!hasSchoolWideAccess()) {
+            alert('Only principals and admins can clear notices.');
+            return;
+        }
+        const user = window.firebaseAuth?.currentUser;
+        if (!user) {
+            alert('Please log in first.');
+            return;
+        }
+        const now = new Date().toISOString();
+        const noticeRef = window.firebaseFirestore.doc(window.firebaseDB, 'notices', 'current');
+        await window.firebaseFirestore.setDoc(
+            noticeRef,
+            {
+                active: false,
+                title: '',
+                message: '',
+                severity: 'info',
+                updatedAt: now,
+                clearedBy: user.email || user.uid,
+                clearedByUid: user.uid
+            },
+            { merge: true }
+        );
+        alert('Notice cleared.');
+    }
     
     async function setupUserClassAccess() {
         try {
@@ -795,7 +1008,7 @@
                 userClassesAccessListener = null;
             }
             
-            if (window.isAdmin) {
+            if (hasSchoolWideAccess()) {
                 allowedClassesForCurrentUser = null;
                 return;
             }
@@ -1018,7 +1231,7 @@
                     <div>
                         <h3 class="text-sm font-medium text-blue-800">📊 Export Individual Class Data</h3>
                         <p class="text-xs text-blue-700 mt-1">
-                            Click any class name in the sidebar → Enter class password → Look for the green "Export to Excel" button
+                            Click any class name in the sidebar → Look for the green "Export Class Data" button
                         </p>
                         <div class="mt-2 text-xs text-blue-600">
                             <strong>Available classes:</strong> <span id="availableClasses">Loading...</span>
@@ -1028,6 +1241,132 @@
             </div>
 
             <!-- Quick Actions section removed -->
+        `,
+        "Principal": `
+            <div class="bg-white rounded-xl shadow-sm p-4 md:p-6">
+                <div class="flex items-start justify-between gap-4 mb-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">School-wide Analytics</h1>
+                        <p class="text-sm text-gray-600 mt-1">Top learners and support needs across all classes</p>
+                    </div>
+                    <button onclick="renderPrincipalAnalytics()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Important Notice</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" id="principalNoticeTitleInput" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-black" placeholder="e.g., School meeting at 2pm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                            <select id="principalNoticeSeveritySelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-black">
+                                <option value="info">Info</option>
+                                <option value="warning">Warning</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="success">Success</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                        <textarea id="principalNoticeMessageInput" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-black" placeholder="Write an important notice to all users..."></textarea>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button onclick="publishGlobalNotice()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-bullhorn mr-2"></i>Publish Notice
+                        </button>
+                        <button onclick="clearGlobalNotice()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                            <i class="fas fa-times-circle mr-2"></i>Clear Notice
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="rounded-2xl p-5 text-white bg-gradient-to-r from-blue-500 to-cyan-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-blue-100 text-sm">Total Classes</p>
+                                <p class="text-3xl font-bold" id="principalTotalClasses">0</p>
+                            </div>
+                            <i class="fas fa-school text-3xl opacity-75"></i>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl p-5 text-white bg-gradient-to-r from-green-500 to-emerald-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-100 text-sm">Total Learners</p>
+                                <p class="text-3xl font-bold" id="principalTotalLearners">0</p>
+                            </div>
+                            <i class="fas fa-users text-3xl opacity-75"></i>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl p-5 text-white bg-gradient-to-r from-teal-500 to-sky-500">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-teal-100 text-sm">Average Performance</p>
+                                <p class="text-3xl font-bold" id="principalAvgPerformance">0%</p>
+                            </div>
+                            <i class="fas fa-chart-pie text-3xl opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-lg font-semibold text-gray-800">Top Performers</h2>
+                            <span class="text-xs text-gray-500" id="principalTopMeta"></span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead>
+                                    <tr class="text-left text-gray-600">
+                                        <th class="py-2 pr-3">Name</th>
+                                        <th class="py-2 pr-3">Class</th>
+                                        <th class="py-2 text-right">Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="principalTopPerformersBody">
+                                    <tr><td class="py-3 text-gray-500" colspan="3">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-lg font-semibold text-gray-800">Support Needed</h2>
+                            <span class="text-xs text-gray-500" id="principalSupportMeta"></span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead>
+                                    <tr class="text-left text-gray-600">
+                                        <th class="py-2 pr-3">Name</th>
+                                        <th class="py-2 pr-3">Class</th>
+                                        <th class="py-2 text-right">Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="principalSupportNeededBody">
+                                    <tr><td class="py-3 text-gray-500" colspan="3">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-xl p-4">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-3">Average Points Per Class</h2>
+                    <div class="h-64">
+                        <canvas id="principalAvgPointsChart"></canvas>
+                    </div>
+                </div>
+            </div>
         `,
         "Admin": `
             <div class="bg-white rounded-xl shadow-sm p-4 md:p-6">
@@ -1055,12 +1394,29 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Grant Principal Access</h3>
+                    <div class="flex gap-2">
+                        <input type="email" id="principalEmailInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-black" placeholder="Enter user email">
+                        <button onclick="grantPrincipalPrivileges()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                            <i class="fas fa-user-tie mr-1"></i>Grant Principal
+                        </button>
+                    </div>
+                </div>
                 
                 <!-- Current Admins Section -->
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">Current Admins</h3>
                     <div id="adminList" class="space-y-2">
                         <!-- Admins will be loaded here -->
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Current Principals</h3>
+                    <div id="principalList" class="space-y-2">
+                        <!-- Principals will be loaded here -->
                     </div>
                 </div>
                 
@@ -1072,18 +1428,46 @@
                         <i class="fas fa-trash mr-2"></i>Reset All Top Learners
                     </button>
                 </div>
+
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Important Notice</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" id="noticeTitleInput" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-black" placeholder="e.g., School meeting at 2pm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                            <select id="noticeSeveritySelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-black">
+                                <option value="info">Info</option>
+                                <option value="warning">Warning</option>
+                                <option value="urgent">Urgent</option>
+                                <option value="success">Success</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                        <textarea id="noticeMessageInput" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-black" placeholder="Write an important notice to all users..."></textarea>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button onclick="publishGlobalNotice()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                            <i class="fas fa-bullhorn mr-2"></i>Publish Notice
+                        </button>
+                        <button onclick="clearGlobalNotice()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                            <i class="fas fa-times-circle mr-2"></i>Clear Notice
+                        </button>
+                    </div>
+                    <div id="currentNoticeStatus" class="text-xs text-gray-600 mt-3"></div>
+                </div>
                 
                 <!-- Manage Classes Section -->
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">Manage Classes</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-4">
+                    <div class="grid grid-cols-1 gap-3 md:gap-4 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Class Name</label>
                             <input type="text" id="newClassName" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base text-black" placeholder="Enter class name">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1 md:mb-2">Password</label>
-                            <input type="password" id="newClassPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm md:text-base text-black" placeholder="Enter password">
                         </div>
                     </div>
 
@@ -1147,6 +1531,64 @@
 
                     </div>
                 </div>
+
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Parent Access</h3>
+
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-semibold text-gray-800">Parents Logged In</h4>
+                            <span id="loggedInParentsCount" class="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">0</span>
+                        </div>
+                        <div id="loggedInParentsList" class="space-y-2">
+                            <div class="text-gray-600 text-sm">Loading parents...</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Parent</label>
+                            <select id="parentSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Loading parents...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+                            <select id="parentAssignClassSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Select a class...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Search Learner</label>
+                            <div class="relative mb-2">
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input id="parentAssignLearnerSearchInput" type="text" placeholder="Type a learner name..." class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select Learner</label>
+                            <select id="parentAssignLearnerSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                <option value="">Select a class first...</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button id="assignParentBtn" onclick="assignSelectedParentToLearner()" class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                                <i class="fas fa-link mr-2"></i>Assign Parent to Learner
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="text-sm font-semibold text-gray-800">Assigned Learners</h4>
+                            <span id="assignedLearnersCount" class="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full">0</span>
+                        </div>
+                        <div id="parentAssignedLearnersList" class="space-y-2">
+                            <div class="text-gray-600 text-sm">Select a parent to view assignments</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `,
         "Logout": `
@@ -1191,7 +1633,7 @@
             const classesRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes');
             adminClassPasswords = {};
             
-            if (!window.isAdmin && allowedClassesForCurrentUser === null) {
+            if (!hasSchoolWideAccess() && allowedClassesForCurrentUser === null) {
                 requestAnimationFrame(() => {
                     updateSidebarNavigation();
                     updateClassesList();
@@ -1201,7 +1643,7 @@
                 return;
             }
             
-            const allowedSet = !window.isAdmin
+            const allowedSet = !hasSchoolWideAccess()
                 ? new Set((allowedClassesForCurrentUser || []).map((c) => String(c).trim().toLowerCase()).filter(Boolean))
                 : null;
             
@@ -1244,11 +1686,14 @@
                         const className = String(doc.id || '').trim();
                         
                         const key = className.toLowerCase();
-                        if (!window.isAdmin && allowedSet && !allowedSet.has(key)) {
+                        if (!hasSchoolWideAccess() && allowedSet && !allowedSet.has(key)) {
                             return;
                         }
                         
-                        adminClassPasswords[className] = { password: classData.password };
+                        adminClassPasswords[className] = {
+                            createdBy: classData.createdBy || null,
+                            teacherId: classData.teacherId || null
+                        };
                         console.log(`✓ Loaded class: "${className}"`);
                     });
                     
@@ -1370,7 +1815,6 @@
             
             const testClassName = 'TestClass' + Date.now();
             const testClassData = {
-                password: 'test123',
                 createdAt: new Date(),
                 createdBy: user.email,
                 teacherId: user.uid  // Required for Firebase security rules
@@ -1502,7 +1946,8 @@
 
                         const nameEl = document.createElement('div');
                         nameEl.className = 'text-sm font-medium text-gray-900 truncate';
-                        nameEl.textContent = user.firstName ? user.firstName : 'Unknown';
+                        const fullName = `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`.trim();
+                        nameEl.textContent = fullName || user.firstName || String(user.email).split('@')[0] || user.email;
 
                         const emailEl = document.createElement('div');
                         emailEl.className = 'text-xs text-gray-600 truncate';
@@ -1566,14 +2011,379 @@
         }
     }
     
+    let parentsListener = null;
+    let parentAssignmentsListener = null;
+    let parentsCache = [];
+    let parentAssignLearnersCache = {};
 
-    
+    function formatParentDisplay(parent) {
+        const name = String(parent.name || '').trim();
+        const phone = String(parent.phoneNumber || '').trim();
+        return name ? `${name} (${phone})` : phone;
+    }
 
+    function renderParentAssignLearnerOptions(className, term) {
+        const learnerSelect = document.getElementById('parentAssignLearnerSelect');
+        if (!learnerSelect) return;
 
+        const raw = Array.isArray(parentAssignLearnersCache[className]) ? parentAssignLearnersCache[className] : [];
+        const q = String(term || '').trim().toLowerCase();
+        const filtered = q ? raw.filter((l) => String(l.name || '').toLowerCase().includes(q)) : raw;
+
+        learnerSelect.innerHTML = '<option value="">Select a learner...</option>';
+        for (const l of filtered) {
+            const option = document.createElement('option');
+            option.value = l.id;
+            option.textContent = `${l.name} (${l.points})`;
+            learnerSelect.appendChild(option);
+        }
+        if (raw.length === 0) {
+            learnerSelect.innerHTML = '<option value="">No learners found</option>';
+        } else if (filtered.length === 0) {
+            learnerSelect.innerHTML = '<option value="">No matches</option>';
+        }
+    }
+
+    function populateParentAssignClassSelect() {
+        const classSelect = document.getElementById('parentAssignClassSelect');
+        if (!classSelect) return;
+        const current = classSelect.value;
+        classSelect.innerHTML = '<option value="">Select a class...</option>';
+        Object.keys(adminClassPasswords || {}).forEach((className) => {
+            const option = document.createElement('option');
+            option.value = className;
+            option.textContent = className;
+            if (className === current) option.selected = true;
+            classSelect.appendChild(option);
+        });
+    }
+
+    async function populateLearnersForParentAssignClass(className) {
+        const learnerSelect = document.getElementById('parentAssignLearnerSelect');
+        const searchInput = document.getElementById('parentAssignLearnerSearchInput');
+        if (!learnerSelect) return;
+        learnerSelect.innerHTML = '<option value="">Loading learners...</option>';
+        if (!className) {
+            learnerSelect.innerHTML = '<option value="">Select a class first...</option>';
+            return;
+        }
+        try {
+            const snap = await window.firebaseFirestore.getDocs(
+                window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners')
+            );
+            const learners = [];
+            snap.forEach((docSnap) => {
+                const data = docSnap.data() || {};
+                learners.push({
+                    id: docSnap.id,
+                    name: String(data.name || '').trim() || 'Unknown',
+                    points: Number(data.points) || 0
+                });
+            });
+            learners.sort((a, b) => a.name.localeCompare(b.name));
+            parentAssignLearnersCache[className] = learners;
+            renderParentAssignLearnerOptions(className, String(searchInput?.value || ''));
+        } catch (error) {
+            console.error('Error loading learners for class:', error);
+            learnerSelect.innerHTML = '<option value="">Error loading learners</option>';
+        }
+    }
+
+    function renderLoggedInParents(parents) {
+        const list = document.getElementById('loggedInParentsList');
+        const countEl = document.getElementById('loggedInParentsCount');
+        const parentSelect = document.getElementById('parentSelect');
+
+        const loggedInCount = parents.filter((p) => !!p.loggedIn).length;
+        if (countEl) countEl.textContent = `${loggedInCount}/${parents.length}`;
+        if (list) list.innerHTML = '';
+
+        if (parentSelect) {
+            const current = parentSelect.value;
+            parentSelect.innerHTML = '<option value="">Select a parent...</option>';
+            for (const p of parents) {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = formatParentDisplay(p);
+                if (p.id === current) option.selected = true;
+                parentSelect.appendChild(option);
+            }
+        }
+
+        if (!list) return;
+        if (parents.length === 0) {
+            list.innerHTML = '<div class="text-gray-600 text-sm">No parents found</div>';
+            return;
+        }
+
+        for (const p of parents.slice(0, 50)) {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between gap-3 p-2 rounded-lg bg-gray-50';
+
+            const left = document.createElement('div');
+            left.className = 'min-w-0';
+
+            const nameEl = document.createElement('div');
+            nameEl.className = 'text-sm font-medium text-gray-900 truncate';
+            nameEl.textContent = String(p.name || '').trim() || String(p.phoneNumber || '').trim() || p.id;
+
+            const metaEl = document.createElement('div');
+            metaEl.className = 'text-xs text-gray-600 truncate';
+            const when = p.lastLoginAt ? new Date(p.lastLoginAt).toLocaleString() : 'Never';
+            metaEl.textContent = p.loggedIn ? `Last login: ${when}` : 'Never logged in';
+
+            left.appendChild(nameEl);
+            left.appendChild(metaEl);
+
+            const badge = document.createElement('div');
+            badge.className = `text-xs bg-white border px-2 py-1 rounded-full whitespace-nowrap ${p.loggedIn ? 'text-green-700 border-green-200' : 'text-gray-500 border-gray-200'}`;
+            badge.textContent = p.loggedIn ? 'Logged in' : 'Not yet';
+
+            row.appendChild(left);
+            row.appendChild(badge);
+            list.appendChild(row);
+        }
+    }
+
+    async function loadParents() {
+        try {
+            if (!window.isAdmin) return;
+
+            populateParentAssignClassSelect();
+            const searchInput = document.getElementById('parentAssignLearnerSearchInput');
+
+            const parentSelect = document.getElementById('parentSelect');
+            const classSelect = document.getElementById('parentAssignClassSelect');
+            if (classSelect) {
+                classSelect.removeEventListener('change', window._parentAssignClassSelectHandler);
+                window._parentAssignClassSelectHandler = (e) => populateLearnersForParentAssignClass(e.target.value);
+                classSelect.addEventListener('change', window._parentAssignClassSelectHandler);
+            }
+            if (searchInput) {
+                searchInput.removeEventListener('input', window._parentAssignLearnerSearchHandler);
+                window._parentAssignLearnerSearchHandler = () => {
+                    const selectedClass = String(classSelect?.value || '').trim();
+                    renderParentAssignLearnerOptions(selectedClass, String(searchInput.value || ''));
+                };
+                searchInput.addEventListener('input', window._parentAssignLearnerSearchHandler);
+            }
+            if (parentSelect) {
+                parentSelect.removeEventListener('change', window._parentSelectHandler);
+                window._parentSelectHandler = () => loadParentAssignmentsForSelectedParent();
+                parentSelect.addEventListener('change', window._parentSelectHandler);
+            }
+
+            const parentsRef = window.firebaseFirestore.collection(window.firebaseDB, 'parents');
+            if (parentsListener) {
+                parentsListener();
+                parentsListener = null;
+            }
+
+            parentsListener = window.firebaseFirestore.onSnapshot(parentsRef, (snapshot) => {
+                const parents = [];
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data() || {};
+                    const lastLoginAt = data.lastLoginAt ? String(data.lastLoginAt) : '';
+                    const loginCount = Number(data.loginCount) || 0;
+                    parents.push({
+                        id: docSnap.id,
+                        name: String(data.name || '').trim(),
+                        phoneNumber: String(data.phoneNumber || '').trim(),
+                        lastLoginAt: lastLoginAt,
+                        loginCount,
+                        loggedIn: !!lastLoginAt || loginCount > 0
+                    });
+                });
+                parents.sort((a, b) => {
+                    if (a.loggedIn !== b.loggedIn) return a.loggedIn ? -1 : 1;
+                    const atA = a.lastLoginAt ? Date.parse(a.lastLoginAt) : 0;
+                    const atB = b.lastLoginAt ? Date.parse(b.lastLoginAt) : 0;
+                    if (atA !== atB) return atB - atA;
+                    const nameA = String(a.name || '').toLowerCase();
+                    const nameB = String(b.name || '').toLowerCase();
+                    if (nameA !== nameB) return nameA.localeCompare(nameB);
+                    return String(a.phoneNumber || '').localeCompare(String(b.phoneNumber || ''));
+                });
+                parentsCache = parents;
+                renderLoggedInParents(parents);
+                loadParentAssignmentsForSelectedParent();
+            }, (error) => {
+                console.error('Error loading parents:', error);
+                const list = document.getElementById('loggedInParentsList');
+                if (list) list.innerHTML = '<div class="text-red-600 text-sm">Error loading parents</div>';
+                const countEl = document.getElementById('loggedInParentsCount');
+                if (countEl) countEl.textContent = '0';
+            });
+        } catch (error) {
+            console.error('Error setting up parents listener:', error);
+        }
+    }
+
+    function renderAssignedLearners(assignments) {
+        const list = document.getElementById('parentAssignedLearnersList');
+        const countEl = document.getElementById('assignedLearnersCount');
+        if (countEl) countEl.textContent = String(assignments.length);
+        if (!list) return;
+        list.innerHTML = '';
+        if (assignments.length === 0) {
+            list.innerHTML = '<div class="text-gray-600 text-sm">No learners assigned</div>';
+            return;
+        }
+        for (const a of assignments) {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between gap-3 p-2 rounded-lg bg-gray-50';
+
+            const left = document.createElement('div');
+            left.className = 'min-w-0';
+            const nameEl = document.createElement('div');
+            nameEl.className = 'text-sm font-medium text-gray-900 truncate';
+            nameEl.textContent = String(a.learnerName || 'Unknown');
+            const metaEl = document.createElement('div');
+            metaEl.className = 'text-xs text-gray-600 truncate';
+            metaEl.textContent = `${a.className} • ${a.learnerId}`;
+            left.appendChild(nameEl);
+            left.appendChild(metaEl);
+
+            const btn = document.createElement('button');
+            btn.className = 'text-red-600 hover:text-red-700 text-sm whitespace-nowrap';
+            btn.textContent = 'Remove';
+            btn.addEventListener('click', () => removeParentAssignment(a.className, a.learnerId));
+
+            row.appendChild(left);
+            row.appendChild(btn);
+            list.appendChild(row);
+        }
+    }
+
+    function loadParentAssignmentsForSelectedParent() {
+        const parentSelect = document.getElementById('parentSelect');
+        if (!parentSelect) return;
+        const parentId = parentSelect.value;
+        if (!parentId) {
+            if (parentAssignmentsListener) {
+                parentAssignmentsListener();
+                parentAssignmentsListener = null;
+            }
+            renderAssignedLearners([]);
+            const countEl = document.getElementById('assignedLearnersCount');
+            if (countEl) countEl.textContent = '0';
+            const list = document.getElementById('parentAssignedLearnersList');
+            if (list) list.innerHTML = '<div class="text-gray-600 text-sm">Select a parent to view assignments</div>';
+            return;
+        }
+
+        const ref = window.firebaseFirestore.doc(window.firebaseDB, 'parentAssignments', parentId);
+        if (parentAssignmentsListener) {
+            parentAssignmentsListener();
+            parentAssignmentsListener = null;
+        }
+        parentAssignmentsListener = window.firebaseFirestore.onSnapshot(ref, (docSnap) => {
+            const data = docSnap.exists() ? (docSnap.data() || {}) : {};
+            const learners = Array.isArray(data.learners) ? data.learners : [];
+            renderAssignedLearners(
+                learners.map((l) => ({
+                    className: String(l.className || '').trim(),
+                    learnerId: String(l.learnerId || '').trim(),
+                    learnerName: String(l.learnerName || '').trim()
+                })).filter((l) => l.className && l.learnerId)
+            );
+        }, (error) => {
+            console.error('Error loading parent assignments:', error);
+            const list = document.getElementById('parentAssignedLearnersList');
+            if (list) list.innerHTML = '<div class="text-red-600 text-sm">Error loading assignments</div>';
+        });
+    }
+
+    async function assignSelectedParentToLearner() {
+        const parentSelect = document.getElementById('parentSelect');
+        const classSelect = document.getElementById('parentAssignClassSelect');
+        const learnerSelect = document.getElementById('parentAssignLearnerSelect');
+        if (!parentSelect || !classSelect || !learnerSelect) return;
+
+        const parentId = String(parentSelect.value || '').trim();
+        const className = String(classSelect.value || '').trim();
+        const learnerId = String(learnerSelect.value || '').trim();
+        if (!parentId || !className || !learnerId) {
+            alert('Please select a parent, class, and learner.');
+            return;
+        }
+
+        try {
+            const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+            const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+            if (!learnerDoc.exists()) {
+                alert('Learner not found.');
+                return;
+            }
+            const learnerData = learnerDoc.data() || {};
+            const learnerName = String(learnerData.name || '').trim() || 'Unknown';
+
+            const parentInfo = parentsCache.find((p) => p.id === parentId) || {};
+
+            const assignmentRef = window.firebaseFirestore.doc(window.firebaseDB, 'parentAssignments', parentId);
+            const existing = await window.firebaseFirestore.getDoc(assignmentRef);
+            const existingData = existing.exists() ? (existing.data() || {}) : {};
+            const learners = Array.isArray(existingData.learners) ? existingData.learners : [];
+
+            const key = `${className}:${learnerId}`;
+            const filtered = learners.filter((l) => `${String(l.className || '').trim()}:${String(l.learnerId || '').trim()}` !== key);
+            filtered.push({
+                className,
+                learnerId,
+                learnerName,
+                assignedAt: new Date().toISOString()
+            });
+
+            await window.firebaseFirestore.setDoc(
+                assignmentRef,
+                {
+                    parentId,
+                    parentName: String(parentInfo.name || '').trim(),
+                    parentPhone: String(parentInfo.phoneNumber || '').trim(),
+                    learners: filtered,
+                    updatedAt: new Date().toISOString()
+                },
+                { merge: true }
+            );
+
+            alert('Parent assigned successfully.');
+        } catch (error) {
+            console.error('Error assigning parent to learner:', error);
+            alert('Error assigning parent. Please try again.');
+        }
+    }
+
+    async function removeParentAssignment(className, learnerId) {
+        const parentSelect = document.getElementById('parentSelect');
+        if (!parentSelect) return;
+        const parentId = String(parentSelect.value || '').trim();
+        if (!parentId) return;
+        if (!confirm('Remove this learner from the parent?')) return;
+
+        try {
+            const assignmentRef = window.firebaseFirestore.doc(window.firebaseDB, 'parentAssignments', parentId);
+            const existing = await window.firebaseFirestore.getDoc(assignmentRef);
+            const existingData = existing.exists() ? (existing.data() || {}) : {};
+            const learners = Array.isArray(existingData.learners) ? existingData.learners : [];
+            const key = `${String(className || '').trim()}:${String(learnerId || '').trim()}`;
+            const filtered = learners.filter((l) => `${String(l.className || '').trim()}:${String(l.learnerId || '').trim()}` !== key);
+            await window.firebaseFirestore.setDoc(
+                assignmentRef,
+                {
+                    learners: filtered,
+                    updatedAt: new Date().toISOString()
+                },
+                { merge: true }
+            );
+        } catch (error) {
+            console.error('Error removing assignment:', error);
+            alert('Error removing assignment. Please try again.');
+        }
+    }
 
     // Real-time listener for user class checkboxes
     let userClassCheckboxesListener = null;
-    
+
     async function loadUserClassCheckboxes() {
         const userEmailSelect = document.getElementById('userEmailSelect');
         const classCheckboxes = document.getElementById('classCheckboxes');
@@ -1759,7 +2569,7 @@
         console.log('Found classes:', classes);
         
         if (classes.length === 0) {
-            classesList.innerHTML = window.isAdmin
+            classesList.innerHTML = hasSchoolWideAccess()
                 ? '<p class="text-gray-500">No classes created yet. Add a class above to get started.</p>'
                 : '<p class="text-gray-500">No classes allocated to your account yet.</p>';
             console.log('No classes to display');
@@ -1775,24 +2585,11 @@
                 <div class="flex-1">
                     <div class="flex items-center mb-2">
                         <span class="font-medium text-lg">${className}</span>
-                        <span class="text-sm text-gray-500 ml-2">(Password protected)</span>
-                    </div>
-                    <div class="text-sm text-gray-600 mb-2">
-                        <strong>Password:</strong>
-                        <span class="password-display ml-2 font-mono text-xs bg-gray-200 px-2 py-1 rounded" data-password="${classData.password}">
-                            ${'*'.repeat(classData.password.length)}
-                        </span>
-                        <button class="show-password-btn ml-2 text-blue-500 hover:text-blue-700" onclick="togglePasswordVisibility(this)">
-                            <i class="fas fa-eye"></i>
-                        </button>
                     </div>
                 </div>
                 <div class="ml-4 flex gap-2">
                     <button class="text-blue-500 hover:text-blue-700 p-2" onclick="editClassName('${className}')" title="Edit class name">
                         <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="text-green-500 hover:text-green-700 p-2" onclick="editClassPassword('${className}')" title="Change password">
-                        <i class="fas fa-key"></i>
                     </button>
                     <button class="text-red-500 hover:text-red-700 p-2" onclick="removeClass('${className}')" title="Delete class">
                         <i class="fas fa-trash"></i>
@@ -1808,10 +2605,9 @@
     // Add new class
     async function addNewClass() {
         const className = document.getElementById('newClassName').value.trim();
-        const password = document.getElementById('newClassPassword').value.trim();
 
-        if (!className || !password) {
-            alert('Please enter both class name and password');
+        if (!className) {
+            alert('Please enter a class name');
             return;
         }
 
@@ -1837,7 +2633,6 @@
                 return;
             }
             await window.firebaseFirestore.setDoc(classRef, {
-                password: password,
                 createdAt: new Date().toISOString(),
                 createdBy: user.email,
                 teacherId: user.uid  // Required for Firebase security rules
@@ -1845,7 +2640,6 @@
 
             // Clear fields
             document.getElementById('newClassName').value = '';
-            document.getElementById('newClassPassword').value = '';
             
             // Success prompt
             alert(`✅ Class "${className}" has been successfully created!`);
@@ -1942,32 +2736,6 @@
         }
     }
 
-    // Edit class password
-    async function editClassPassword(className) {
-        const newPassword = prompt('Enter new password for ' + className + ':');
-        
-        if (!newPassword || newPassword.trim() === '') {
-            return; // User cancelled or entered empty password
-        }
-        
-        const trimmedPassword = newPassword.trim();
-        
-        try {
-            const classRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className);
-            
-            await window.firebaseFirestore.updateDoc(classRef, {
-                password: trimmedPassword
-            });
-            
-            alert(`Password for "${className}" has been updated successfully.`);
-            loadClasses(); // Reload classes to show updated password
-            
-        } catch (error) {
-            console.error('Error editing class password:', error);
-            alert('Error changing class password. Please try again.');
-        }
-    }
-
     // Learners collection functions
     async function addLearner(className) {
         const learnerNameInput = document.getElementById(`${className}-new-learner`);
@@ -1984,8 +2752,7 @@
             // Create a unique ID for the learner
             const learnerId = Date.now().toString();
             const currentDate = new Date();
-            const currentUser = window.firebaseAuth.currentUser;
-            const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+            const userName = getCurrentUserDisplayName();
             
             // Add learner to Firestore with default 100 points and initial adjustment record
             await window.firebaseFirestore.setDoc(
@@ -2029,6 +2796,144 @@
     // Load learners for a specific class
     // Real-time listener for learners in a class
     const learnersListeners = {};
+    const learnersCacheByClass = {};
+    const learnerSearchHandlers = {};
+
+    function setupLearnerSearch(className) {
+        const input = document.getElementById(`${className}-learner-search`);
+        if (!input) return;
+        if (learnerSearchHandlers[className]) return;
+        const handler = () => {
+            const cached = Array.isArray(learnersCacheByClass[className]) ? learnersCacheByClass[className] : [];
+            renderLearnersGrid(className, cached, null);
+        };
+        learnerSearchHandlers[className] = handler;
+        input.addEventListener('input', handler);
+    }
+
+    function renderLearnersGrid(className, allLearners, scrollToLearnerId) {
+        const studentsGrid = document.getElementById(`${className}-students-grid`);
+        if (!studentsGrid) return;
+
+        const input = document.getElementById(`${className}-learner-search`);
+        const term = String(input?.value || '').trim().toLowerCase();
+
+        let filtered = allLearners;
+        if (term) {
+            filtered = allLearners.filter((l) => String(l.name || '').toLowerCase().includes(term));
+        }
+
+        if (scrollToLearnerId && term) {
+            const targetIncluded = filtered.some((l) => String(l.id) === String(scrollToLearnerId));
+            if (!targetIncluded) {
+                if (input) input.value = '';
+                return renderLearnersGrid(className, allLearners, scrollToLearnerId);
+            }
+        }
+
+        studentsGrid.innerHTML = '';
+
+        if (filtered.length === 0) {
+            studentsGrid.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-400">
+                    <i class="fas fa-magnifying-glass text-4xl mb-3"></i>
+                    <p class="text-lg font-medium">${term ? 'No matches found' : 'No students added yet'}</p>
+                    <p class="text-sm">${term ? 'Try a different name' : 'Add your first student to get started'}</p>
+                </div>
+            `;
+        } else {
+            const maxPoints = Math.max(...allLearners.map((l) => Number(l.points) || 0)) || 100;
+            filtered.forEach((learner, index) => {
+                const card = document.createElement('div');
+                card.className = `student-card bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-100`;
+                card.setAttribute('data-learner-id', learner.id);
+
+                const initials = String(learner.name || '')
+                    .split(' ')
+                    .filter(Boolean)
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2);
+
+                let rankBadge = '';
+                if (index === 0) rankBadge = '<span class="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">🥇</span>';
+                else if (index === 1) rankBadge = '<span class="absolute -top-2 -right-2 bg-gray-300 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">🥈</span>';
+                else if (index === 2) rankBadge = '<span class="absolute -top-2 -right-2 bg-orange-300 text-orange-900 text-xs font-bold px-2 py-1 rounded-full">🥉</span>';
+
+                const points = Number(learner.points) || 0;
+                const progressPercent = Math.min((points / maxPoints) * 100, 100);
+
+                let lastAdjustmentInfo = 'No recent activity';
+                if (learner.lastAdjustment) {
+                    const adjustment = learner.lastAdjustment;
+                    const pointsText = adjustment.points > 0 ? `+${adjustment.points}` : adjustment.points;
+                    lastAdjustmentInfo = `${pointsText} pts: ${adjustment.reason}`;
+                }
+
+                card.innerHTML = `
+                    <div class="p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="relative">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
+                                    ${initials || 'ST'}
+                                </div>
+                                ${rankBadge}
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold ${points > 100 ? 'text-green-600' : 'text-gray-800'}">${points}</div>
+                                <div class="text-xs text-gray-500">points</div>
+                            </div>
+                        </div>
+                        
+                        <h4 class="font-semibold text-gray-800 mb-1 truncate">${String(learner.name || '').trim() || 'Unknown'}</h4>
+                        <p class="text-xs text-gray-600 mb-3 truncate">${lastAdjustmentInfo}</p>
+                        
+                        <div class="mb-3">
+                            <div class="bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="adjustPoints('${className}', '${learner.id}', 5)" 
+                                class="bg-green-100 hover:bg-green-200 text-green-700 p-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button onclick="adjustPoints('${className}', '${learner.id}', -5)" 
+                                class="bg-red-100 hover:bg-red-200 text-red-700 p-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button onclick="showStudentActions('${className}', '${learner.id}', '${String(learner.name || '').replace(/'/g, "\\'")}')" 
+                                class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                studentsGrid.appendChild(card);
+            });
+        }
+
+        const countElement = document.getElementById(`${className}-count`);
+        if (countElement) {
+            countElement.textContent = term ? `${filtered.length}/${allLearners.length}` : String(allLearners.length);
+        }
+
+        if (scrollToLearnerId) {
+            setTimeout(() => {
+                const targetCard = studentsGrid.querySelector(`[data-learner-id="${scrollToLearnerId}"]`);
+                if (targetCard) {
+                    targetCard.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => {
+                        targetCard.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+                    }, 1500);
+                }
+            }, 100);
+        }
+    }
     
     async function loadLearners(className, scrollToLearnerId = null) {
         try {
@@ -2059,6 +2964,8 @@
                 setTimeout(() => loadLearners(className, scrollToLearnerId), 500);
                 return;
             }
+
+            setupLearnerSearch(className);
             
             // Clean up existing listener for this class
             if (learnersListeners[className]) {
@@ -2086,27 +2993,6 @@
                     return;
                 }
                 
-                // Clear existing content
-                studentsGrid.innerHTML = '';
-                
-                if (snapshot.empty) {
-                    studentsGrid.innerHTML = `
-                        <div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-400">
-                            <i class="fas fa-user-graduate text-4xl mb-3"></i>
-                            <p class="text-lg font-medium">No students added yet</p>
-                            <p class="text-sm">Add your first student to get started</p>
-                        </div>
-                    `;
-                    
-                    // Update class count
-                    const countElement = document.getElementById(`${className}-count`);
-                    if (countElement) {
-                        countElement.textContent = '0';
-                    }
-                    return;
-                }
-                
-                // Sort learners by points (highest first)
                 const learners = [];
                 snapshot.forEach(doc => {
                     learners.push({
@@ -2116,101 +3002,9 @@
                 });
                 
                 learners.sort((a, b) => b.points - a.points);
-                
-                // Create student cards
-                learners.forEach((learner, index) => {
-                    const card = document.createElement('div');
-                    card.className = `student-card bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-gray-100`;
-                    card.setAttribute('data-learner-id', learner.id);
-                    
-                    // Get initials for avatar
-                    const initials = learner.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                    
-                    // Determine rank badge
-                    let rankBadge = '';
-                    if (index === 0) rankBadge = '<span class="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">🥇</span>';
-                    else if (index === 1) rankBadge = '<span class="absolute -top-2 -right-2 bg-gray-300 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">🥈</span>';
-                    else if (index === 2) rankBadge = '<span class="absolute -top-2 -right-2 bg-orange-300 text-orange-900 text-xs font-bold px-2 py-1 rounded-full">🥉</span>';
-                    
-                    // Progress bar calculation
-                    const maxPoints = Math.max(...learners.map(l => l.points)) || 100;
-                    const progressPercent = Math.min((learner.points / maxPoints) * 100, 100);
-                    
-                    // Last adjustment info
-                    let lastAdjustmentInfo = 'No recent activity';
-                    if (learner.lastAdjustment) {
-                        const adjustment = learner.lastAdjustment;
-                        const date = new Date(adjustment.date);
-                        const formattedDate = date.toLocaleDateString();
-                        const pointsText = adjustment.points > 0 ? `+${adjustment.points}` : adjustment.points;
-                        lastAdjustmentInfo = `${pointsText} pts: ${adjustment.reason}`;
-                    }
-                    
-                    card.innerHTML = `
-                        <div class="p-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="relative">
-                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
-                                        ${initials}
-                                    </div>
-                                    ${rankBadge}
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-2xl font-bold ${learner.points > 100 ? 'text-green-600' : 'text-gray-800'}">${learner.points}</div>
-                                    <div class="text-xs text-gray-500">points</div>
-                                </div>
-                            </div>
-                            
-                            <h4 class="font-semibold text-gray-800 mb-1 truncate">${learner.name}</h4>
-                            <p class="text-xs text-gray-600 mb-3 truncate">${lastAdjustmentInfo}</p>
-                            
-                            <div class="mb-3">
-                                <div class="bg-gray-200 rounded-full h-2">
-                                    <div class="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="grid grid-cols-3 gap-2">
-                                <button onclick="adjustPoints('${className}', '${learner.id}', 5)" 
-                                    class="bg-green-100 hover:bg-green-200 text-green-700 p-2 rounded-lg text-sm font-medium transition-colors duration-200">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                                <button onclick="adjustPoints('${className}', '${learner.id}', -5)" 
-                                    class="bg-red-100 hover:bg-red-200 text-red-700 p-2 rounded-lg text-sm font-medium transition-colors duration-200">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <button onclick="showStudentActions('${className}', '${learner.id}', '${learner.name}')" 
-                                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg text-sm font-medium transition-colors duration-200">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    
-                    studentsGrid.appendChild(card);
-                });
-                
-                // Update class stats
-                const countElement = document.getElementById(`${className}-count`);
-                if (countElement) {
-                    countElement.textContent = learners.length;
-                }
-                
-                // Scroll to the specified learner if needed
-                if (scrollToLearnerId) {
-                    setTimeout(() => {
-                        const targetCard = studentsGrid.querySelector(`[data-learner-id="${scrollToLearnerId}"]`);
-                        if (targetCard) {
-                            targetCard.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
-                            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            
-                            // Remove highlight after a short delay
-                            setTimeout(() => {
-                                targetCard.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
-                            }, 1500);
-                        }
-                    }, 100);
-                }
+
+                learnersCacheByClass[className] = learners;
+                renderLearnersGrid(className, learners, scrollToLearnerId);
                 
             }, (error) => {
                 console.error(`Error in learners listener for ${className}:`, error);
@@ -2453,8 +3247,7 @@
                     const newPoints = Math.max(0, currentPoints + pointsChange);
                     
                     // Get current user info
-                    const currentUser = window.firebaseAuth.currentUser;
-                    const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+                    const userName = getCurrentUserDisplayName();
                     const currentDate = new Date();
                     
                     // Create adjustment record
@@ -3001,8 +3794,7 @@
             const newPoints = Math.max(0, currentPoints + pointsChange);
             
             // Get current user info
-            const currentUser = window.firebaseAuth.currentUser;
-            const userName = currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown User';
+            const userName = getCurrentUserDisplayName();
             const currentDate = new Date();
             
             // Create adjustment record
@@ -3131,7 +3923,7 @@
     function updateTabContentWithClasses() {
         // Remove old class entries from tabContent
         Object.keys(tabContent).forEach(key => {
-            if (key !== 'Dashboard' && key !== 'Admin' && key !== 'Logout') {
+            if (key !== 'Dashboard' && key !== 'Admin' && key !== 'Principal' && key !== 'Logout') {
                 delete tabContent[key];
             }
         });
@@ -3185,7 +3977,7 @@
                         <i class="fas fa-file-excel mr-2"></i>Export Class Data
                     </button>
                 </div>
-                <div class="class-content-blur" id="${className}-content">
+                <div id="${className}-content">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                         <div class="lg:col-span-2">
                             <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6">
@@ -3198,6 +3990,14 @@
                                             <i class="fas fa-plus mr-2"></i>Add Student
                                         </button>
                                     </div>
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-4">
+                                    <div class="relative w-full sm:max-w-sm">
+                                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                        <input type="text" id="${className}-learner-search" placeholder="Search learner by name..." class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 bg-white">
+                                    </div>
+                                    <div class="text-xs text-gray-500">Tip: count shows filtered/total</div>
                                 </div>
                                 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="${className}-students-grid">
@@ -3319,107 +4119,6 @@
         });
     }
 
-    // Show password modal
-    function showPasswordModal(className) {
-        try {
-            currentClass = className;
-            const passwordModal = document.getElementById('passwordModal');
-            const passwordInput = document.getElementById('classPasswordInput');
-            const passwordError = document.getElementById('passwordError');
-            
-            if (passwordModal) {
-                passwordModal.classList.remove('hidden');
-                passwordModal.classList.add('flex');
-            }
-            
-            if (passwordInput) {
-                passwordInput.value = '';
-                passwordInput.focus();
-            }
-            
-            if (passwordError) {
-                passwordError.classList.add('hidden');
-            }
-            
-            // Ensure password input has black text
-            setTimeout(() => {
-                if (passwordInput) {
-                    passwordInput.classList.add('text-black', '!text-black');
-                    passwordInput.style.color = 'black';
-                    passwordInput.setAttribute('style', 'color: black !important;');
-                }
-            }, 100);
-        } catch (error) {
-            console.error('Error in showPasswordModal:', error);
-        }
-    }
-
-    // Hide password modal
-    function hidePasswordModal() {
-        try {
-            const passwordModal = document.getElementById('passwordModal');
-            if (passwordModal) {
-                passwordModal.classList.add('hidden');
-                passwordModal.classList.remove('flex');
-            }
-        } catch (error) {
-            console.error('Error in hidePasswordModal:', error);
-        }
-    }
-
-    // Toggle class password visibility
-    function toggleClassPasswordVisibility() {
-        try {
-            const passwordInput = document.getElementById('classPasswordInput');
-            const eyeIcon = document.getElementById('passwordToggleIcon'); // Fixed ID to match HTML
-            
-            // Check if elements exist before accessing their properties
-            if (!passwordInput || !eyeIcon) {
-                console.error('Password input or eye icon element not found');
-                return;
-            }
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                eyeIcon.classList.remove('fa-eye');
-                eyeIcon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                eyeIcon.classList.remove('fa-eye-slash');
-                eyeIcon.classList.add('fa-eye');
-            }
-        } catch (error) {
-            console.error('Error in toggleClassPasswordVisibility:', error);
-        }
-    }
-
-    // Check password
-    function checkPassword() {
-        try {
-            const enteredPassword = document.getElementById('classPasswordInput')?.value || '';
-            const correctPassword = adminClassPasswords[currentClass]?.password;
-            
-            if (enteredPassword === correctPassword) {
-                hidePasswordModal();
-                const contentDiv = document.getElementById(`${currentClass}-content`);
-                if (contentDiv) {
-                    contentDiv.classList.remove('class-content-blur');
-                    contentDiv.classList.add('class-content-unblur');
-                    
-                    // Load learners for this class after password verification
-                    loadLearners(currentClass);
-                }
-            } else {
-                const passwordError = document.getElementById('passwordError');
-                if (passwordError) {
-                    passwordError.classList.remove('hidden');
-                }
-            }
-        } catch (error) {
-            console.error('Error in checkPassword:', error);
-        }
-    }
-
     // Load content
     function loadContent(content) {
         const contentDiv = document.getElementById('content');
@@ -3427,10 +4126,22 @@
         if (tabContent[content]) {
             contentDiv.innerHTML = tabContent[content];
             
-            if (content !== 'Dashboard' && content !== 'Admin' && content !== 'Logout') {
-                showPasswordModal(content);
+            if (content !== 'Dashboard' && content !== 'Admin' && content !== 'Principal' && content !== 'Logout') {
+                currentClass = content;
+                setTimeout(() => loadLearners(content), 0);
             } else if (content === 'Dashboard') {
                 updateDashboardStats();
+            } else if (content === 'Principal') {
+                if (!hasSchoolWideAccess()) {
+                    contentDiv.innerHTML = `
+                        <div class="bg-white rounded-xl shadow-sm p-6 text-center">
+                            <h1 class="text-2xl font-bold text-gray-800 mb-2">Access restricted</h1>
+                            <p class="text-gray-600">Only principals and admins can view school-wide analytics.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                setTimeout(() => renderPrincipalAnalytics(), 0);
             } else if (content === 'Admin') {
                 // Ensure classes are loaded when admin panel is opened
                 // Use requestAnimationFrame to ensure DOM is ready
@@ -3451,16 +4162,22 @@
                         // Load admin list when admin panel is opened
                         loadAdminList();
                         console.log('Admin list loaded');
+                        loadPrincipalList();
                         
                         // Load user data for admin panel (wait for DOM elements to exist)
                         const waitForElements = () => {
                             const adminList = document.getElementById('adminList');
                             const classesList = document.getElementById('classesList');
                             const userEmailSelect = document.getElementById('userEmailSelect');
+                            const principalList = document.getElementById('principalList');
+                            const parentSelect = document.getElementById('parentSelect');
+                            const parentAssignClassSelect = document.getElementById('parentAssignClassSelect');
+                            const parentAssignLearnerSelect = document.getElementById('parentAssignLearnerSelect');
                             
-                            if (adminList && classesList && userEmailSelect) {
+                            if (adminList && principalList && classesList && userEmailSelect && parentSelect && parentAssignClassSelect && parentAssignLearnerSelect) {
                                 loadUsers();
                                 loadUserClassAllocations();
+                                loadParents();
                             } else {
                                 requestAnimationFrame(waitForElements);
                             }
@@ -3470,6 +4187,161 @@
                 });
             }
         }
+    }
+
+    let principalAvgPointsChart = null;
+
+    async function renderPrincipalAnalytics() {
+        const totalClassesEl = document.getElementById('principalTotalClasses');
+        const totalLearnersEl = document.getElementById('principalTotalLearners');
+        const avgPerfEl = document.getElementById('principalAvgPerformance');
+        const topBody = document.getElementById('principalTopPerformersBody');
+        const supportBody = document.getElementById('principalSupportNeededBody');
+        const topMeta = document.getElementById('principalTopMeta');
+        const supportMeta = document.getElementById('principalSupportMeta');
+
+        if (!totalClassesEl || !totalLearnersEl || !avgPerfEl || !topBody || !supportBody) return;
+        if (!window.firebaseDB || !window.firebaseFirestore) return;
+
+        totalClassesEl.textContent = '...';
+        totalLearnersEl.textContent = '...';
+        avgPerfEl.textContent = '...';
+        topBody.innerHTML = '<tr><td class="py-3 text-gray-500" colspan="3">Loading...</td></tr>';
+        supportBody.innerHTML = '<tr><td class="py-3 text-gray-500" colspan="3">Loading...</td></tr>';
+        if (topMeta) topMeta.textContent = '';
+        if (supportMeta) supportMeta.textContent = '';
+
+        try {
+            const classesSnap = await window.firebaseFirestore.getDocs(
+                window.firebaseFirestore.collection(window.firebaseDB, 'classes')
+            );
+
+            const classNames = classesSnap.docs.map((d) => String(d.id || '').trim()).filter(Boolean);
+
+            const allLearners = [];
+            const perClassAverages = [];
+
+            for (const className of classNames) {
+                const learnersSnap = await window.firebaseFirestore.getDocs(
+                    window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners')
+                );
+
+                let sum = 0;
+                let count = 0;
+
+                learnersSnap.forEach((docSnap) => {
+                    const data = docSnap.data() || {};
+                    const name = String(data.name || '').trim() || 'Unknown';
+                    const points = Number(data.points) || 0;
+                    sum += points;
+                    count += 1;
+                    allLearners.push({ name, points, className });
+                });
+
+                const avg = count > 0 ? sum / count : 0;
+                perClassAverages.push({ className, avgPoints: avg, learnerCount: count });
+            }
+
+            totalClassesEl.textContent = String(classNames.length);
+            totalLearnersEl.textContent = String(allLearners.length);
+
+            const avgPointsOverall = allLearners.length > 0
+                ? allLearners.reduce((acc, l) => acc + l.points, 0) / allLearners.length
+                : 0;
+            const avgPerfPct = Math.max(0, Math.min(100, Math.round(avgPointsOverall)));
+            avgPerfEl.textContent = `${avgPerfPct}%`;
+
+            const topN = Math.min(5, allLearners.length);
+            const bottomN = Math.min(5, allLearners.length);
+            if (topMeta) topMeta.textContent = topN ? `Top ${topN}` : '';
+            if (supportMeta) supportMeta.textContent = bottomN ? `Bottom ${bottomN}` : '';
+
+            const sortedDesc = [...allLearners].sort((a, b) => b.points - a.points);
+            const sortedAsc = [...allLearners].sort((a, b) => a.points - b.points);
+
+            const topRows = sortedDesc.slice(0, topN);
+            const supportRows = sortedAsc.slice(0, bottomN);
+
+            topBody.innerHTML = topRows.length
+                ? topRows.map((r) => `
+                    <tr class="border-t">
+                        <td class="py-2 pr-3">
+                            <span class="inline-flex items-center gap-2">
+                                <i class="fas fa-star text-yellow-400"></i>
+                                <span class="text-gray-900 font-medium">${r.name}</span>
+                            </span>
+                        </td>
+                        <td class="py-2 pr-3 text-gray-700">${r.className}</td>
+                        <td class="py-2 text-right text-gray-900 font-semibold">${r.points}</td>
+                    </tr>
+                `).join('')
+                : '<tr><td class="py-3 text-gray-500" colspan="3">No learners found</td></tr>';
+
+            supportBody.innerHTML = supportRows.length
+                ? supportRows.map((r) => `
+                    <tr class="border-t">
+                        <td class="py-2 pr-3">
+                            <span class="inline-flex items-center gap-2">
+                                <i class="fas fa-arrow-down text-red-500"></i>
+                                <span class="text-gray-900 font-medium">${r.name}</span>
+                            </span>
+                        </td>
+                        <td class="py-2 pr-3 text-gray-700">${r.className}</td>
+                        <td class="py-2 text-right text-gray-900 font-semibold">${r.points}</td>
+                    </tr>
+                `).join('')
+                : '<tr><td class="py-3 text-gray-500" colspan="3">No learners found</td></tr>';
+
+            const labels = perClassAverages.map((c) => c.className);
+            const values = perClassAverages.map((c) => Math.round(c.avgPoints));
+            createOrUpdatePrincipalChart(labels, values);
+
+        } catch (error) {
+            console.error('Error loading principal analytics:', error);
+            topBody.innerHTML = '<tr><td class="py-3 text-red-600" colspan="3">Error loading data</td></tr>';
+            supportBody.innerHTML = '<tr><td class="py-3 text-red-600" colspan="3">Error loading data</td></tr>';
+        }
+    }
+
+    function createOrUpdatePrincipalChart(labels, values) {
+        const canvas = document.getElementById('principalAvgPointsChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        if (principalAvgPointsChart) {
+            principalAvgPointsChart.destroy();
+        }
+
+        principalAvgPointsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Avg Points',
+                        data: values,
+                        backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
     }
 
     // Update dashboard stats and welcome message
@@ -3876,6 +4748,80 @@
             alert('Error revoking admin privileges. Please try again.');
         }
     }
+
+    async function grantPrincipalPrivileges() {
+        const emailInput = document.getElementById('principalEmailInput');
+        const email = String(emailInput?.value || '').trim();
+        
+        if (!email) {
+            alert('Please enter an email address');
+            return;
+        }
+        
+        if (!confirm(`Are you sure you want to grant principal access to ${email}?`)) {
+            return;
+        }
+        
+        try {
+            const usersRef = window.firebaseFirestore.collection(window.firebaseDB, 'users');
+            const usersSnapshot = await window.firebaseFirestore.getDocs(usersRef);
+            const matches = [];
+            
+            usersSnapshot.forEach((doc) => {
+                const userData = doc.data();
+                if (userData.email === email) {
+                    matches.push({ docId: doc.id, ...userData });
+                }
+            });
+            
+            const targetUser =
+                matches.find((u) => String(u.uid || '').trim() && String(u.uid).trim() === String(u.docId).trim())
+                || matches.find((u) => !String(u.docId || '').includes('@'))
+                || matches[0]
+                || null;
+
+            if (!targetUser) {
+                alert('User not found with this email address');
+                return;
+            }
+            
+            await window.firebaseFirestore.setDoc(
+                window.firebaseFirestore.doc(window.firebaseDB, 'principals', targetUser.docId),
+                {
+                    email: targetUser.email,
+                    firstName: targetUser.firstName,
+                    lastName: targetUser.lastName,
+                    grantedBy: window.firebaseAuth.currentUser.uid,
+                    grantedAt: new Date().toISOString()
+                }
+            );
+            
+            alert(`Principal access granted to ${targetUser.firstName} ${targetUser.lastName}`);
+            if (emailInput) emailInput.value = '';
+            loadPrincipalList();
+        } catch (error) {
+            console.error('Error granting principal access:', error);
+            alert('Error granting principal access. Please try again.');
+        }
+    }
+
+    async function revokePrincipalPrivileges(userId) {
+        if (!confirm('Are you sure you want to revoke principal access?')) {
+            return;
+        }
+        
+        try {
+            await window.firebaseFirestore.deleteDoc(
+                window.firebaseFirestore.doc(window.firebaseDB, 'principals', userId)
+            );
+            
+            alert('Principal access revoked successfully');
+            loadPrincipalList();
+        } catch (error) {
+            console.error('Error revoking principal access:', error);
+            alert('Error revoking principal access. Please try again.');
+        }
+    }
     
 
     
@@ -3991,6 +4937,73 @@
             console.error('Error setting up admin list listener:', error);
         }
     }
+
+    let principalListListener = null;
+
+    async function loadPrincipalList() {
+        if (!window.isAdmin) return;
+        
+        try {
+            const principalsRef = window.firebaseFirestore.collection(window.firebaseDB, 'principals');
+            
+            if (principalListListener) {
+                principalListListener();
+                principalListListener = null;
+            }
+            
+            let retryCount = 0;
+            const maxRetries = 50;
+            const checkPrincipalList = setInterval(() => {
+                const principalList = document.getElementById('principalList');
+                if (principalList) {
+                    clearInterval(checkPrincipalList);
+                    
+                    principalList.innerHTML = '<p class="text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading principals...</p>';
+                    
+                    principalListListener = window.firebaseFirestore.onSnapshot(principalsRef, (snapshot) => {
+                        principalList.innerHTML = '';
+                        
+                        if (snapshot.empty) {
+                            principalList.innerHTML = '<p class="text-gray-500">No principals found</p>';
+                            return;
+                        }
+                        
+                        snapshot.forEach((doc) => {
+                            const principal = doc.data() || {};
+                            const principalDiv = document.createElement('div');
+                            principalDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg border';
+                            principalDiv.innerHTML = `
+                                <div>
+                                    <p class="font-medium">${String(principal.firstName || '').trim()} ${String(principal.lastName || '').trim()}</p>
+                                    <p class="text-sm text-gray-600">${String(principal.email || '').trim()}</p>
+                                    <p class="text-xs text-gray-500">Granted: ${principal.grantedAt ? new Date(principal.grantedAt).toLocaleDateString() : ''}</p>
+                                </div>
+                                ${doc.id !== window.firebaseAuth.currentUser.uid ?
+                                    `<button onclick="revokePrincipalPrivileges('${doc.id}')" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                                        <i class="fas fa-user-times"></i> Revoke
+                                    </button>` :
+                                    '<span class="text-sm text-green-600">Current User</span>'
+                                }
+                            `;
+                            principalList.appendChild(principalDiv);
+                        });
+                    }, (error) => {
+                        console.error('Error in principal list listener:', error);
+                        principalList.innerHTML = `<p class="text-red-500"><i class="fas fa-exclamation-triangle mr-2"></i>Error loading principals: ${error.message}</p>`;
+                    });
+                    
+                } else {
+                    retryCount++;
+                    if (retryCount >= maxRetries) {
+                        clearInterval(checkPrincipalList);
+                    }
+                }
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error setting up principal list listener:', error);
+        }
+    }
     
 
     
@@ -4044,6 +5057,7 @@
                     if (window.firebaseDB && window.firebaseFirestore) {
                         clearInterval(checkFirebase);
                         setupUserClassAccess().then(() => loadClasses());
+                        setupGlobalNoticeListener();
                         
                         // Load dashboard by default
                         loadContent('Dashboard');
@@ -4054,6 +5068,16 @@
                             updateWelcomeMessage();
                             initializeFirstAdmin();
                             setupAdminTabs();
+                            const dismissBtn = document.getElementById('dismissGlobalNoticeBtn');
+                            if (dismissBtn) {
+                                dismissBtn.addEventListener('click', () => {
+                                    if (currentGlobalNoticeUpdatedAt) {
+                                        localStorage.setItem('dismissedGlobalNoticeUpdatedAt', currentGlobalNoticeUpdatedAt);
+                                    }
+                                    const banner = document.getElementById('globalNoticeBanner');
+                                    if (banner) banner.classList.add('hidden');
+                                });
+                            }
                             
                             setTimeout(() => {
                                 checkAndShowWelcomeModal();
@@ -4065,26 +5089,6 @@
                 setTimeout(() => unsubscribe(), 1000);
             });
         }, 50);
-        
-        const submitPassword = document.getElementById('submitPassword');
-        if (submitPassword) submitPassword.addEventListener('click', checkPassword);
-        
-        const cancelPassword = document.getElementById('cancelPassword');
-        if (cancelPassword) cancelPassword.addEventListener('click', hidePasswordModal);
-        
-        const classPasswordInput = document.getElementById('classPasswordInput');
-        if (classPasswordInput) {
-            classPasswordInput.addEventListener('keypress', (e) => {
-                try {
-                    if (e.key === 'Enter') {
-                        e.preventDefault(); // Prevent default form submission
-                        checkPassword();
-                    }
-                } catch (error) {
-                    console.error('Error in classPasswordInput keypress handler:', error);
-                }
-            });
-        }
         
         const classesDropdownBtn = document.getElementById('classesDropdownBtn');
         if (classesDropdownBtn) {
@@ -4121,7 +5125,7 @@
                     return;
                 }
 
-                const allowedSet = !window.isAdmin
+                const allowedSet = !hasSchoolWideAccess()
                     ? new Set((allowedClassesForCurrentUser || []).map((c) => String(c).trim().toLowerCase()).filter(Boolean))
                     : null;
 
@@ -4197,7 +5201,7 @@
                 // Update summary
                 const avgPointsOverall = totalLearners > 0 ? Math.round(totalPoints / totalLearners) : 0;
                 updateChartSummary(
-                    window.isAdmin ? classesSnapshot.size : visibleClassDocs.length,
+                    hasSchoolWideAccess() ? classesSnapshot.size : visibleClassDocs.length,
                     avgPointsOverall,
                     highestPoints,
                     mostActiveClass.name
@@ -4345,13 +5349,13 @@
                     return;
                 }
 
-                const allowedSet = !window.isAdmin
+                const allowedSet = !hasSchoolWideAccess()
                     ? new Set((allowedClassesForCurrentUser || []).map((c) => String(c).trim().toLowerCase()).filter(Boolean))
                     : null;
 
                 classesSnapshot.forEach(doc => {
                     const className = doc.id;
-                    if (!window.isAdmin && allowedSet && !allowedSet.has(String(className).toLowerCase())) {
+                    if (!hasSchoolWideAccess() && allowedSet && !allowedSet.has(String(className).toLowerCase())) {
                         return;
                     }
                     const option = document.createElement('option');
@@ -4404,7 +5408,7 @@
                     return;
                 }
 
-                const allowedSet = !window.isAdmin
+                const allowedSet = !hasSchoolWideAccess()
                     ? new Set((allowedClassesForCurrentUser || []).map((c) => String(c).trim().toLowerCase()).filter(Boolean))
                     : null;
 
@@ -4417,7 +5421,7 @@
                 
                 classesSnapshot.docs.forEach((classDoc) => {
                     const className = classDoc.id;
-                    if (!window.isAdmin && allowedSet && !allowedSet.has(String(className).toLowerCase())) {
+                    if (!hasSchoolWideAccess() && allowedSet && !allowedSet.has(String(className).toLowerCase())) {
                         return;
                     }
                     const learnersRef = window.firebaseFirestore.collection(window.firebaseDB, 'classes', className, 'learners');
@@ -4443,7 +5447,7 @@
                         const totalPointsEl = document.getElementById('totalPoints');
 
                         if (totalClassesEl) {
-                            totalClassesEl.textContent = window.isAdmin
+                            totalClassesEl.textContent = hasSchoolWideAccess()
                                 ? String(classesSnapshot.size)
                                 : String(allowedSet ? allowedSet.size : 0);
                         }

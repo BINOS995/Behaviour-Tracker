@@ -1,6 +1,6 @@
-const CACHE_NAME = 'behaviour-tracker-v7';
-const STATIC_CACHE_NAME = 'behaviour-tracker-static-v7';
-const DYNAMIC_CACHE_NAME = 'behaviour-tracker-dynamic-v7';
+const CACHE_NAME = 'behaviour-tracker-v8';
+const STATIC_CACHE_NAME = 'behaviour-tracker-static-v8';
+const DYNAMIC_CACHE_NAME = 'behaviour-tracker-dynamic-v8';
 
 // Assets to cache immediately
 const STATIC_ASSETS = [
@@ -71,6 +71,26 @@ self.addEventListener('fetch', (event) => {
 
   // Skip non-GET requests
   if (request.method !== 'GET') {
+    return;
+  }
+
+  // Always prefer network for HTML/navigation so updates show immediately
+  if (url.origin === location.origin && (request.mode === 'navigate' || request.destination === 'document' || url.pathname.endsWith('.html'))) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          const responseClone = networkResponse.clone();
+          caches.open(STATIC_CACHE_NAME)
+            .then((cache) => {
+              cache.put(request, responseClone);
+            });
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(request)
+            .then((cacheResponse) => cacheResponse || caches.match('/index.html'));
+        })
+    );
     return;
   }
 

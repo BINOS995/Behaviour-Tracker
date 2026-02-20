@@ -14,11 +14,48 @@
     
     <!-- Content Security Policy for font loading -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
-                 script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                 script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://cdn.tailwindcss.com;
                  connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
                  img-src 'self' data: https:;
                  style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com;
                  font-src 'self' 'data:' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind = tailwind || {};
+        tailwind.config = {
+            corePlugins: { preflight: false },
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif']
+                    },
+                    keyframes: {
+                        floatSlow: {
+                            '0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
+                            '50%': { transform: 'translate3d(0, -18px, 0) scale(1.05)' }
+                        },
+                        drift: {
+                            '0%': { transform: 'translate3d(-10%, -10%, 0)' },
+                            '50%': { transform: 'translate3d(10%, 8%, 0)' },
+                            '100%': { transform: 'translate3d(-10%, -10%, 0)' }
+                        }
+                    },
+                    animation: {
+                        floatSlow: 'floatSlow 10s ease-in-out infinite',
+                        drift: 'drift 16s ease-in-out infinite'
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.6/babel.min.js"></script>
     
     <!-- Firebase -->
     <script type="module" src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
@@ -33,118 +70,26 @@
 <body>
     <!-- Header Navigation -->
     <header id="mainHeader">
-        <div class="header-container">
-            <div class="header-content">
-                <div class="header-brand">
-                    <h1>Parent Portal</h1>
-                </div>
-                <div id="authButtons" class="auth-buttons">
-                    <button onclick="showLogin()" class="btn btn-primary">
-                        <i class="fas fa-sign-in-alt"></i>Login
-                    </button>
-                    <button onclick="showRegistration()" class="btn btn-success">
-                        <i class="fas fa-user-plus"></i>Register
-                    </button>
-                </div>
-            </div>
-        </div>
+        <div id="reactNavRoot"></div>
     </header>
 
-    <!-- Authentication Container -->
-    <div id="authContainer" class="auth-container">
-        <div class="auth-card">
-            <div class="auth-header">
-                <h1>Parent Portal</h1>
-                <p>Monitor your child's academic journey</p>
+    <div id="globalNoticeBanner" style="display:none; max-width: 1100px; margin: 12px auto 0; padding: 0 16px;">
+        <div id="globalNoticeInner" style="border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 14px; padding: 14px 14px; display:flex; gap:12px; align-items:flex-start;">
+            <div style="margin-top: 2px; color:#2563eb;">
+                <i id="globalNoticeIcon" class="fas fa-info-circle"></i>
             </div>
-            
-            <!-- Login Form -->
-            <div id="loginForm" class="space-y-6">
-                <div class="form-group">
-                    <label class="form-label">Phone Number (include country code)</label>
-                    <div class="input-group">
-                        <i class="fas fa-phone input-icon"></i>
-                        <input type="tel" id="phoneNumber" placeholder="+1234567890" class="form-input text-black">
-                    </div>
-                    <p class="form-help">Format: +[country code][number] (e.g., +1234567890)</p>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <div class="input-group">
-                        <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="loginPassword" placeholder="Enter your password" class="form-input text-black">
-                    </div>
-                </div>
-                
-                <button onclick="loginWithPassword()" class="btn btn-primary w-full">
-                    <i class="fas fa-sign-in-alt"></i>Login
-                </button>
-                
-                <!-- OTP section removed as we now use password-based authentication -->
-                
-                <div class="text-center">
-                    <p class="text-sm">
-                        New parent? <button onclick="showRegistration()" class="text-purple-600 font-semibold">Register here</button>
-                    </p>
-                </div>
+            <div style="flex:1; min-width:0;">
+                <div id="globalNoticeTitle" style="font-weight:700; color:#111827;"></div>
+                <div id="globalNoticeMessage" style="color:#374151; white-space:pre-wrap; font-size:14px;"></div>
+                <div id="globalNoticeMeta" style="color:#6b7280; font-size:12px; margin-top:8px;"></div>
             </div>
-            
-            <!-- Registration Form -->
-            <div id="registrationForm" class="hidden">
-                <div class="form-group">
-                    <label class="form-label">Your Name</label>
-                    <div class="input-group">
-                        <i class="fas fa-user input-icon"></i>
-                        <input type="text" id="parentName" placeholder="Your full name" class="form-input text-black">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Phone Number (include country code)</label>
-                    <div class="input-group">
-                        <i class="fas fa-phone input-icon"></i>
-                        <input type="tel" id="regPhoneNumber" placeholder="+1234567890" class="form-input text-black">
-                    </div>
-                    <p class="form-help">Format: +[country code][number] (e.g., +1234567890)</p>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Child's Phone or Guardian Phone (as registered by teacher)</label>
-                    <div class="input-group">
-                        <i class="fas fa-child input-icon"></i>
-                        <input type="tel" id="childGuardianPhone" placeholder="+1234567890" class="form-input text-black">
-                    </div>
-                    <p class="form-help">Format: +[country code][number] (e.g., +1234567890)</p>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Create Password</label>
-                    <div class="input-group">
-                        <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="regPassword" placeholder="Create a secure password" class="form-input text-black">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Confirm Password</label>
-                    <div class="input-group">
-                        <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="confirmPassword" placeholder="Confirm your password" class="form-input text-black">
-                    </div>
-                </div>
-                
-                <button onclick="registerParent()" class="btn btn-primary w-full">
-                    <i class="fas fa-user-plus"></i>Register
-                </button>
-                
-                <div class="text-center">
-                    <p class="text-sm">
-                        Already registered? <button onclick="showLogin()" class="text-purple-600 font-semibold">Login here</button>
-                    </p>
-                </div>
-            </div>
+            <button id="dismissGlobalNoticeBtn" style="border:none; background:transparent; font-size:18px; color:#6b7280; cursor:pointer; padding:0 6px;" aria-label="Dismiss notice">×</button>
         </div>
+    </div>
+
+    <!-- Authentication Container -->
+    <div id="authContainer" class="min-h-screen">
+        <div id="reactAuthRoot"></div>
     </div>
 
     <!-- Dashboard Container -->
@@ -243,7 +188,7 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         // We're not using Firebase Auth anymore, so we don't need to import it
         // import { getAuth, signInWithPhoneNumber, RecaptchaVerifier } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
         // Firebase configuration
         const firebaseConfig = {
@@ -270,8 +215,78 @@
             getDocs,
             doc,
             getDoc,
-            setDoc
+            setDoc,
+            onSnapshot
         };
+
+        let currentGlobalNoticeUpdatedAt = null;
+
+        function renderGlobalNotice(notice) {
+            const banner = document.getElementById('globalNoticeBanner');
+            const inner = document.getElementById('globalNoticeInner');
+            const icon = document.getElementById('globalNoticeIcon');
+            const titleEl = document.getElementById('globalNoticeTitle');
+            const messageEl = document.getElementById('globalNoticeMessage');
+            const metaEl = document.getElementById('globalNoticeMeta');
+            if (!banner || !inner || !icon || !titleEl || !messageEl || !metaEl) return;
+
+            if (!notice || !notice.active || !String(notice.message || '').trim()) {
+                banner.style.display = 'none';
+                currentGlobalNoticeUpdatedAt = null;
+                return;
+            }
+
+            const updatedAt = String(notice.updatedAt || '').trim();
+            currentGlobalNoticeUpdatedAt = updatedAt || null;
+            const dismissedAt = String(localStorage.getItem('dismissedGlobalNoticeUpdatedAt') || '').trim();
+            if (dismissedAt && updatedAt && dismissedAt === updatedAt) {
+                banner.style.display = 'none';
+                return;
+            }
+
+            const severity = String(notice.severity || 'info').toLowerCase();
+            const styleMap = {
+                info: { border: '#bfdbfe', bg: '#eff6ff', color: '#2563eb', icon: 'fa-info-circle' },
+                warning: { border: '#fde68a', bg: '#fffbeb', color: '#b45309', icon: 'fa-triangle-exclamation' },
+                urgent: { border: '#fecaca', bg: '#fef2f2', color: '#dc2626', icon: 'fa-circle-exclamation' },
+                success: { border: '#bbf7d0', bg: '#f0fdf4', color: '#16a34a', icon: 'fa-circle-check' }
+            };
+            const s = styleMap[severity] || styleMap.info;
+            inner.style.borderColor = s.border;
+            inner.style.background = s.bg;
+            icon.className = `fas ${s.icon}`;
+            icon.parentElement.style.color = s.color;
+
+            titleEl.textContent = String(notice.title || '').trim() || 'Important Notice';
+            messageEl.textContent = String(notice.message || '').trim();
+            const metaParts = [];
+            if (notice.updatedAt) metaParts.push(new Date(notice.updatedAt).toLocaleString());
+            if (notice.createdBy) metaParts.push(String(notice.createdBy));
+            metaEl.textContent = metaParts.join(' • ');
+
+            banner.style.display = 'block';
+        }
+
+        function setupGlobalNoticeListener() {
+            const noticeRef = doc(db, 'notices', 'current');
+            onSnapshot(
+                noticeRef,
+                (docSnap) => renderGlobalNotice(docSnap.exists() ? (docSnap.data() || {}) : null),
+                () => renderGlobalNotice(null)
+            );
+            const dismissBtn = document.getElementById('dismissGlobalNoticeBtn');
+            if (dismissBtn) {
+                dismissBtn.addEventListener('click', () => {
+                    if (currentGlobalNoticeUpdatedAt) {
+                        localStorage.setItem('dismissedGlobalNoticeUpdatedAt', currentGlobalNoticeUpdatedAt);
+                    }
+                    const banner = document.getElementById('globalNoticeBanner');
+                    if (banner) banner.style.display = 'none';
+                });
+            }
+        }
+
+        setupGlobalNoticeListener();
 
         // Authentication functions
         window.loginWithPassword = async function() {
@@ -592,6 +607,29 @@
                 if (parentDoc.exists()) {
                     const parentData = parentDoc.data();
                     document.getElementById('parentNameDisplay').textContent = parentData.name;
+
+                    try {
+                        await setDoc(
+                            doc(db, 'parents', userId),
+                            { lastLoginAt: new Date().toISOString() },
+                            { merge: true }
+                        );
+                    } catch (e) {
+                    }
+
+                    try {
+                        const assignmentsDoc = await getDoc(doc(db, 'parentAssignments', userId));
+                        if (assignmentsDoc.exists()) {
+                            const assignments = assignmentsDoc.data() || {};
+                            const learners = Array.isArray(assignments.learners) ? assignments.learners : [];
+                            if (learners.length > 0) {
+                                await loadChildrenByAssignments(learners);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                    }
+
                     await loadChildren(parentData.guardianPhone);
                 } else {
                     // Fallback to phone number
@@ -604,6 +642,23 @@
                 await loadChildren(user.phoneNumber);
             }
         };
+
+        async function loadChildrenByAssignments(learners) {
+            const childrenContainer = document.getElementById('childrenContainer');
+            childrenContainer.innerHTML = '<div class="text-center py-8"><div class="spinner"></div><p class="text-gray-600 mt-2">Loading children data...</p></div>';
+            
+            const tasks = learners.map(async (a) => {
+                const className = String(a.className || '').trim();
+                const learnerId = String(a.learnerId || '').trim();
+                if (!className || !learnerId) return null;
+                const learnerDoc = await getDoc(doc(db, 'classes', className, 'learners', learnerId));
+                if (!learnerDoc.exists()) return null;
+                return { id: learnerId, className, ...learnerDoc.data() };
+            });
+
+            const results = (await Promise.all(tasks)).filter(Boolean);
+            displayChildren(results);
+        }
 
         window.loadChildren = async function(parentPhone) {
             try {
@@ -779,32 +834,24 @@
             document.getElementById('authContainer').classList.remove('hidden');
             // Show login header again
             document.getElementById('mainHeader').style.display = 'block';
-            // Clear input fields
-            document.getElementById('phoneNumber').value = '';
-            document.getElementById('loginPassword').value = '';
             // Clear localStorage
             localStorage.removeItem('parentPhone');
             updateHeaderVisibility();
-            showLogin();
+            if (typeof window.parentPortalSetMode === 'function') {
+                window.parentPortalSetMode('login');
+            }
         };
 
         window.showRegistration = function() {
-            document.getElementById('loginForm').classList.add('hidden');
-            document.getElementById('registrationForm').classList.remove('hidden');
-            // Clear input fields
-            document.getElementById('phoneNumber').value = '';
-            document.getElementById('loginPassword').value = '';
+            if (typeof window.parentPortalSetMode === 'function') {
+                window.parentPortalSetMode('register');
+            }
         };
 
         window.showLogin = function() {
-            document.getElementById('registrationForm').classList.add('hidden');
-            document.getElementById('loginForm').classList.remove('hidden');
-            // Clear input fields
-            document.getElementById('parentName').value = '';
-            document.getElementById('regPhoneNumber').value = '';
-            document.getElementById('childGuardianPhone').value = '';
-            document.getElementById('regPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
+            if (typeof window.parentPortalSetMode === 'function') {
+                window.parentPortalSetMode('login');
+            }
         };
 
         // Show/hide header based on auth state
@@ -831,6 +878,402 @@
 
         // We no longer need the recaptcha container since we're not using Firebase Phone Auth
         // But we'll keep the clearRecaptchaContainer function for compatibility
+    </script>
+
+    <script type="text/babel">
+        const { useEffect, useMemo, useState } = React;
+
+        function PhoneIcon({ className }) {
+            return (
+                <svg className={className} viewBox="0 0 24 24" fill="none">
+                    <path d="M6.5 3.5h2.25c.52 0 .98.36 1.1.86l.68 2.86c.1.42-.08.86-.45 1.08l-1.62.97c1.1 2.21 2.9 4.01 5.11 5.11l.97-1.62c.22-.37.66-.55 1.08-.45l2.86.68c.5.12.86.58.86 1.1V17.5c0 1.1-.9 2-2 2H17c-7.46 0-13.5-6.04-13.5-13.5V5.5c0-1.1.9-2 2-2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+            );
+        }
+
+        function LockIcon({ className }) {
+            return (
+                <svg className={className} viewBox="0 0 24 24" fill="none">
+                    <path d="M7.5 11V8.5a4.5 4.5 0 0 1 9 0V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path d="M7 11h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+                </svg>
+            );
+        }
+
+        function Input({ icon, label, help, type = 'text', value, onChange, placeholder, autoComplete }) {
+            return (
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/90">{label}</label>
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center text-white/70">
+                            {icon}
+                        </div>
+                        <input
+                            type={type}
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
+                            placeholder={placeholder}
+                            autoComplete={autoComplete}
+                            className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/50 outline-none transition-all duration-300 focus:border-purple-300/70 focus:ring-2 focus:ring-purple-400/30"
+                        />
+                    </div>
+                    {help ? <p className="text-xs text-white/60">{help}</p> : null}
+                </div>
+            );
+        }
+
+        function PrimaryButton({ children, disabled, onClick, type = 'button' }) {
+            return (
+                <button
+                    type={type}
+                    disabled={disabled}
+                    onClick={onClick}
+                    className="w-full py-3 rounded-xl bg-purple-600 text-white font-semibold shadow-lg shadow-purple-500/40 transition-all duration-300 hover:scale-105 hover:bg-purple-500 disabled:opacity-60 disabled:hover:scale-100"
+                >
+                    {children}
+                </button>
+            );
+        }
+
+        function Nav() {
+            const onLogin = () => window.parentPortalSetMode && window.parentPortalSetMode('login');
+            const onRegister = () => window.parentPortalSetMode && window.parentPortalSetMode('register');
+
+            return (
+                <div className="sticky top-0 z-20">
+                    <div className="w-full bg-white/10 backdrop-blur-xl border-b border-white/10">
+                        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xl flex items-center justify-center">
+                                    <i className="fas fa-heart text-white/90"></i>
+                                </div>
+                                <div className="leading-tight">
+                                    <div className="text-white font-extrabold tracking-tight text-xl">Parent Portal</div>
+                                    <div className="text-white/60 text-xs">Behaviour Tracker</div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={onLogin} className="px-4 py-2 rounded-xl bg-purple-600/90 text-white font-semibold shadow-md shadow-purple-500/30 transition-all duration-300 hover:scale-105 hover:bg-purple-500">
+                                    <i className="fas fa-right-to-bracket mr-2"></i>Login
+                                </button>
+                                <button onClick={onRegister} className="px-4 py-2 rounded-xl bg-emerald-500/90 text-white font-semibold shadow-md shadow-emerald-500/30 transition-all duration-300 hover:scale-105 hover:bg-emerald-400">
+                                    <i className="fas fa-user-plus mr-2"></i>Register
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function AuthCard() {
+            const [mode, setMode] = useState('login');
+            const [loginPhone, setLoginPhone] = useState('');
+            const [loginPassword, setLoginPassword] = useState('');
+            const [parentName, setParentName] = useState('');
+            const [regPhone, setRegPhone] = useState('');
+            const [childPhone, setChildPhone] = useState('');
+            const [regPassword, setRegPassword] = useState('');
+            const [regPassword2, setRegPassword2] = useState('');
+            const [busy, setBusy] = useState(false);
+            const [error, setError] = useState('');
+
+            useEffect(() => {
+                window.parentPortalSetMode = (m) => {
+                    setError('');
+                    setMode(m === 'register' ? 'register' : 'login');
+                };
+                return () => {
+                    if (window.parentPortalSetMode) delete window.parentPortalSetMode;
+                };
+            }, []);
+
+            const firebase = window.firebaseFirestore;
+            const ready = !!(firebase && firebase.db && firebase.doc && firebase.getDoc && firebase.setDoc && firebase.collection && firebase.getDocs && firebase.query && firebase.where);
+
+            const submitLogin = async () => {
+                if (!ready) {
+                    setError('System is still loading. Please wait a moment and try again.');
+                    return;
+                }
+                let phoneNumber = String(loginPhone || '').trim();
+                const password = String(loginPassword || '');
+                if (!phoneNumber || !password) {
+                    setError('Please enter both phone number and password.');
+                    return;
+                }
+                if (!phoneNumber.startsWith('+')) phoneNumber = '+' + phoneNumber;
+                setBusy(true);
+                setError('');
+
+                try {
+                    const userId = 'user_' + phoneNumber.replace(/[^0-9]/g, '');
+                    const parentDoc = await firebase.getDoc(firebase.doc(firebase.db, 'parents', userId));
+                    if (!parentDoc.exists()) {
+                        setError('Account not found. Please register first.');
+                        setBusy(false);
+                        return;
+                    }
+                    const data = parentDoc.data() || {};
+                    if (String(data.password || '') !== String(password)) {
+                        setError('Incorrect password.');
+                        setBusy(false);
+                        return;
+                    }
+
+                    try {
+                        const now = new Date().toISOString();
+                        const loginCount = Number(data.loginCount) || 0;
+                        await firebase.setDoc(
+                            firebase.doc(firebase.db, 'parents', userId),
+                            {
+                                lastLoginAt: now,
+                                loginCount: loginCount + 1
+                            },
+                            { merge: true }
+                        );
+                    } catch (e) {
+                    }
+
+                    const normalizedPhone = phoneNumber.replace(/[^0-9+]/g, '');
+                    let hasChildren = false;
+                    try {
+                        const classesSnapshot = await firebase.getDocs(firebase.collection(firebase.db, 'classes'));
+                        for (const classDoc of classesSnapshot.docs) {
+                            const classId = classDoc.id;
+                            const learnersRef = firebase.collection(firebase.db, 'classes', classId, 'learners');
+                            const guardianQuery = firebase.query(learnersRef, firebase.where('guardianPhone', '==', normalizedPhone));
+                            const guardianSnapshot = await firebase.getDocs(guardianQuery);
+                            if (!guardianSnapshot.empty) {
+                                hasChildren = true;
+                                break;
+                            }
+                            const phoneQuery = firebase.query(learnersRef, firebase.where('phone', '==', normalizedPhone));
+                            const phoneSnapshot = await firebase.getDocs(phoneQuery);
+                            if (!phoneSnapshot.empty) {
+                                hasChildren = true;
+                                break;
+                            }
+                        }
+                    } catch (childCheckError) {
+                        hasChildren = true;
+                    }
+
+                    if (!hasChildren) {
+                        const proceed = window.confirm(
+                            'No children found with this phone number.\n\nThis might be because:\n• Your child hasn’t been added yet\n• The phone number doesn’t match what the teacher registered\n\nProceed anyway?'
+                        );
+                        if (!proceed) {
+                            setBusy(false);
+                            return;
+                        }
+                    }
+
+                    localStorage.setItem('parentPhone', phoneNumber);
+                    await window.loadParentDashboard({ phoneNumber });
+                } catch (e) {
+                    setError(String(e?.message || 'Login failed.'));
+                } finally {
+                    setBusy(false);
+                }
+            };
+
+            const submitRegister = async () => {
+                if (!ready) {
+                    setError('System is still loading. Please wait a moment and try again.');
+                    return;
+                }
+                const name = String(parentName || '').trim();
+                let phoneNumber = String(regPhone || '').trim();
+                let guardianPhone = String(childPhone || '').trim();
+                const p1 = String(regPassword || '');
+                const p2 = String(regPassword2 || '');
+                if (!name || !phoneNumber || !guardianPhone || !p1 || !p2) {
+                    setError('Please fill in all fields.');
+                    return;
+                }
+                if (p1 !== p2) {
+                    setError('Passwords do not match.');
+                    return;
+                }
+                if (p1.length < 6) {
+                    setError('Password must be at least 6 characters long.');
+                    return;
+                }
+                if (!phoneNumber.startsWith('+')) phoneNumber = '+' + phoneNumber;
+                if (!guardianPhone.startsWith('+')) guardianPhone = '+' + guardianPhone;
+
+                setBusy(true);
+                setError('');
+
+                try {
+                    const userId = 'user_' + phoneNumber.replace(/[^0-9]/g, '');
+                    const existing = await firebase.getDoc(firebase.doc(firebase.db, 'parents', userId));
+                    if (existing.exists()) {
+                        setError('An account with this phone number already exists. Please log in.');
+                        setBusy(false);
+                        return;
+                    }
+
+                    await firebase.setDoc(firebase.doc(firebase.db, 'parents', userId), {
+                        name,
+                        phoneNumber,
+                        guardianPhone,
+                        password: p1,
+                        createdAt: new Date().toISOString(),
+                        children: [],
+                        lastLoginAt: new Date().toISOString(),
+                        loginCount: 1
+                    });
+
+                    localStorage.setItem('parentPhone', phoneNumber);
+                    await window.loadParentDashboard({ phoneNumber });
+                } catch (e) {
+                    setError(String(e?.message || 'Registration failed.'));
+                } finally {
+                    setBusy(false);
+                }
+            };
+
+            const title = mode === 'login' ? 'Parent Portal' : 'Create Account';
+            const subtitle = mode === 'login' ? "Monitor your child's academic journey" : 'Register to view your child’s progress';
+
+            return (
+                <div className="min-h-screen font-sans">
+                    <div className="fixed inset-0 -z-10 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-700 via-indigo-700 to-pink-500"></div>
+                        <div className="absolute -top-24 -left-24 w-[520px] h-[520px] rounded-full bg-white/10 blur-3xl animate-floatSlow"></div>
+                        <div className="absolute -bottom-32 -right-28 w-[640px] h-[640px] rounded-full bg-white/10 blur-3xl animate-drift"></div>
+                        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.25) 0, rgba(255,255,255,0) 45%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.18) 0, rgba(255,255,255,0) 40%), radial-gradient(circle at 50% 80%, rgba(255,255,255,0.16) 0, rgba(255,255,255,0) 45%)' }}></div>
+                    </div>
+
+                    <div className="relative z-10">
+                        <div className="max-w-6xl mx-auto px-4 pt-28 pb-14 flex items-center justify-center">
+                            <div className="w-full max-w-xl">
+                                <div className="bg-white/15 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-10 shadow-2xl shadow-black/20">
+                                    <div className="text-center space-y-2">
+                                        <div className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">{title}</div>
+                                        <div className="text-white/70 text-sm">{subtitle}</div>
+                                    </div>
+
+                                    <div className="mt-8 space-y-5">
+                                        {mode === 'login' ? (
+                                            <>
+                                                <Input
+                                                    label="Phone Number (include country code)"
+                                                    help="Format: +[country code][number] (e.g., +1234567890)"
+                                                    icon={<PhoneIcon className="w-5 h-5" />}
+                                                    type="tel"
+                                                    value={loginPhone}
+                                                    onChange={setLoginPhone}
+                                                    placeholder="+1234567890"
+                                                    autoComplete="tel"
+                                                />
+                                                <Input
+                                                    label="Password"
+                                                    icon={<LockIcon className="w-5 h-5" />}
+                                                    type="password"
+                                                    value={loginPassword}
+                                                    onChange={setLoginPassword}
+                                                    placeholder="Enter your password"
+                                                    autoComplete="current-password"
+                                                />
+                                                {error ? <div className="text-sm text-red-200 bg-red-500/10 border border-red-300/20 rounded-xl px-4 py-3">{error}</div> : null}
+                                                <PrimaryButton disabled={busy} onClick={submitLogin}>
+                                                    {busy ? 'Logging in…' : (<><i className="fas fa-right-to-bracket mr-2"></i>Login</>)}
+                                                </PrimaryButton>
+                                                <div className="text-center text-sm text-white/70">
+                                                    New parent?{' '}
+                                                    <button onClick={() => window.parentPortalSetMode('register')} className="text-white font-semibold underline decoration-white/30 underline-offset-4 hover:decoration-white transition-all duration-300">
+                                                        Register here
+                                                    </button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="md:col-span-2">
+                                                        <Input
+                                                            label="Your Name"
+                                                            icon={<i className="fas fa-user"></i>}
+                                                            value={parentName}
+                                                            onChange={setParentName}
+                                                            placeholder="Your full name"
+                                                            autoComplete="name"
+                                                        />
+                                                    </div>
+                                                    <Input
+                                                        label="Phone Number"
+                                                        help="Format: +[country code][number]"
+                                                        icon={<PhoneIcon className="w-5 h-5" />}
+                                                        type="tel"
+                                                        value={regPhone}
+                                                        onChange={setRegPhone}
+                                                        placeholder="+1234567890"
+                                                        autoComplete="tel"
+                                                    />
+                                                    <Input
+                                                        label="Child/Guardian Phone"
+                                                        help="Must match what teacher registered"
+                                                        icon={<i className="fas fa-child"></i>}
+                                                        type="tel"
+                                                        value={childPhone}
+                                                        onChange={setChildPhone}
+                                                        placeholder="+1234567890"
+                                                        autoComplete="tel"
+                                                    />
+                                                    <Input
+                                                        label="Create Password"
+                                                        icon={<LockIcon className="w-5 h-5" />}
+                                                        type="password"
+                                                        value={regPassword}
+                                                        onChange={setRegPassword}
+                                                        placeholder="Create a secure password"
+                                                        autoComplete="new-password"
+                                                    />
+                                                    <Input
+                                                        label="Confirm Password"
+                                                        icon={<LockIcon className="w-5 h-5" />}
+                                                        type="password"
+                                                        value={regPassword2}
+                                                        onChange={setRegPassword2}
+                                                        placeholder="Confirm your password"
+                                                        autoComplete="new-password"
+                                                    />
+                                                </div>
+                                                {error ? <div className="text-sm text-red-200 bg-red-500/10 border border-red-300/20 rounded-xl px-4 py-3">{error}</div> : null}
+                                                <PrimaryButton disabled={busy} onClick={submitRegister}>
+                                                    {busy ? 'Creating account…' : (<><i className="fas fa-user-plus mr-2"></i>Register</>)}
+                                                </PrimaryButton>
+                                                <div className="text-center text-sm text-white/70">
+                                                    Already registered?{' '}
+                                                    <button onClick={() => window.parentPortalSetMode('login')} className="text-white font-semibold underline decoration-white/30 underline-offset-4 hover:decoration-white transition-all duration-300">
+                                                        Login here
+                                                    </button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 text-center text-xs text-white/60">
+                                    By continuing you agree to the school’s policies.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const navRoot = document.getElementById('reactNavRoot');
+        if (navRoot) {
+            ReactDOM.createRoot(navRoot).render(<Nav />);
+        }
+        const authRoot = document.getElementById('reactAuthRoot');
+        if (authRoot) {
+            ReactDOM.createRoot(authRoot).render(<AuthCard />);
+        }
     </script>
 </body>
 </html>

@@ -74,5 +74,11 @@ service cloud.firestore {
     match /parents/{parentId} {
       allow read, write: if true; // Allow unauthenticated access for our custom password auth system
     }
+    
+    // Class notices - parents can post notices to their children's classes
+    match /classNotices/{className}/notices/{noticeId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+    }
   }
 }

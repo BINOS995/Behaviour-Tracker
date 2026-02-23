@@ -630,6 +630,49 @@
                     } catch (e) {
                     }
 
+                    try {
+                        const ad = parentDoc.data() || {};
+                        const fallbackLearners = Array.isArray(ad.assignedLearners) ? ad.assignedLearners : [];
+                        if (fallbackLearners.length > 0) {
+                            const mapped = fallbackLearners.map(l => ({
+                                className: String(l.className || '').trim(),
+                                learnerId: String(l.learnerId || '').trim()
+                            })).filter(l => l.className && l.learnerId);
+                            if (mapped.length > 0) {
+                                await loadChildrenByAssignments(mapped);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                    }
+
+                    try {
+                        const classesSnapshot2 = await getDocs(collection(db, 'classes'));
+                        const scans = classesSnapshot2.docs.map(async (classDoc) => {
+                            const className = classDoc.id;
+                            const learnersRef = collection(db, 'classes', className, 'learners');
+                            const snap = await getDocs(learnersRef);
+                            const hits = [];
+                            snap.forEach(learnerDoc => {
+                                const data = learnerDoc.data() || {};
+                                const assigned = Array.isArray(data.assignedParents) ? data.assignedParents : [];
+                                const has = assigned.some(p => String(p.parentId || '').trim() === String(userId).trim());
+                                if (has) {
+                                    hits.push({ className, learnerId: learnerDoc.id });
+                                }
+                            });
+                            return hits;
+                        });
+                        const arrays = await Promise.all(scans);
+                        const merged = [];
+                        arrays.forEach(a => merged.push(...a));
+                        if (merged.length > 0) {
+                            await loadChildrenByAssignments(merged);
+                            return;
+                        }
+                    } catch (e) {
+                    }
+
                     await loadChildren(parentData.guardianPhone);
                 } else {
                     // Fallback to phone number
@@ -759,9 +802,15 @@
                         </div>
                         <i class="fas fa-graduation-cap text-3xl text-white opacity-80"></i>
                     </div>
-                    <div class="text-center">
+                    <div class="text-center mb-4">
                         <p class="text-3xl font-bold">${child.points}</p>
                         <p class="text-sm text-purple-100">Current Points</p>
+                    </div>
+                    <div class="text-center">
+                        <button onclick="event.stopPropagation(); sendNoticeToChildClass('${child.id}', '${child.name}', '${child.className}')" 
+                                class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                            <i class="fas fa-bell mr-2"></i>Send Notice to Class
+                        </button>
                     </div>
                 `;
                 
@@ -827,6 +876,35 @@
 
         window.closeChildModal = function() {
             document.getElementById('childModal').classList.add('hidden');
+        };
+
+        window.sendNoticeToChildClass = async function(learnerId, learnerName, className) {
+            const notice = prompt(`Send notice to ${learnerName}'s class (${className}):`);
+            if (!notice || !notice.trim()) return;
+            
+            try {
+                const parentPhone = localStorage.getItem('parentPhone');
+                if (!parentPhone) {
+                    alert('Please log in first.');
+                    return;
+                }
+                
+                const parentId = 'user_' + parentPhone.replace(/[^0-9]/g, '');
+                const noticeRef = doc(db, 'classNotices', className, 'notices', Date.now().toString());
+                
+                await setDoc(noticeRef, {
+                    message: notice.trim(),
+                    from: parentId,
+                    learnerId: learnerId,
+                    learnerName: learnerName,
+                    createdAt: new Date().toISOString()
+                });
+                
+                alert('Notice sent to class successfully!');
+            } catch (error) {
+                console.error('Error sending notice:', error);
+                alert('Error sending notice. Please try again.');
+            }
         };
 
         window.logout = function() {

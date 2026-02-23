@@ -86,7 +86,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { initializeFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { initializeFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, getDocs, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBNGdPWISw803XD8xVo0RyCGoGpNX8o_jM",
@@ -1578,6 +1578,22 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="md:col-span-1">
+                            <button id="resetParentPasswordBtn" onclick="adminResetParentPassword()" class="w-full bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">
+                                <i class="fas fa-key mr-2"></i>Reset Parent Password
+                            </button>
+                        </div>
+                        <div class="md:col-span-1">
+                            <button id="deleteParentAccountBtn" onclick="adminDeleteParentAccount()" class="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                                <i class="fas fa-user-slash mr-2"></i>Delete Parent Account
+                            </button>
+                        </div>
+                        <div class="md:col-span-1">
+                            <p class="text-xs text-gray-600">Select a parent above, then use these controls. Admin only.</p>
+                        </div>
+                    </div>
 
                     <div class="bg-white border border-gray-200 rounded-lg p-4">
                         <div class="flex items-center justify-between mb-3">
@@ -1705,6 +1721,7 @@
                     updateClassesList();
                     updateTabContentWithClasses();
                     updateSidebarNavigation();
+                    populateParentAssignClassSelect();
                 });
                     
             }, (error) => {
@@ -2255,6 +2272,7 @@
         }
     }
 
+    let parentAssignmentsFallbackListener = null;
     function loadParentAssignmentsForSelectedParent() {
         const parentSelect = document.getElementById('parentSelect');
         if (!parentSelect) return;
@@ -2263,6 +2281,10 @@
             if (parentAssignmentsListener) {
                 parentAssignmentsListener();
                 parentAssignmentsListener = null;
+            }
+            if (parentAssignmentsFallbackListener) {
+                parentAssignmentsFallbackListener();
+                parentAssignmentsFallbackListener = null;
             }
             renderAssignedLearners([]);
             const countEl = document.getElementById('assignedLearnersCount');
@@ -2280,13 +2302,67 @@
         parentAssignmentsListener = window.firebaseFirestore.onSnapshot(ref, (docSnap) => {
             const data = docSnap.exists() ? (docSnap.data() || {}) : {};
             const learners = Array.isArray(data.learners) ? data.learners : [];
-            renderAssignedLearners(
-                learners.map((l) => ({
-                    className: String(l.className || '').trim(),
-                    learnerId: String(l.learnerId || '').trim(),
-                    learnerName: String(l.learnerName || '').trim()
-                })).filter((l) => l.className && l.learnerId)
-            );
+            const normalized = learners.map((l) => ({
+                className: String(l.className || '').trim(),
+                learnerId: String(l.learnerId || '').trim(),
+                learnerName: String(l.learnerName || '').trim()
+            })).filter((l) => l.className && l.learnerId);
+            // Also read fallback from parents doc if present
+            const parentDocRef = window.firebaseFirestore.doc(window.firebaseDB, 'parents', parentId);
+            if (parentAssignmentsFallbackListener) {
+                parentAssignmentsFallbackListener();
+                parentAssignmentsFallbackListener = null;
+            }
+            parentAssignmentsFallbackListener = window.firebaseFirestore.onSnapshot(parentDocRef, (parentSnap) => {
+                const pdata = parentSnap.exists() ? (parentSnap.data() || {}) : {};
+                const fallback = Array.isArray(pdata.assignedLearners) ? pdata.assignedLearners : [];
+                const merged = [...normalized];
+                merged.push(
+                    ...fallback.map((l) => ({
+                        className: String(l.className || '').trim(),
+                        learnerId: String(l.learnerId || '').trim(),
+                        learnerName: String(l.learnerName || '').trim()
+                    })).filter((l) => l.className && l.learnerId)
+                );
+                // Collect from learner records assignedParents across all classes
+                const classNames = Object.keys(adminClassPasswords || {});
+                const scanTasks = classNames.map(async (cn) => {
+                    try {
+                        const snap = await window.firebaseFirestore.getDocs(
+                            window.firebaseFirestore.collection(window.firebaseDB, 'classes', cn, 'learners')
+                        );
+                        const results = [];
+                        snap.forEach((docSnap) => {
+                            const data = docSnap.data() || {};
+                            const assigned = Array.isArray(data.assignedParents) ? data.assignedParents : [];
+                            const has = assigned.some((p) => String(p.parentId || '').trim() === String(parentId).trim());
+                            if (has) {
+                                results.push({
+                                    className: cn,
+                                    learnerId: docSnap.id,
+                                    learnerName: String(data.name || '').trim() || 'Unknown'
+                                });
+                            }
+                        });
+                        return results;
+                    } catch {
+                        return [];
+                    }
+                });
+                Promise.all(scanTasks).then((arrays) => {
+                    arrays.forEach((arr) => merged.push(...arr));
+                    const seen = new Set();
+                    const unique = merged.filter((l) => {
+                        const key = `${l.className}:${l.learnerId}`;
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
+                    renderAssignedLearners(unique);
+                });
+            }, () => {
+                renderAssignedLearners(normalized);
+            });
         }, (error) => {
             console.error('Error loading parent assignments:', error);
             const list = document.getElementById('parentAssignedLearnersList');
@@ -2309,6 +2385,7 @@
         }
 
         try {
+            console.log('Assigning parent to learner', { parentId, className, learnerId });
             const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
             const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
             if (!learnerDoc.exists()) {
@@ -2348,8 +2425,64 @@
 
             alert('Parent assigned successfully.');
         } catch (error) {
-            console.error('Error assigning parent to learner:', error);
-            alert('Error assigning parent. Please try again.');
+            console.error('Error assigning parent to learner:', { message: error?.message, code: error?.code, error });
+            if (error && error.code === 'permission-denied') {
+                try {
+                    const parentInfo = parentsCache.find((p) => p.id === parentId) || {};
+                    const parentDocRef = window.firebaseFirestore.doc(window.firebaseDB, 'parents', parentId);
+                    const parentDoc = await window.firebaseFirestore.getDoc(parentDocRef);
+                    const existingData = parentDoc.exists() ? (parentDoc.data() || {}) : {};
+                    const learners = Array.isArray(existingData.assignedLearners) ? existingData.assignedLearners : [];
+                    const key = `${className}:${learnerId}`;
+                    const filtered = learners.filter((l) => `${String(l.className || '').trim()}:${String(l.learnerId || '').trim()}` !== key);
+                    filtered.push({
+                        className,
+                        learnerId,
+                        learnerName,
+                        assignedAt: new Date().toISOString()
+                    });
+                    await window.firebaseFirestore.setDoc(
+                        parentDocRef,
+                        {
+                            assignedLearners: filtered,
+                            parentId,
+                            parentName: String(parentInfo.name || '').trim(),
+                            parentPhone: String(parentInfo.phoneNumber || '').trim(),
+                            updatedAt: new Date().toISOString()
+                        },
+                        { merge: true }
+                    );
+                    alert('Parent assigned successfully via fallback.');
+                } catch (fallbackError) {
+                    try {
+                        const learnerRef = window.firebaseFirestore.doc(window.firebaseDB, 'classes', className, 'learners', learnerId);
+                        const learnerDoc = await window.firebaseFirestore.getDoc(learnerRef);
+                        const learnerData = learnerDoc.exists() ? (learnerDoc.data() || {}) : {};
+                        const assigned = Array.isArray(learnerData.assignedParents) ? learnerData.assignedParents : [];
+                        const key = String(parentId || '').trim();
+                        const filtered = assigned.filter((p) => String(p.parentId || '').trim() !== key);
+                        filtered.push({
+                            parentId: parentId,
+                            parentName: String((parentsCache.find((p) => p.id === parentId) || {}).name || '').trim(),
+                            parentPhone: String((parentsCache.find((p) => p.id === parentId) || {}).phoneNumber || '').trim(),
+                            assignedAt: new Date().toISOString()
+                        });
+                        await window.firebaseFirestore.setDoc(
+                            learnerRef,
+                            { assignedParents: filtered, updatedAt: new Date().toISOString() },
+                            { merge: true }
+                        );
+                        alert('Parent assigned successfully via learner record.');
+                    } catch (finalError) {
+                        console.error('All assignment writes failed:', { message: finalError?.message, code: finalError?.code, finalError });
+                        alert('Permission denied. Only admins or principals can assign parents to learners.');
+                    }
+                }
+            } else if (error && (String(error.message || '').includes('network') || String(error.message || '').includes('Failed to fetch'))) {
+                alert('Network error while assigning parent. Check your internet connection and try again.');
+            } else {
+                alert('Error assigning parent. Please try again. Details in console.');
+            }
         }
     }
 
@@ -2378,6 +2511,103 @@
         } catch (error) {
             console.error('Error removing assignment:', error);
             alert('Error removing assignment. Please try again.');
+        }
+    }
+    
+    async function adminResetParentPassword() {
+        try {
+            if (!window.isAdmin) {
+                alert('Only admins can reset parent passwords.');
+                return;
+            }
+            const parentSelect = document.getElementById('parentSelect');
+            if (!parentSelect) return;
+            const parentId = String(parentSelect.value || '').trim();
+            if (!parentId) {
+                alert('Select a parent first.');
+                return;
+            }
+            const newPassword = prompt('Enter new password (min 6 chars):');
+            if (!newPassword || newPassword.length < 6) {
+                alert('Password must be at least 6 characters.');
+                return;
+            }
+            const parentDocRef = window.firebaseFirestore.doc(window.firebaseDB, 'parents', parentId);
+            await window.firebaseFirestore.setDoc(
+                parentDocRef,
+                { password: newPassword, passwordResetAt: new Date().toISOString() },
+                { merge: true }
+            );
+            alert('Parent password reset successfully.');
+        } catch (error) {
+            console.error('Error resetting parent password:', error);
+            alert('Error resetting password. Please try again.');
+        }
+    }
+    
+    async function adminDeleteParentAccount() {
+        try {
+            if (!window.isAdmin) {
+                alert('Only admins can delete parent accounts.');
+                return;
+            }
+            const parentSelect = document.getElementById('parentSelect');
+            if (!parentSelect) return;
+            const parentId = String(parentSelect.value || '').trim();
+            if (!parentId) {
+                alert('Select a parent first.');
+                return;
+            }
+            if (!confirm('Delete this parent account? This will remove assignments and the parent profile.')) return;
+            
+            // Remove parentAssignments doc
+            try {
+                await window.firebaseFirestore.deleteDoc(
+                    window.firebaseFirestore.doc(window.firebaseDB, 'parentAssignments', parentId)
+                );
+            } catch {}
+            
+            // Remove fallback assignedLearners from parents doc (delete entire doc)
+            try {
+                await window.firebaseFirestore.deleteDoc(
+                    window.firebaseFirestore.doc(window.firebaseDB, 'parents', parentId)
+                );
+            } catch {}
+            
+            // Sweep learners assignedParents arrays
+            try {
+                const classNames = Object.keys(adminClassPasswords || {});
+                const tasks = classNames.map(async (cn) => {
+                    const snap = await window.firebaseFirestore.getDocs(
+                        window.firebaseFirestore.collection(window.firebaseDB, 'classes', cn, 'learners')
+                    );
+                    const updates = [];
+                    snap.forEach((docSnap) => {
+                        const data = docSnap.data() || {};
+                        const assigned = Array.isArray(data.assignedParents) ? data.assignedParents : [];
+                        const filtered = assigned.filter((p) => String(p.parentId || '').trim() !== parentId);
+                        if (filtered.length !== assigned.length) {
+                            updates.push(
+                                window.firebaseFirestore.setDoc(
+                                    window.firebaseFirestore.doc(window.firebaseDB, 'classes', cn, 'learners', docSnap.id),
+                                    { assignedParents: filtered, updatedAt: new Date().toISOString() },
+                                    { merge: true }
+                                )
+                            );
+                        }
+                    });
+                    await Promise.all(updates);
+                });
+                await Promise.all(tasks);
+            } catch (e) {
+            }
+            
+            renderLoggedInParents(parentsCache.filter((p) => p.id !== parentId));
+            loadParentAssignmentsForSelectedParent();
+            alert('Parent account deleted.');
+        } catch (error) {
+            console.error('Error deleting parent account:', error);
+            alert('Error deleting parent account. Please try again.');
         }
     }
 
@@ -3918,6 +4148,100 @@
             return { bestLearnerName: '', bestLearnerPoints: '' };
         }
     }
+
+    // Function to create a test notice (for debugging)
+    async function createTestNotice(className) {
+        try {
+            const testNotice = {
+                message: 'Test notice from teacher dashboard',
+                from: 'teacher_test',
+                learnerId: 'test_learner',
+                learnerName: 'Test Student',
+                createdAt: new Date().toISOString()
+            };
+            
+            const noticeRef = doc(window.firebaseDB, 'classNotices', className, 'notices', 'test_' + Date.now());
+            await setDoc(noticeRef, testNotice);
+            console.log('Test notice created successfully');
+            return true;
+        } catch (error) {
+            console.error('Error creating test notice:', error);
+            return false;
+        }
+    }
+
+    // Function to load class notices from Firestore
+    async function loadClassNotices(className) {
+        try {
+            console.log(`Loading notices for class: ${className}`);
+            
+            // Wait a bit for DOM to be ready
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const noticesContainer = document.getElementById(`${className}-notices`);
+            if (!noticesContainer) {
+                console.warn(`Notices container not found for class: ${className}`);
+                return;
+            }
+            
+            // Show loading state
+            noticesContainer.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">Loading notices...</p>';
+            
+            console.log(`Fetching notices from Firestore for class: ${className}`);
+            
+            try {
+                const noticesRef = collection(window.firebaseDB, 'classNotices', className, 'notices');
+                const noticesQuery = query(noticesRef, orderBy('createdAt', 'desc'));
+                const noticesSnapshot = await getDocs(noticesQuery);
+                
+                console.log(`Found ${noticesSnapshot.size} notices for class: ${className}`);
+            
+            if (noticesSnapshot.empty) {
+                noticesContainer.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No notices yet</p>';
+                return;
+            }
+            } catch (firestoreError) {
+                console.error('Firestore error loading notices:', firestoreError);
+                if (firestoreError.code === 'permission-denied') {
+                    noticesContainer.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Permission denied - check Firebase rules</p>';
+                } else if (firestoreError.code === 'not-found') {
+                    noticesContainer.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No notices yet</p>';
+                } else {
+                    noticesContainer.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error loading notices</p>';
+                }
+                return;
+            }
+            
+            noticesContainer.innerHTML = '';
+            noticesSnapshot.forEach(doc => {
+                const notice = doc.data();
+                const noticeElement = document.createElement('div');
+                noticeElement.className = 'bg-white rounded-lg p-3 border border-gray-200';
+                
+                const date = new Date(notice.createdAt).toLocaleDateString();
+                const time = new Date(notice.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                noticeElement.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs text-gray-500">${date} ${time}</span>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${notice.learnerName}</span>
+                    </div>
+                    <p class="text-sm text-gray-800 mb-1">${notice.message}</p>
+                    <p class="text-xs text-gray-500">From: ${notice.from}</p>
+                `;
+                
+                noticesContainer.appendChild(noticeElement);
+            });
+            
+        } catch (error) {
+            console.error('Error loading class notices:', error);
+            console.error('Error details:', error.message, error.stack);
+            const noticesContainer = document.getElementById(`${className}-notices`);
+            if (noticesContainer) {
+                noticesContainer.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error loading notices</p>';
+            }
+        }
+    }
     
     // Update tab content with dynamic classes
     function updateTabContentWithClasses() {
@@ -3939,6 +4263,11 @@
         // Load learners for each class
         Object.keys(adminClassPasswords).forEach(className => {
             setTimeout(() => loadLearners(className), 500);
+        });
+        
+        // Load class notices for each class
+        Object.keys(adminClassPasswords).forEach(className => {
+            setTimeout(() => loadClassNotices(className), 600);
         });
         
 
@@ -4033,24 +4362,22 @@
                             </div>
                             
                             <div class="bg-gray-50 rounded-xl p-3 md:p-4 mb-3 md:mb-4">
-                                <h3 class="text-base md:text-lg font-semibold text-gray-700 mb-3 md:mb-4">Add Top Learner</h3>
-                                <div class="space-y-2 md:space-y-3">
-                                    <div>
-                                        <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                                        <input type="text" id="${className}-best-learner-name" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base text-gray-900 bg-white" 
-                                            placeholder="Enter student name" value="${bestLearnerName}">
+                                <div class="flex justify-between items-center mb-3 md:mb-4">
+                                    <h3 class="text-base md:text-lg font-semibold text-gray-700">Class Notices</h3>
+                                    <div class="flex gap-2">
+                                        <button onclick="createTestNotice('${className}')" class="text-green-600 hover:text-green-800 text-sm" title="Create test notice (debug)">
+                                            <i class="fas fa-plus mr-1"></i>Test
+                                        </button>
+                                        <button onclick="loadClassNotices('${className}')" class="text-blue-600 hover:text-blue-800 text-sm">
+                                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Points</label>
-                                        <input type="number" id="${className}-best-learner-points" class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm md:text-base text-gray-900 bg-white" 
-                                            placeholder="Enter points" value="${bestLearnerPoints}">
-                                    </div>
-                                    <button onclick="saveBestLearner('${className}')" class="w-full bg-green-500 text-white py-1.5 md:py-2 rounded-lg hover:bg-green-600 mt-2 text-sm md:text-base">
-                                        <i class="fas fa-plus mr-2"></i>Add Top Learner
-                                    </button>
-                                    <p class="text-xs text-gray-600 mt-2">You can add multiple top learners for this class. They will be ranked by points on the dashboard.</p>
+                                </div>
+                                <div id="${className}-notices" class="space-y-2 max-h-40 overflow-y-auto">
+                                    <p class="text-gray-500 text-sm text-center py-4">Loading notices...</p>
                                 </div>
                             </div>
+                            
                             
                             <div class="bg-gray-50 rounded-xl p-3 md:p-4">
                                 <canvas id="${className}-chart" width="300" height="200"></canvas>
